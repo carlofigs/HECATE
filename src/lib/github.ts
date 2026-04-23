@@ -71,8 +71,11 @@ export async function getFile<T>(
 
   const json = await res.json()
 
-  // Contents API returns base64-encoded content
-  const raw = atob(json.content.replace(/\n/g, ''))
+  // Contents API returns base64-encoded UTF-8 content.
+  // atob() produces a binary string — must pipe through TextDecoder for non-ASCII chars.
+  const binary = atob(json.content.replace(/\n/g, ''))
+  const bytes  = Uint8Array.from(binary, c => c.charCodeAt(0))
+  const raw    = new TextDecoder('utf-8').decode(bytes)
   const data: T = JSON.parse(raw)
 
   return { data, sha: json.sha, path: json.path }
