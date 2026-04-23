@@ -40,4 +40,10 @@ declare module 'lucide-react' {
   export const Info: LucideIcon
   export const Loader2: LucideIcon
   export const LayoutList: LucideIcon
+  export const CheckCircle2: LucideIcon
+  export const Cloud: LucideIcon
+  export const CloudUpload: LucideIcon
+  export const WifiOff: LucideIcon
+  export const RefreshCw: LucideIcon
+  export const AlertTriangle: LucideIcon
 }
