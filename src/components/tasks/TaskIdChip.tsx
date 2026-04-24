@@ -23,15 +23,9 @@ interface Props {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-/** Normalise shorthand (e.g. "A47" → "t-a47", "t-A47" → "t-a47") */
-function normaliseId(raw: string): string {
-  const lower = raw.toLowerCase()
-  return lower.startsWith('t-') ? lower : `t-${lower}`
-}
-
 export function TaskIdChip({ taskid }: Props) {
-  const navigate  = useNavigate()
-  const resolvedId = normaliseId(taskid)
+  const navigate   = useNavigate()
+  const resolvedId = taskid.toLowerCase()
 
   // Look up the task across all columns using the normalised ID
   const result = useDataStore(s => {
