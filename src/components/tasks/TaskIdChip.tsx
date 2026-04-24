@@ -23,6 +23,12 @@ interface Props {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
+/** t-a47 → A47,  t-b28 → B28,  t-a-lx3k9r → A-lx3k9r */
+function displayId(id: string): string {
+  const s = id.toLowerCase().startsWith('t-') ? id.slice(2) : id
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
 export function TaskIdChip({ taskid }: Props) {
   const navigate   = useNavigate()
   const resolvedId = taskid.toLowerCase()
@@ -59,7 +65,7 @@ export function TaskIdChip({ taskid }: Props) {
               : 'border-muted-foreground/30 bg-muted/50 text-muted-foreground hover:bg-muted',
           )}
         >
-          {resolvedId}
+          {displayId(resolvedId)}
         </button>
       </TooltipPrimitive.Trigger>
 
@@ -78,7 +84,7 @@ export function TaskIdChip({ taskid }: Props) {
             <TaskPreview task={result.task} colName={result.colName} />
           ) : (
             <div className="px-3 py-2.5 space-y-1">
-              <p className="text-xs font-mono text-muted-foreground">{resolvedId}</p>
+              <p className="text-xs font-mono text-muted-foreground">{displayId(resolvedId)}</p>
               <p className="text-[11px] text-muted-foreground/60 italic">
                 Task not found — may have been deleted
               </p>
@@ -116,7 +122,7 @@ function TaskPreview({ task, colName }: { task: Task; colName: string }) {
       {/* Meta row */}
       <div className="px-3 pt-2 pb-1 space-y-1.5">
         <div className="flex items-center justify-between">
-          <span className="font-mono text-[10px] text-muted-foreground/60">{task.id}</span>
+          <span className="font-mono text-[10px] text-muted-foreground/60">{displayId(task.id)}</span>
           <span className="text-[10px] text-muted-foreground">{colName}</span>
         </div>
 
