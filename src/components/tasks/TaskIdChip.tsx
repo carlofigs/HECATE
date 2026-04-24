@@ -12,7 +12,7 @@ import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 import { Clock } from 'lucide-react'
 import { cn, daysSince } from '@/lib/utils'
 import { PRIORITY_CONFIG } from '@/lib/taskConstants'
-import { useDataStore } from '@/store/useDataStore'
+import { useDataFile } from '@/hooks/useDataFile'
 import type { Task } from '@/lib/schemas'
 
 // ─── Props come from the hast node properties (lowercase keys) ───────────────
@@ -27,16 +27,18 @@ export function TaskIdChip({ taskid }: Props) {
   const navigate   = useNavigate()
   const resolvedId = taskid.toLowerCase()
 
-  // Look up the task across all columns using the normalised ID
-  const result = useDataStore(s => {
-    const tasks = s.tasks.data
-    if (!tasks) return null
-    for (const col of tasks.columns) {
+  // Load tasks on demand — works even if the user hasn't visited Tasks page yet.
+  // useDataFile deduplicates: if TasksPage is also mounted, no double fetch.
+  const { data: tasksData } = useDataFile('tasks')
+
+  const result = (() => {
+    if (!tasksData) return null
+    for (const col of tasksData.columns) {
       const task = col.tasks.find(t => t.id === resolvedId)
       if (task) return { task, colName: col.name }
     }
     return null
-  })
+  })()
 
   function handleClick(e: React.MouseEvent) {
     e.preventDefault()
