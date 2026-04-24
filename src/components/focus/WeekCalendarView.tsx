@@ -36,6 +36,7 @@ interface DayCell {
 
 interface WeekRow {
   mondayDate: number
+  weekNum:    number
   cells: DayCell[]   // always 5 items, Mon–Fri
 }
 
@@ -119,13 +120,15 @@ function buildWeeks(rows: ParsedRow[], weekOf: string): WeekRow[] {
 
   // Build WeekRow for each Monday found, sorted ascending
   return [...weekMap.keys()].sort((a, b) => a - b).map(mondayDate => {
+    // Reconstruct the actual Date for this Monday to get ISO week number
+    const thisMonday = new Date(anchorMonday)
+    thisMonday.setDate(anchorMonday.getDate() + (mondayDate - anchorMonday.getDate()))
+    const weekNum = isoWeekNumber(thisMonday)
+
     const cells: DayCell[] = DOW_NAMES.map((dayName, i) => {
       const dateN = mondayDate + i
-      // Today: same date number AND same month as the anchor week
-      // (good enough for a weekly view — avoids cross-month false positives)
       const sameMonth = anchorMonth === todayMonth
       const isToday = sameMonth && dateN === todayDate
-
       return {
         dayName,
         dateN,
@@ -134,8 +137,18 @@ function buildWeeks(rows: ParsedRow[], weekOf: string): WeekRow[] {
         isToday,
       }
     })
-    return { mondayDate, cells }
+    return { mondayDate, weekNum, cells }
   })
+}
+
+// ─── ISO week number ──────────────────────────────────────────────────────────
+
+function isoWeekNumber(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+  const day = d.getUTCDay() || 7
+  d.setUTCDate(d.getUTCDate() + 4 - day) // Thursday of the week
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
 }
 
 // ─── Inline chip renderer ─────────────────────────────────────────────────────
@@ -183,8 +196,17 @@ export function WeekCalendarView({ content, weekOf, onEdit }: Props) {
       </div>
 
       {weeks.map(week => (
-        <div key={week.mondayDate} className="overflow-x-auto pb-0.5">
-          <div className="flex gap-1.5 min-w-[560px]">
+        <div key={week.mondayDate} className="flex items-stretch gap-1.5 overflow-x-auto pb-0.5">
+          {/* Rotated week number */}
+          <div className="flex items-center justify-center shrink-0 w-5">
+            <span
+              className="text-[9px] font-semibold text-muted-foreground/40 tracking-widest uppercase select-none"
+              style={{ writingMode: 'vertical-lr', transform: 'rotate(180deg)' }}
+            >
+              W{week.weekNum}
+            </span>
+          </div>
+          <div className="flex gap-1.5 flex-1 min-w-[520px]">
             {week.cells.map(cell => (
               <div
                 key={cell.dayName}
@@ -260,6 +282,7 @@ export function WeekCalendarView({ content, weekOf, onEdit }: Props) {
           </div>
         </div>
       ))}
+
     </div>
   )
 }
