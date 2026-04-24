@@ -16,7 +16,6 @@ import { useEffect, useRef, useCallback } from 'react'
 import { toast } from 'sonner'
 import { useDataStore } from '@/store/useDataStore'
 import type {
-  DataFileName,
   TasksData,
   FocusData,
   ProjectsData,
@@ -28,7 +27,14 @@ import type {
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-// DataFileName is imported from schemas — single source of truth
+type DataFileName =
+  | 'tasks'
+  | 'focus'
+  | 'projects'
+  | 'weekly_log'
+  | 'archive'
+  | 'memory'
+  | 'settings'
 
 type SliceData<K extends DataFileName> =
   K extends 'tasks'      ? TasksData      :
@@ -67,14 +73,11 @@ export function useDataFile<K extends DataFileName>(
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // ── Initial load ──────────────────────────────────────────────────────────
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadFile is a stable
-  // Zustand action (referentially stable across renders); slice omitted intentionally
-  // so we only re-run when the file name changes, not on every slice update.
   useEffect(() => {
     if (slice.data === null && !slice.loading) {
       loadFile(name)
     }
-  }, [name])
+  }, [name]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Auto-save on dirty ───────────────────────────────────────────────────
   useEffect(() => {
@@ -98,8 +101,7 @@ export function useDataFile<K extends DataFileName>(
         debounceRef.current = null
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- saveFile is a stable Zustand action
-  }, [slice.dirty, name, autoSaveMs, disableAutoSave])
+  }, [slice.dirty, name, autoSaveMs, disableAutoSave]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── setData wrapper ───────────────────────────────────────────────────────
   const setData = useCallback(

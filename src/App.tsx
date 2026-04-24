@@ -1,6 +1,5 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
-import { TooltipProvider } from '@/components/ui/tooltip'
 import AppShell from '@/components/layout/AppShell'
 import FocusPage from '@/pages/FocusPage'
 import TasksPage from '@/pages/TasksPage'
@@ -12,7 +11,6 @@ import SetupPage from '@/pages/SetupPage'
 
 export default function App() {
   return (
-    <TooltipProvider delayDuration={250}>
     <HashRouter>
       <Routes>
         {/* Setup — shown when no valid token exists */}
@@ -43,6 +41,5 @@ export default function App() {
         }}
       />
     </HashRouter>
-    </TooltipProvider>
   )
 }

@@ -10,7 +10,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, Clock } from 'lucide-react'
 import { cn, daysSince } from '@/lib/utils'
-import { PRIORITY_CONFIG, displayId } from '@/lib/taskConstants'
+import { PRIORITY_CONFIG } from '@/lib/taskConstants'
 import type { Task } from '@/lib/schemas'
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -96,13 +96,6 @@ export function TaskCard({ task, onClick }: Props) {
             <span>Blocked {blockedDays}d</span>
           </div>
         )}
-
-        {/* ID badge */}
-        <div className="flex justify-end">
-          <span className="font-mono text-[10px] text-muted-foreground/35 select-none">
-            {displayId(task.id)}
-          </span>
-        </div>
       </div>
     </div>
   )

@@ -16,17 +16,9 @@ export interface TasksData {
   columns: Column[]
 }
 
-/**
- * Semantic role of a column — used by Archive and Week Log to identify
- * which tasks to snapshot. Configured in Settings → Column Types.
- * null = unassigned (column is ignored by automated actions).
- */
-export type ColumnType = 'backlog' | 'in-progress' | 'done' | 'not-doing' | null
-
 export interface Column {
   id: string
   name: string
-  columnType?: ColumnType   // optional — absent = null = unassigned
   tasks: Task[]
 }
 

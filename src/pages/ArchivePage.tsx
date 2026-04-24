@@ -17,7 +17,7 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Archive, ChevronDown, ChevronRight, Inbox } from 'lucide-react'
+import { Archive, ChevronDown, ChevronRight, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useDataFile } from '@/hooks/useDataFile'
 import { useDataStore } from '@/store/useDataStore'
@@ -295,7 +295,7 @@ export default function ArchivePage() {
         ) : sortedWeeks.length === 0 ? (
           /* Empty state */
           <div className="flex flex-col items-center justify-center gap-2 py-20 text-muted-foreground">
-            <Inbox className="w-8 h-8 opacity-20" />
+            <Package className="w-8 h-8 opacity-20" />
             <p className="text-sm">No archived sprints yet</p>
             <p className="text-xs opacity-40">
               Close a sprint to snapshot your done tasks here.

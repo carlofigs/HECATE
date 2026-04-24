@@ -9,8 +9,7 @@
  * - Toast notifications on mutations
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useState, useCallback } from 'react'
 import { toast } from 'sonner'
 import { Kanban, LayoutList, Plus } from 'lucide-react'
 import { useDataFile } from '@/hooks/useDataFile'
@@ -43,8 +42,6 @@ const BoardSkeleton = (
 
 export default function TasksPage() {
   const { data, loading, error, setData, reload } = useDataFile('tasks')
-  const [searchParams, setSearchParams] = useSearchParams()
-  const autoOpenHandled = useRef(false)
 
   const [view, setView] = useState<View>(
     () => (localStorage.getItem(VIEW_KEY) as View | null) ?? 'board',
@@ -71,24 +68,6 @@ export default function TasksPage() {
     setDialogColId(columnId)
     setDialogOpen(true)
   }, [])
-
-  // ── Auto-open from ?open=<taskId> (linked from TaskIdChip) ───────────────
-
-  useEffect(() => {
-    const openId = searchParams.get('open')
-    if (!openId || !data || autoOpenHandled.current) return
-    autoOpenHandled.current = true
-
-    for (const col of data.columns) {
-      const task = col.tasks.find(t => t.id === openId)
-      if (task) {
-        openEdit(task, col.id)
-        break
-      }
-    }
-    // Remove the param from the URL so back-navigation works cleanly
-    setSearchParams(p => { p.delete('open'); return p }, { replace: true })
-  }, [data, searchParams, openEdit, setSearchParams])
 
   // ── CRUD handlers ──────────────────────────────────────────────────────────
 
