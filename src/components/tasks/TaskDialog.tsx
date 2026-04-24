@@ -79,7 +79,7 @@ export function TaskDialog({
       setBlockedSince('')
     }
     setTargetCol(columnId ?? columns[0]?.id ?? '')
-  }, [task, columnId, open]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [task, columnId, columns, open])
 
   function buildTask(): Task {
     const now = nowISO()

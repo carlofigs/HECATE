@@ -10,22 +10,14 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, Clock } from 'lucide-react'
 import { cn, daysSince } from '@/lib/utils'
-import type { Task, Priority } from '@/lib/schemas'
-
-// ─── Priority config ────────────────────────────────────────────────────────
-
-const PRIORITY: Record<Priority, { label: string; cls: string }> = {
-  high:   { label: 'High',   cls: 'bg-red-500'    },
-  medium: { label: 'Medium', cls: 'bg-yellow-400'  },
-  low:    { label: 'Low',    cls: 'bg-blue-400'    },
-}
+import { PRIORITY_CONFIG } from '@/lib/taskConstants'
+import type { Task } from '@/lib/schemas'
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
 interface Props {
-  task:     Task
-  columnId: string
-  onClick:  () => void
+  task:    Task
+  onClick: () => void
 }
 
 export function TaskCard({ task, onClick }: Props) {
@@ -74,8 +66,8 @@ export function TaskCard({ task, onClick }: Props) {
           {/* Priority dot */}
           {task.priority && (
             <span
-              className={cn('mt-1.5 w-1.5 h-1.5 rounded-full shrink-0', PRIORITY[task.priority].cls)}
-              title={PRIORITY[task.priority].label}
+              className={cn('mt-1.5 w-1.5 h-1.5 rounded-full shrink-0', PRIORITY_CONFIG[task.priority].dot)}
+              title={PRIORITY_CONFIG[task.priority].label}
             />
           )}
           <p className="text-xs leading-snug text-foreground break-words">

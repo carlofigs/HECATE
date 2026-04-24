@@ -105,7 +105,6 @@ export function TaskColumn({ column, onTaskClick, onQuickAdd, collapsed, onToggl
               <TaskCard
                 key={task.id}
                 task={task}
-                columnId={column.id}
                 onClick={() => onTaskClick(task, column.id)}
               />
             ))}

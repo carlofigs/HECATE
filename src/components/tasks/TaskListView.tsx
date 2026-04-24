@@ -12,14 +12,9 @@
 import { useState, useMemo } from 'react'
 import { Search, Plus, ChevronDown, ChevronRight, Clock } from 'lucide-react'
 import { cn, daysSince, columnAccentClass, accentTextStyle } from '@/lib/utils'
+import { PRIORITY_CONFIG } from '@/lib/taskConstants'
 import { useCollapsed } from '@/hooks/useCollapsed'
-import type { Column, Task, Priority } from '@/lib/schemas'
-
-const PRIORITY_DOT: Record<Priority, string> = {
-  high:   'bg-red-500',
-  medium: 'bg-yellow-400',
-  low:    'bg-blue-400',
-}
+import type { Column, Task } from '@/lib/schemas'
 
 interface Props {
   columns:     Column[]
@@ -28,7 +23,6 @@ interface Props {
 }
 
 export function TaskListView({ columns, onTaskClick, onNewTask }: Props) {
-  const [query] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const { isCollapsed, toggle, collapseAll, expandAll, collapsedCount } =
     useCollapsed('hecate:tasks:list:collapsed')
@@ -144,7 +138,7 @@ export function TaskListView({ columns, onTaskClick, onNewTask }: Props) {
 
         {filtered.length === 0 && (
           <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
-            No tasks match "{query}"
+            No tasks match &ldquo;{searchQuery}&rdquo;
           </div>
         )}
 
@@ -175,7 +169,7 @@ function TaskListRow({
       {/* Priority dot */}
       <span className={cn(
         'w-1.5 h-1.5 rounded-full shrink-0',
-        task.priority ? PRIORITY_DOT[task.priority] : 'bg-muted-foreground/20',
+        task.priority ? PRIORITY_CONFIG[task.priority].dot : 'bg-muted-foreground/20',
       )} />
 
       {/* Title */}

@@ -37,7 +37,9 @@ export function useSettings() {
     const creds = loadCredentials()
     if (!creds) return
     loadFile('settings')
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: load once on mount;
+  // slice/loadFile refs are stable Zustand selectors and don't change between renders
+  }, [])
 
   // ── Apply theme to DOM whenever settings change ───────────────────────────
   useEffect(() => {

@@ -11,7 +11,7 @@
  * - Blur from textarea (after 150ms debounce) → commit silently
  */
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Pencil, Trash2, GripVertical, ChevronDown, ChevronRight } from 'lucide-react'
@@ -37,6 +37,10 @@ export function FocusSectionCard({ section, colorIndex, onUpdate, onDelete, coll
   const [contentDraft, setContentDraft] = useState(section.content)
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Keep a stable ref to the latest drafts so commit() never captures stale values
+  const draftsRef = useRef({ titleDraft, contentDraft })
+  useEffect(() => { draftsRef.current = { titleDraft, contentDraft } }, [titleDraft, contentDraft])
+
   // ── Edit helpers ──────────────────────────────────────────────────────────
 
   function startEdit() {
@@ -45,36 +49,37 @@ export function FocusSectionCard({ section, colorIndex, onUpdate, onDelete, coll
     setEditing(true)
   }
 
-  function commit() {
+  const commit = useCallback(() => {
     if (blurTimerRef.current) clearTimeout(blurTimerRef.current)
-    const title   = titleDraft.trim()   || section.title
-    const content = contentDraft
+    const { titleDraft: t, contentDraft: c } = draftsRef.current
+    const title   = t.trim() || section.title
+    const content = c
     onUpdate(s => {
       s.title   = title
       s.content = content
     })
     setEditing(false)
-  }
+  }, [section.title, onUpdate])
 
-  function discard() {
+  const discard = useCallback(() => {
     if (blurTimerRef.current) clearTimeout(blurTimerRef.current)
     setEditing(false)
-  }
+  }, [])
 
   // Debounced blur — gives Save button click time to register before closing
   const onTextareaBlur = useCallback(() => {
     blurTimerRef.current = setTimeout(commit, 200)
-  }, [commit])  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [commit])
 
-  function onTextareaKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+  const onTextareaKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); commit() }
     if (e.key === 'Escape') { e.preventDefault(); discard() }
-  }
+  }, [commit, discard])
 
-  function onTitleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+  const onTitleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') { e.preventDefault(); /* focus textarea */ }
     if (e.key === 'Escape') { e.preventDefault(); discard() }
-  }
+  }, [discard])
 
   // ── Render ────────────────────────────────────────────────────────────────
 

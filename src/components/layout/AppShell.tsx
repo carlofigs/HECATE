@@ -59,7 +59,7 @@ export default function AppShell() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [tasks.dirty, focus.dirty, projects.dirty, weekly_log.dirty, archive.dirty, memory.dirty]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [saveFile, tasks.dirty, focus.dirty, projects.dirty, weekly_log.dirty, archive.dirty, memory.dirty])
 
   function toggleTheme() {
     const next = settings.theme === 'dark' ? 'light' : 'dark'

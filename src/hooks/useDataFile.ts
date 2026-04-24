@@ -85,6 +85,7 @@ export function useDataFile<K extends DataFileName>(
 
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(async () => {
+      debounceRef.current = null
       try {
         await saveFile(name)
       } catch {
@@ -95,7 +96,10 @@ export function useDataFile<K extends DataFileName>(
     }, autoSaveMs)
 
     return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+        debounceRef.current = null
+      }
     }
   }, [slice.dirty, name, autoSaveMs, disableAutoSave]) // eslint-disable-line react-hooks/exhaustive-deps
 

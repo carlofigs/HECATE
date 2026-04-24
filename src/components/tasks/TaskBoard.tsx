@@ -109,7 +109,7 @@ export function TaskBoard({ data, setData, onTaskClick, onQuickAdd }: Props) {
       <DragOverlay>
         {activeTask && (
           <div className="opacity-90 rotate-1 shadow-xl">
-            <TaskCard task={activeTask} columnId="" onClick={() => {}} />
+            <TaskCard task={activeTask} onClick={() => {}} />
           </div>
         )}
       </DragOverlay>
