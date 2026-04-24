@@ -2,7 +2,7 @@
  * WeekLogPage — sprint week log: task snapshots + editable narrative
  *
  * Layout:
- *   Header: week navigator (< WB date >) · "Generate Week" button
+ *   Header: week selector (dropdown) · "Generate Week" button
  *   Body:
  *     Task snapshot grid  (Completed | Carried Forward | Delayed)
  *     Next Week           (editable list — one item per line)
@@ -20,7 +20,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
+import { CalendarDays } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useDataFile } from '@/hooks/useDataFile'
 import { useSettings } from '@/hooks/useSettings'
@@ -77,16 +77,13 @@ interface NextWeekEditorProps {
 }
 
 function NextWeekEditor({ items, onUpdate }: NextWeekEditorProps) {
-  // Edit as a single textarea (one item per line)
   const joined = items.join('\n')
+  const splitAndUpdate = useCallback(
+    (val: string) => onUpdate(val.split('\n').filter(l => l.trim() !== '')),
+    [onUpdate],
+  )
   const { editing, draft, setDraft, startEdit, commit, discard, onTextareaBlur, onTextareaKeyDown } =
-    useInlineEdit(
-      joined,
-      useCallback(
-        (val: string) => onUpdate(val.split('\n').filter(l => l.trim() !== '')),
-        [onUpdate],
-      ),
-    )
+    useInlineEdit(joined, splitAndUpdate)
 
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
@@ -135,17 +132,47 @@ function NextWeekEditor({ items, onUpdate }: NextWeekEditorProps) {
   )
 }
 
+// ─── 1:1 per-person card ─────────────────────────────────────────────────────
+// Defined here (above Page) so hooks are never called inside a .map() in JSX.
+
+interface OneOnOneCardProps {
+  weekOf:   string
+  person:   string
+  content:  string
+  onUpdate: (person: string, content: string) => void
+}
+
+function OneOnOneCard({ weekOf, person, content, onUpdate }: OneOnOneCardProps) {
+  const handleUpdate = useCallback(
+    (c: string) => onUpdate(person, c),
+    // weekOf in deps ensures the callback re-binds when the selected week changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [weekOf, person],
+  )
+  return (
+    <NarrativeCard
+      label={person}
+      content={content}
+      onUpdate={handleUpdate}
+      minEditHeight={100}
+    />
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function WeekLogPage() {
-  const location = useLocation()
+  const location    = useLocation()
   const fromArchive = location.state?.fromArchive === true
 
   // ── Data ─────────────────────────────────────────────────────────────────
-  const { data: logData,   setData: setLog   } = useDataFile('weekly_log')
-  const { data: tasksData                     } = useDataFile('tasks')
-  const { settings                            } = useSettings()
-  const saveFile = useDataFile('weekly_log').save  // explicit save for generate action
+  const {
+    data: logData,
+    setData: setLog,
+    save: saveLog,
+  } = useDataFile('weekly_log')
+  const { data: tasksData } = useDataFile('tasks')
+  const { settings }        = useSettings()
 
   // ── Week navigation ───────────────────────────────────────────────────────
   const sortedWeeks: WeekEntry[] = logData
@@ -154,6 +181,7 @@ export default function WeekLogPage() {
 
   const [selectedWeekOf, setSelectedWeekOf] = useState<string | null>(null)
 
+  // Default to most recent once data loads
   useEffect(() => {
     if (sortedWeeks.length > 0 && selectedWeekOf === null) {
       setSelectedWeekOf(sortedWeeks[0].weekOf)
@@ -161,19 +189,17 @@ export default function WeekLogPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortedWeeks.length])
 
-  const selectedWeek = sortedWeeks.find(w => w.weekOf === selectedWeekOf) ?? sortedWeeks[0] ?? null
-  const selectedIdx  = sortedWeeks.findIndex(w => w.weekOf === selectedWeek?.weekOf)
-  const canNext      = selectedIdx > 0                           // newer week exists
-  const canPrev      = selectedIdx < sortedWeeks.length - 1     // older week exists
+  // Guard: if selectedWeekOf no longer exists (e.g. after overwrite), reset to first
+  const selectedWeek =
+    sortedWeeks.find(w => w.weekOf === selectedWeekOf) ?? sortedWeeks[0] ?? null
 
   // ── Generate Week state ───────────────────────────────────────────────────
   const [generateOpen, setGenerateOpen] = useState(false)
-  const [saving, setSaving] = useState(false)
+  const [saving, setSaving]             = useState(false)
 
-  // Build task snapshot arrays from current board state
-  const doneCols       = tasksData?.columns.filter(c => c.columnType === 'done')       ?? []
-  const inProgCols     = tasksData?.columns.filter(c => c.columnType === 'in-progress') ?? []
-  const allInProg      = inProgCols.flatMap(c => c.tasks)
+  const doneCols   = tasksData?.columns.filter(c => c.columnType === 'done')        ?? []
+  const inProgCols = tasksData?.columns.filter(c => c.columnType === 'in-progress') ?? []
+  const allInProg  = inProgCols.flatMap(c => c.tasks)
 
   const completedSnaps: TaskSnapshot[] = doneCols.flatMap(col =>
     col.tasks.map(t => ({ id: t.id, title: t.title, note: t.note, tags: t.tags })),
@@ -189,10 +215,7 @@ export default function WeekLogPage() {
   const weekExists     = sortedWeeks.some(w => w.weekOf === generateWeekOf)
 
   function handleOpenGenerate() {
-    if (!tasksData) {
-      toast.error('Tasks still loading — try again in a moment')
-      return
-    }
+    if (!tasksData) { toast.error('Tasks still loading — try again in a moment'); return }
     if (doneCols.length === 0 && inProgCols.length === 0) {
       toast.error('No Done or In-Progress columns configured', {
         description: 'Set column types in Settings → Column Types first.',
@@ -205,16 +228,16 @@ export default function WeekLogPage() {
   async function handleConfirmGenerate() {
     setSaving(true)
     try {
-      const people = settings.oneOnOnePeople
+      const people    = settings.oneOnOnePeople
       const newEntry: WeekEntry = {
-        weekOf:      generateWeekOf,
-        dateRange:   formatWeekRange(generateWeekOf),
-        generatedAt: nowISO(),
-        updatedAt:   nowISO(),
-        completed:   completedSnaps,
+        weekOf:         generateWeekOf,
+        dateRange:      formatWeekRange(generateWeekOf),
+        generatedAt:    nowISO(),
+        updatedAt:      nowISO(),
+        completed:      completedSnaps,
         carriedForward: carriedSnaps,
-        delayed:     delayedSnaps,
-        nextWeek:    [],
+        delayed:        delayedSnaps,
+        nextWeek:       [],
         narrative: {
           meetingsAndDiscussions: '',
           decisionsMade:          '',
@@ -228,14 +251,11 @@ export default function WeekLogPage() {
 
       setLog(draft => {
         const existingIdx = draft.weeks.findIndex(w => w.weekOf === generateWeekOf)
-        if (existingIdx >= 0) {
-          draft.weeks[existingIdx] = newEntry
-        } else {
-          draft.weeks.unshift(newEntry)
-        }
+        if (existingIdx >= 0) draft.weeks[existingIdx] = newEntry
+        else draft.weeks.unshift(newEntry)
       })
 
-      await saveFile('Generate week log')
+      await saveLog('Generate week log')
 
       setGenerateOpen(false)
       setSelectedWeekOf(generateWeekOf)
@@ -249,49 +269,51 @@ export default function WeekLogPage() {
 
   // Auto-trigger from Archive "Generate week log →" shortcut
   useEffect(() => {
-    if (fromArchive && tasksData && !generateOpen) {
-      handleOpenGenerate()
-    }
+    if (fromArchive && tasksData && !generateOpen) handleOpenGenerate()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fromArchive, !!tasksData])
 
   // ── Narrative update helpers ──────────────────────────────────────────────
 
-  function updateNarrativeField(
-    field: 'meetingsAndDiscussions' | 'decisionsMade' | 'frustrations',
-    content: string,
-  ) {
-    if (!selectedWeek) return
-    setLog(draft => {
-      const w = draft.weeks.find(x => x.weekOf === selectedWeek.weekOf)
-      if (w) { w.narrative[field] = content; w.updatedAt = nowISO() }
-    })
-  }
+  const updateField = useCallback(
+    (field: 'meetingsAndDiscussions' | 'decisionsMade' | 'frustrations', content: string) => {
+      if (!selectedWeek) return
+      setLog(draft => {
+        const w = draft.weeks.find(x => x.weekOf === selectedWeek.weekOf)
+        if (w) { w.narrative[field] = content; w.updatedAt = nowISO() }
+      })
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedWeek?.weekOf],
+  )
 
-  function updateOneOnOne(person: string, content: string) {
-    if (!selectedWeek) return
-    setLog(draft => {
-      const w = draft.weeks.find(x => x.weekOf === selectedWeek.weekOf)
-      if (w) {
-        w.narrative.oneOnOnePrep.sections[person] = content
-        w.updatedAt = nowISO()
-      }
-    })
-  }
+  const onUpdateMeetings     = useCallback((c: string) => updateField('meetingsAndDiscussions', c), [updateField])
+  const onUpdateDecisions    = useCallback((c: string) => updateField('decisionsMade', c),          [updateField])
+  const onUpdateFrustrations = useCallback((c: string) => updateField('frustrations', c),            [updateField])
 
-  function updateNextWeek(items: string[]) {
-    if (!selectedWeek) return
-    setLog(draft => {
-      const w = draft.weeks.find(x => x.weekOf === selectedWeek.weekOf)
-      if (w) { w.nextWeek = items; w.updatedAt = nowISO() }
-    })
-  }
+  const onUpdateNextWeek = useCallback(
+    (items: string[]) => {
+      if (!selectedWeek) return
+      setLog(draft => {
+        const w = draft.weeks.find(x => x.weekOf === selectedWeek.weekOf)
+        if (w) { w.nextWeek = items; w.updatedAt = nowISO() }
+      })
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedWeek?.weekOf],
+  )
 
-  // ── Stable callbacks for NarrativeCard (avoid inline arrow → cascading rememo) ──
-  const onUpdateMeetings  = useCallback((c: string) => updateNarrativeField('meetingsAndDiscussions', c), [selectedWeek?.weekOf])
-  const onUpdateDecisions = useCallback((c: string) => updateNarrativeField('decisionsMade', c),          [selectedWeek?.weekOf])
-  const onUpdateFrustrations = useCallback((c: string) => updateNarrativeField('frustrations', c),        [selectedWeek?.weekOf])
-  const onUpdateNextWeek  = useCallback((items: string[]) => updateNextWeek(items),                        [selectedWeek?.weekOf])
+  const onUpdateOneOnOne = useCallback(
+    (person: string, content: string) => {
+      if (!selectedWeek) return
+      setLog(draft => {
+        const w = draft.weeks.find(x => x.weekOf === selectedWeek.weekOf)
+        if (w) { w.narrative.oneOnOnePrep.sections[person] = content; w.updatedAt = nowISO() }
+      })
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedWeek?.weekOf],
+  )
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -300,43 +322,28 @@ export default function WeekLogPage() {
 
       {/* ── Header ── */}
       <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-3 border-b border-border bg-card">
-        <div className="flex items-center gap-1">
-          {/* Older */}
-          <button
-            onClick={() => canPrev && setSelectedWeekOf(sortedWeeks[selectedIdx + 1].weekOf)}
-            disabled={!canPrev}
-            className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-25"
-            aria-label="Older week"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
 
-          {/* Week label */}
-          <div className="min-w-[180px] text-center">
-            {selectedWeek ? (
-              <p className="text-sm font-semibold text-foreground">
-                WB {formatWeekRange(selectedWeek.weekOf)}
-              </p>
-            ) : (
-              <p className="text-sm text-muted-foreground/50 italic">No weeks yet</p>
-            )}
-          </div>
-
-          {/* Newer */}
-          <button
-            onClick={() => canNext && setSelectedWeekOf(sortedWeeks[selectedIdx - 1].weekOf)}
-            disabled={!canNext}
-            className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-25"
-            aria-label="Newer week"
+        {/* Week selector */}
+        {sortedWeeks.length > 0 ? (
+          <select
+            value={selectedWeek?.weekOf ?? ''}
+            onChange={e => setSelectedWeekOf(e.target.value)}
+            className="h-7 rounded-md border border-input bg-transparent px-2 text-sm font-medium text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
+            {sortedWeeks.map(w => (
+              <option key={w.weekOf} value={w.weekOf}>
+                WB {formatWeekRange(w.weekOf)}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <p className="text-sm text-muted-foreground/50 italic">No weeks yet</p>
+        )}
 
         <Button
           size="sm"
           variant="outline"
-          className="gap-1.5 h-7 text-xs"
+          className="gap-1.5 h-7 text-xs shrink-0"
           onClick={handleOpenGenerate}
           disabled={saving}
         >
@@ -348,14 +355,12 @@ export default function WeekLogPage() {
       {/* ── Body ── */}
       <div className="flex-1 overflow-y-auto min-h-0">
         {!logData ? (
-          /* Loading skeleton */
           <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
             {[1, 2, 3].map(i => (
               <div key={i} className="h-16 rounded-lg bg-muted/40 animate-pulse" />
             ))}
           </div>
         ) : !selectedWeek ? (
-          /* Empty state */
           <div className="flex flex-col items-center justify-center gap-2 py-20 text-muted-foreground">
             <CalendarDays className="w-8 h-8 opacity-20" />
             <p className="text-sm">No week logs yet</p>
@@ -370,20 +375,20 @@ export default function WeekLogPage() {
         ) : (
           <div className="max-w-3xl mx-auto px-4 py-4 space-y-4">
 
-            {/* ── Task snapshot grid ── */}
+            {/* Task snapshot grid */}
             <div className="grid grid-cols-3 gap-3">
-              <TaskListCard label="Completed"     tasks={selectedWeek.completed}      accent="green" />
+              <TaskListCard label="Completed"      tasks={selectedWeek.completed}       accent="green" />
               <TaskListCard label="Carried Forward" tasks={selectedWeek.carriedForward} accent="muted" />
-              <TaskListCard label="Delayed"       tasks={selectedWeek.delayed}        accent="amber" />
+              <TaskListCard label="Delayed"         tasks={selectedWeek.delayed}        accent="amber" />
             </div>
 
-            {/* ── Next Week ── */}
+            {/* Next Week */}
             <NextWeekEditor
               items={selectedWeek.nextWeek}
               onUpdate={onUpdateNextWeek}
             />
 
-            {/* ── Narrative sections ── */}
+            {/* Narrative sections */}
             <NarrativeCard
               label="Meetings & Discussions"
               content={selectedWeek.narrative.meetingsAndDiscussions}
@@ -401,7 +406,7 @@ export default function WeekLogPage() {
               onUpdate={onUpdateFrustrations}
             />
 
-            {/* ── 1:1 Prep ── */}
+            {/* 1:1 Prep */}
             {selectedWeek.narrative.oneOnOnePrep.people.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
@@ -414,13 +419,10 @@ export default function WeekLogPage() {
                 {selectedWeek.narrative.oneOnOnePrep.people.map(person => (
                   <OneOnOneCard
                     key={`${selectedWeek.weekOf}-${person}`}
+                    weekOf={selectedWeek.weekOf}
                     person={person}
                     content={selectedWeek.narrative.oneOnOnePrep.sections[person] ?? ''}
-                    onUpdate={useCallback(
-                      (c: string) => updateOneOnOne(person, c),
-                      // eslint-disable-next-line react-hooks/exhaustive-deps
-                      [selectedWeek.weekOf, person],
-                    )}
+                    onUpdate={onUpdateOneOnOne}
                   />
                 ))}
               </div>
@@ -430,7 +432,7 @@ export default function WeekLogPage() {
         )}
       </div>
 
-      {/* ── Generate Week Dialog ── */}
+      {/* Generate Week Dialog */}
       <GenerateWeekDialog
         open={generateOpen}
         onClose={() => setGenerateOpen(false)}
@@ -443,24 +445,5 @@ export default function WeekLogPage() {
         onConfirm={handleConfirmGenerate}
       />
     </div>
-  )
-}
-
-// ─── 1:1 per-person card ─────────────────────────────────────────────────────
-
-interface OneOnOneCardProps {
-  person:   string
-  content:  string
-  onUpdate: (content: string) => void
-}
-
-function OneOnOneCard({ person, content, onUpdate }: OneOnOneCardProps) {
-  return (
-    <NarrativeCard
-      label={person}
-      content={content}
-      onUpdate={onUpdate}
-      minEditHeight={100}
-    />
   )
 }
