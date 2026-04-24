@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom'
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 import { Clock } from 'lucide-react'
 import { cn, daysSince } from '@/lib/utils'
-import { PRIORITY_CONFIG } from '@/lib/taskConstants'
+import { PRIORITY_CONFIG, displayId } from '@/lib/taskConstants'
 import { useDataFile } from '@/hooks/useDataFile'
 import type { Task } from '@/lib/schemas'
 
@@ -19,14 +19,6 @@ import type { Task } from '@/lib/schemas'
 
 interface Props {
   taskid: string
-}
-
-// ─── Component ───────────────────────────────────────────────────────────────
-
-/** t-a47 → A47,  t-b28 → B28,  t-a-lx3k9r → A-lx3k9r */
-function displayId(id: string): string {
-  const s = id.toLowerCase().startsWith('t-') ? id.slice(2) : id
-  return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 export function TaskIdChip({ taskid }: Props) {
