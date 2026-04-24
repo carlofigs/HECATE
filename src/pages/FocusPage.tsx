@@ -18,6 +18,7 @@
 import { useCallback } from 'react'
 import { Plus } from 'lucide-react'
 import { useDataFile } from '@/hooks/useDataFile'
+import { useCollapsed } from '@/hooks/useCollapsed'
 import { PageShell } from '@/components/layout/PageShell'
 import { FocusWeekHeader } from '@/components/focus/FocusWeekHeader'
 import { FocusSectionCard } from '@/components/focus/FocusSectionCard'
@@ -39,6 +40,8 @@ function uniqueId(title: string, existing: FocusSection[]): string {
 
 export default function FocusPage() {
   const { data, loading, error, setData, reload } = useDataFile('focus')
+  const { isCollapsed, toggle, collapseAll, expandAll, collapsedCount } =
+    useCollapsed('hecate:focus:collapsed')
 
   // ── Mutate helpers (all stamp updatedAt) ──────────────────────────────────
 
@@ -108,6 +111,17 @@ export default function FocusPage() {
 
           {/* Section list */}
           <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-3">
+            {/* Collapse / expand all */}
+            {data.sections.length > 1 && (
+              <div className="flex justify-end">
+                <button
+                  onClick={() => collapsedCount > 0 ? expandAll() : collapseAll(data.sections.map(s => s.id))}
+                  className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {collapsedCount > 0 ? 'Expand all' : 'Collapse all'}
+                </button>
+              </div>
+            )}
             {data.sections.length === 0 && (
               <div className="flex flex-col items-center justify-center h-32 gap-2">
                 <p className="text-sm text-muted-foreground">No sections yet</p>
@@ -124,6 +138,8 @@ export default function FocusPage() {
                 section={section}
                 onUpdate={updater => updateSection(section.id, updater)}
                 onDelete={() => deleteSection(section.id)}
+                collapsed={isCollapsed(section.id)}
+                onToggle={() => toggle(section.id)}
               />
             ))}
 

@@ -14,20 +14,22 @@
 import { useState, useRef, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Pencil, Trash2, GripVertical } from 'lucide-react'
+import { Pencil, Trash2, GripVertical, ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { FocusSection } from '@/lib/schemas'
 
 interface Props {
-  section:    FocusSection
-  onUpdate:   (updater: (s: FocusSection) => void) => void
-  onDelete:   () => void
+  section:     FocusSection
+  onUpdate:    (updater: (s: FocusSection) => void) => void
+  onDelete:    () => void
+  collapsed:   boolean
+  onToggle:    () => void
   dragHandle?: React.HTMLAttributes<HTMLDivElement>
   isDragging?: boolean
 }
 
-export function FocusSectionCard({ section, onUpdate, onDelete, dragHandle, isDragging }: Props) {
+export function FocusSectionCard({ section, onUpdate, onDelete, collapsed, onToggle, dragHandle, isDragging }: Props) {
   const [editing,      setEditing]      = useState(false)
   const [titleDraft,   setTitleDraft]   = useState(section.title)
   const [contentDraft, setContentDraft] = useState(section.content)
@@ -144,10 +146,19 @@ export function FocusSectionCard({ section, onUpdate, onDelete, dragHandle, isDr
         /* ── Display mode ───────────────────────────────────────────────── */
         <div className="pl-6 pr-3 py-3">
           {/* Header row */}
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <h3 className="text-xs font-semibold text-foreground/70 uppercase tracking-wider">
-              {section.title}
-            </h3>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <button
+              onClick={onToggle}
+              className="flex items-center gap-1.5 flex-1 min-w-0 group/collapse"
+            >
+              {collapsed
+                ? <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                : <ChevronDown  className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              }
+              <h3 className="text-xs font-semibold text-foreground/70 uppercase tracking-wider truncate">
+                {section.title}
+              </h3>
+            </button>
             {/* Actions — visible on hover */}
             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
               <button
@@ -167,23 +178,25 @@ export function FocusSectionCard({ section, onUpdate, onDelete, dragHandle, isDr
             </div>
           </div>
 
-          {/* Markdown content */}
-          {section.content.trim() ? (
-            <div
-              className="prose prose-sm dark:prose-invert max-w-none cursor-text"
-              onClick={startEdit}
-            >
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {section.content}
-              </ReactMarkdown>
-            </div>
-          ) : (
-            <p
-              className="text-xs text-muted-foreground/40 italic cursor-text"
-              onClick={startEdit}
-            >
-              Empty — click to add content
-            </p>
+          {/* Markdown content — hidden when collapsed */}
+          {!collapsed && (
+            section.content.trim() ? (
+              <div
+                className="prose prose-sm dark:prose-invert max-w-none cursor-text"
+                onClick={startEdit}
+              >
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {section.content}
+                </ReactMarkdown>
+              </div>
+            ) : (
+              <p
+                className="text-xs text-muted-foreground/40 italic cursor-text"
+                onClick={startEdit}
+              >
+                Empty — click to add content
+              </p>
+            )
           )}
         </div>
       )}

@@ -20,6 +20,7 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { TaskColumn } from './TaskColumn'
 import { TaskCard } from './TaskCard'
 import { nowISO } from '@/lib/utils'
+import { useCollapsed } from '@/hooks/useCollapsed'
 import type { TasksData, Task } from '@/lib/schemas'
 
 interface Props {
@@ -31,6 +32,8 @@ interface Props {
 
 export function TaskBoard({ data, setData, onTaskClick, onQuickAdd }: Props) {
   const [activeTask, setActiveTask] = useState<Task | null>(null)
+  const { isCollapsed, toggle, collapseAll, expandAll, collapsedCount } =
+    useCollapsed('hecate:tasks:board:collapsed')
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -75,15 +78,29 @@ export function TaskBoard({ data, setData, onTaskClick, onQuickAdd }: Props) {
     })
   }
 
+  const allIds = data.columns.map(c => c.id)
+
   return (
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-      <div className="flex lg:flex-row flex-col gap-3 h-full p-4 overflow-x-auto overflow-y-auto lg:overflow-y-hidden">
+      {/* Collapse / expand all bar */}
+      <div className="shrink-0 flex items-center justify-end gap-2 px-4 pt-3 pb-0">
+        <button
+          onClick={() => collapsedCount > 0 ? expandAll() : collapseAll(allIds)}
+          className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {collapsedCount > 0 ? 'Expand all' : 'Collapse all'}
+        </button>
+      </div>
+
+      <div className="flex lg:flex-row flex-col gap-3 h-full p-4 pt-2 overflow-x-auto overflow-y-auto lg:overflow-y-hidden">
         {data.columns.map(col => (
           <TaskColumn
             key={col.id}
             column={col}
             onTaskClick={onTaskClick}
             onQuickAdd={onQuickAdd}
+            collapsed={isCollapsed(col.id)}
+            onToggle={() => toggle(col.id)}
           />
         ))}
         <div className="lg:hidden h-4 shrink-0" />

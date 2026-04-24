@@ -12,6 +12,7 @@
 import { useState, useMemo } from 'react'
 import { Search, Plus, ChevronDown, ChevronRight, Clock } from 'lucide-react'
 import { cn, daysSince, columnAccentClass } from '@/lib/utils'
+import { useCollapsed } from '@/hooks/useCollapsed'
 import type { Column, Task, Priority } from '@/lib/schemas'
 
 const PRIORITY_DOT: Record<Priority, string> = {
@@ -27,10 +28,12 @@ interface Props {
 }
 
 export function TaskListView({ columns, onTaskClick, onNewTask }: Props) {
-  const [query,     setQuery]     = useState('')
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const [query] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const { isCollapsed, toggle, collapseAll, expandAll, collapsedCount } =
+    useCollapsed('hecate:tasks:list:collapsed')
 
-  const q = query.toLowerCase().trim()
+  const q = searchQuery.toLowerCase().trim()
 
   // Filter tasks per column when search is active
   const filtered = useMemo(() =>
@@ -46,15 +49,8 @@ export function TaskListView({ columns, onTaskClick, onNewTask }: Props) {
     })).filter(col => col.tasks.length > 0 || !q),
   [columns, q])
 
-  function toggleCollapse(colId: string) {
-    setCollapsed(prev => {
-      const next = new Set(prev)
-      next.has(colId) ? next.delete(colId) : next.add(colId)
-      return next
-    })
-  }
-
   const totalVisible = filtered.reduce((n, c) => n + c.tasks.length, 0)
+  const allIds = columns.map(c => c.id)
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -63,8 +59,8 @@ export function TaskListView({ columns, onTaskClick, onNewTask }: Props) {
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
           <input
-            value={query}
-            onChange={e => setQuery(e.target.value)}
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
             placeholder="Search tasks…"
             className="w-full h-8 pl-8 pr-3 rounded-md border border-input bg-background text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-ring"
           />
@@ -78,19 +74,28 @@ export function TaskListView({ columns, onTaskClick, onNewTask }: Props) {
 
       {/* List */}
       <div className="flex-1 overflow-y-auto min-h-0 px-4 py-3 space-y-4">
+        {columns.length > 1 && (
+          <div className="flex justify-end">
+            <button
+              onClick={() => collapsedCount > 0 ? expandAll() : collapseAll(allIds)}
+              className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {collapsedCount > 0 ? 'Expand all' : 'Collapse all'}
+            </button>
+          </div>
+        )}
         {filtered.map(col => {
-          const isCollapsed = collapsed.has(col.id)
-          const accent      = columnAccentClass(col.id)
+          const accent = columnAccentClass(col.id)
 
           return (
             <div key={col.id}>
               {/* Column group header */}
               <div className="flex items-center justify-between mb-1">
                 <button
-                  onClick={() => toggleCollapse(col.id)}
+                  onClick={() => toggle(col.id)}
                   className="flex items-center gap-1.5 group"
                 >
-                  {isCollapsed
+                  {isCollapsed(col.id)
                     ? <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
                     : <ChevronDown  className="w-3.5 h-3.5 text-muted-foreground" />
                   }
@@ -115,7 +120,7 @@ export function TaskListView({ columns, onTaskClick, onNewTask }: Props) {
               </div>
 
               {/* Task rows */}
-              {!isCollapsed && (
+              {!isCollapsed(col.id) && (
                 <div className="rounded-lg border border-border overflow-hidden divide-y divide-border">
                   {col.tasks.length === 0 ? (
                     <div className="px-3 py-2 text-xs text-muted-foreground/40 italic">
