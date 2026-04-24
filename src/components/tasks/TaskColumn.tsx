@@ -10,7 +10,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Plus, ChevronDown, ChevronRight } from 'lucide-react'
 import { useState, useRef } from 'react'
 import { TaskCard } from './TaskCard'
-import { cn, columnAccentClass } from '@/lib/utils'
+import { cn, columnAccentClass, accentHeaderStyle, accentTextStyle } from '@/lib/utils'
 import type { Column, Task } from '@/lib/schemas'
 
 interface Props {
@@ -53,21 +53,26 @@ export function TaskColumn({ column, onTaskClick, onQuickAdd, collapsed, onToggl
       {/* Column header */}
       <div
         className={cn(
-          'shrink-0 flex items-center justify-between px-3 py-2 border border-border bg-card transition-all',
+          'shrink-0 flex items-center justify-between px-3 py-2 border transition-all',
           collapsed ? 'rounded-lg' : 'rounded-t-lg border-b-0',
         )}
-        style={{ borderTopColor: `hsl(var(--${accentToken}))`, borderTopWidth: 2 }}
+        style={accentHeaderStyle(accentToken)}
       >
         <button
           onClick={onToggle}
           className="flex items-center gap-2 flex-1 min-w-0 group"
         >
           {collapsed
-            ? <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-            : <ChevronDown  className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            ? <ChevronRight className="w-3.5 h-3.5 shrink-0 opacity-60" style={accentTextStyle(accentToken)} />
+            : <ChevronDown  className="w-3.5 h-3.5 shrink-0 opacity-60" style={accentTextStyle(accentToken)} />
           }
-          <span className="text-xs font-semibold text-foreground truncate">{column.name}</span>
-          <span className="text-[10px] tabular-nums text-muted-foreground bg-muted rounded px-1.5 py-0.5 shrink-0">
+          <span className="text-xs font-semibold truncate" style={accentTextStyle(accentToken)}>
+            {column.name}
+          </span>
+          <span
+            className="text-[10px] tabular-nums rounded px-1.5 py-0.5 shrink-0 opacity-80"
+            style={{ ...accentTextStyle(accentToken), backgroundColor: `hsl(var(--${accentToken}) / 0.15)` }}
+          >
             {column.tasks.length}
           </span>
         </button>

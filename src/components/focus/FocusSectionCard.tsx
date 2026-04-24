@@ -16,11 +16,12 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Pencil, Trash2, GripVertical, ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { cn, paletteToken, accentHeaderStyle, accentTextStyle } from '@/lib/utils'
 import type { FocusSection } from '@/lib/schemas'
 
 interface Props {
   section:     FocusSection
+  colorIndex:  number
   onUpdate:    (updater: (s: FocusSection) => void) => void
   onDelete:    () => void
   collapsed:   boolean
@@ -29,7 +30,8 @@ interface Props {
   isDragging?: boolean
 }
 
-export function FocusSectionCard({ section, onUpdate, onDelete, collapsed, onToggle, dragHandle, isDragging }: Props) {
+export function FocusSectionCard({ section, colorIndex, onUpdate, onDelete, collapsed, onToggle, dragHandle, isDragging }: Props) {
+  const token = paletteToken(colorIndex)
   const [editing,      setEditing]      = useState(false)
   const [titleDraft,   setTitleDraft]   = useState(section.title)
   const [contentDraft, setContentDraft] = useState(section.content)
@@ -84,11 +86,12 @@ export function FocusSectionCard({ section, onUpdate, onDelete, collapsed, onTog
         !editing && 'hover:border-border/80',
       )}
     >
-      {/* Drag handle */}
+      {/* Drag handle — positioned inside header area */}
       {dragHandle && (
         <div
           {...dragHandle}
-          className="absolute left-1 top-3 p-1 cursor-grab text-muted-foreground/30 hover:text-muted-foreground/60 transition-colors touch-none"
+          className="absolute left-1.5 top-2 p-1 cursor-grab opacity-30 hover:opacity-70 transition-opacity touch-none z-10"
+          style={accentTextStyle(token)}
         >
           <GripVertical className="w-3.5 h-3.5" />
         </div>
@@ -144,18 +147,27 @@ export function FocusSectionCard({ section, onUpdate, onDelete, collapsed, onTog
         </div>
       ) : (
         /* ── Display mode ───────────────────────────────────────────────── */
-        <div className="pl-6 pr-3 py-3">
-          {/* Header row */}
-          <div className="flex items-center justify-between gap-2 mb-2">
+        <div>
+          {/* Coloured header */}
+          <div
+            className={cn(
+              'flex items-center justify-between gap-2 pl-8 pr-3 py-2 border',
+              collapsed ? 'rounded-lg' : 'rounded-t-lg border-b-0',
+            )}
+            style={accentHeaderStyle(token)}
+          >
             <button
               onClick={onToggle}
-              className="flex items-center gap-1.5 flex-1 min-w-0 group/collapse"
+              className="flex items-center gap-1.5 flex-1 min-w-0"
             >
               {collapsed
-                ? <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                : <ChevronDown  className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                ? <ChevronRight className="w-3.5 h-3.5 shrink-0 opacity-70" style={accentTextStyle(token)} />
+                : <ChevronDown  className="w-3.5 h-3.5 shrink-0 opacity-70" style={accentTextStyle(token)} />
               }
-              <h3 className="text-xs font-semibold text-foreground/70 uppercase tracking-wider truncate">
+              <h3
+                className="text-xs font-semibold uppercase tracking-wider truncate"
+                style={accentTextStyle(token)}
+              >
                 {section.title}
               </h3>
             </button>
@@ -178,25 +190,27 @@ export function FocusSectionCard({ section, onUpdate, onDelete, collapsed, onTog
             </div>
           </div>
 
-          {/* Markdown content — hidden when collapsed */}
+          {/* Content body — hidden when collapsed */}
           {!collapsed && (
-            section.content.trim() ? (
-              <div
-                className="prose prose-sm dark:prose-invert max-w-none cursor-text"
-                onClick={startEdit}
-              >
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {section.content}
-                </ReactMarkdown>
-              </div>
-            ) : (
-              <p
-                className="text-xs text-muted-foreground/40 italic cursor-text"
-                onClick={startEdit}
-              >
-                Empty — click to add content
-              </p>
-            )
+            <div className="px-3 py-3 rounded-b-lg border border-t-0 border-border bg-card/50">
+              {section.content.trim() ? (
+                <div
+                  className="prose prose-sm dark:prose-invert max-w-none cursor-text"
+                  onClick={startEdit}
+                >
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {section.content}
+                  </ReactMarkdown>
+                </div>
+              ) : (
+                <p
+                  className="text-xs text-muted-foreground/40 italic cursor-text"
+                  onClick={startEdit}
+                >
+                  Empty — click to add content
+                </p>
+              )}
+            </div>
           )}
         </div>
       )}

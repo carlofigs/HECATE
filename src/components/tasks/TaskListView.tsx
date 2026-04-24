@@ -11,7 +11,7 @@
 
 import { useState, useMemo } from 'react'
 import { Search, Plus, ChevronDown, ChevronRight, Clock } from 'lucide-react'
-import { cn, daysSince, columnAccentClass } from '@/lib/utils'
+import { cn, daysSince, columnAccentClass, accentTextStyle } from '@/lib/utils'
 import { useCollapsed } from '@/hooks/useCollapsed'
 import type { Column, Task, Priority } from '@/lib/schemas'
 
@@ -101,7 +101,7 @@ export function TaskListView({ columns, onTaskClick, onNewTask }: Props) {
                   }
                   <span
                     className="text-[11px] font-semibold uppercase tracking-wider"
-                    style={{ color: `hsl(var(--${accent}))` }}
+                    style={accentTextStyle(accent)}
                   >
                     {col.name}
                   </span>

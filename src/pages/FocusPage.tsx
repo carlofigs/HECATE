@@ -132,10 +132,11 @@ export default function FocusPage() {
               </div>
             )}
 
-            {data.sections.map(section => (
+            {data.sections.map((section, index) => (
               <FocusSectionCard
                 key={section.id}
                 section={section}
+                colorIndex={index}
                 onUpdate={updater => updateSection(section.id, updater)}
                 onDelete={() => deleteSection(section.id)}
                 collapsed={isCollapsed(section.id)}

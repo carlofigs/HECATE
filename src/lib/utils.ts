@@ -1,3 +1,4 @@
+import type React from 'react'
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
@@ -58,6 +59,34 @@ export function columnAccentClass(columnId: string): string {
   if (id.includes('block'))    return 'col-blocked'
   if (id.includes('backlog'))  return 'col-backlog'
   return 'col-todo'
+}
+
+/** Ordered palette for cycling section/card accent colours */
+const ACCENT_PALETTE = [
+  'col-progress',
+  'col-review',
+  'col-done',
+  'col-blocked',
+  'col-todo',
+  'col-backlog',
+] as const
+
+/** Pick an accent token by index — wraps around the palette */
+export function paletteToken(index: number): string {
+  return ACCENT_PALETTE[index % ACCENT_PALETTE.length]
+}
+
+/** Inline style for a tinted, bordered accent header */
+export function accentHeaderStyle(token: string): React.CSSProperties {
+  return {
+    backgroundColor: `hsl(var(--${token}) / 0.15)`,
+    borderColor:     `hsl(var(--${token}) / 0.35)`,
+  }
+}
+
+/** Inline style for text coloured to the accent */
+export function accentTextStyle(token: string): React.CSSProperties {
+  return { color: `hsl(var(--${token}))` }
 }
 
 /** Truncate a string to maxLength with ellipsis */
