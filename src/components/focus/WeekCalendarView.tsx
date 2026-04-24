@@ -128,6 +128,14 @@ function buildWeeks(rows: ParsedRow[], weekOf: string): WeekRow[] {
 
   const todayMs = (() => { const d = new Date(); d.setHours(0,0,0,0); return d.getTime() })()
 
+  // Current Monday — used to filter out past weeks
+  const currentMondayMs = (() => {
+    const d = new Date(); d.setHours(0,0,0,0)
+    const dow = d.getDay() === 0 ? 6 : d.getDay() - 1
+    d.setDate(d.getDate() - dow)
+    return d.getTime()
+  })()
+
   // Group events by ISO monday date string → ISO day date string → events
   const weekMap = new Map<string, Map<string, CalEvent[]>>()
 
@@ -149,13 +157,20 @@ function buildWeeks(rows: ParsedRow[], weekOf: string): WeekRow[] {
     dayMap.get(dayKey)!.push({ time: row.time, event: row.event, relevance: row.relevance })
   }
 
-  // Fallback: no events parsed → synthesise one empty week from anchor
+  // Fallback: no events parsed → synthesise one empty week from current Monday
   if (weekMap.size === 0) {
-    weekMap.set(isoDate(anchorMonday), new Map())
+    const currentMonday = new Date(); currentMonday.setHours(0,0,0,0)
+    const dow = currentMonday.getDay() === 0 ? 6 : currentMonday.getDay() - 1
+    currentMonday.setDate(currentMonday.getDate() - dow)
+    weekMap.set(isoDate(currentMonday), new Map())
   }
 
-  // Build WeekRow for each Monday, sorted chronologically
-  return [...weekMap.keys()].sort().map(mondayKey => {
+  // Build WeekRow for each Monday, sorted chronologically,
+  // dropping any week that ended before the current Monday (i.e. past weeks)
+  return [...weekMap.keys()].sort().filter(mondayKey => {
+    const ms = new Date(`${mondayKey}T00:00`).getTime()
+    return ms >= currentMondayMs
+  }).map(mondayKey => {
     const thisMonday = new Date(`${mondayKey}T00:00`)
     const weekNum    = isoWeekNumber(thisMonday)
 
