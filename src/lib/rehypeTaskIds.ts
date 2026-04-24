@@ -2,14 +2,20 @@
  * rehypeTaskIds — rehype plugin that detects task ID patterns in prose text
  * and replaces them with <task-id-chip> custom elements.
  *
- * Pattern matched: t-{prefix}-{alphanumeric}  e.g. t-a-lx3k9r, t-custom-abc123
+ * Patterns matched (case-insensitive):
+ *   t-a47      legacy short format (one hyphen, letter + digits)
+ *   t-a-lx3k9r generated format   (two hyphens, letter + alphanumeric)
+ *   A47 / a47  shorthand (letter + 2+ digits) — normalised to t-a47 in the chip
+ *
  * Skipped: text inside <code> or <pre> blocks
  */
 
 import { visit } from 'unist-util-visit'
 import type { Root, Text, Element, Node, Parent } from 'hast'
 
-const TASK_ID_RE = /\b(t-[a-z]+-[a-z0-9]+)\b/g
+// Full IDs:  t-a47 | t-b28 | t-a-lx3k9r | t-custom-abc123
+// Shorthand: A47   | a47   (letter + 2+ digits, NOT preceded by t-)
+const TASK_ID_RE = /\b(t-[a-z][a-z0-9]*(?:-[a-z0-9]+)?|[a-z]\d{2,})\b/gi
 
 function isElement(node: Node): node is Element {
   return node.type === 'element'

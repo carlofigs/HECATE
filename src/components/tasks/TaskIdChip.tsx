@@ -23,15 +23,22 @@ interface Props {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function TaskIdChip({ taskid }: Props) {
-  const navigate = useNavigate()
+/** Normalise shorthand (e.g. "A47" → "t-a47", "t-A47" → "t-a47") */
+function normaliseId(raw: string): string {
+  const lower = raw.toLowerCase()
+  return lower.startsWith('t-') ? lower : `t-${lower}`
+}
 
-  // Look up the task across all columns
+export function TaskIdChip({ taskid }: Props) {
+  const navigate  = useNavigate()
+  const resolvedId = normaliseId(taskid)
+
+  // Look up the task across all columns using the normalised ID
   const result = useDataStore(s => {
     const tasks = s.tasks.data
     if (!tasks) return null
     for (const col of tasks.columns) {
-      const task = col.tasks.find(t => t.id === taskid)
+      const task = col.tasks.find(t => t.id === resolvedId)
       if (task) return { task, colName: col.name }
     }
     return null
@@ -40,7 +47,7 @@ export function TaskIdChip({ taskid }: Props) {
   function handleClick(e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
-    navigate(`/tasks?open=${encodeURIComponent(taskid)}`)
+    navigate(`/tasks?open=${encodeURIComponent(resolvedId)}`)
   }
 
   return (
@@ -56,7 +63,7 @@ export function TaskIdChip({ taskid }: Props) {
               : 'border-muted-foreground/30 bg-muted/50 text-muted-foreground hover:bg-muted',
           )}
         >
-          {taskid}
+          {resolvedId}
         </button>
       </TooltipPrimitive.Trigger>
 
@@ -75,7 +82,7 @@ export function TaskIdChip({ taskid }: Props) {
             <TaskPreview task={result.task} colName={result.colName} />
           ) : (
             <div className="px-3 py-2.5 space-y-1">
-              <p className="text-xs font-mono text-muted-foreground">{taskid}</p>
+              <p className="text-xs font-mono text-muted-foreground">{resolvedId}</p>
               <p className="text-[11px] text-muted-foreground/60 italic">
                 Task not found — may have been deleted
               </p>
