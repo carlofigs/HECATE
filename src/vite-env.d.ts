@@ -52,4 +52,8 @@ declare module 'lucide-react' {
   export const Plus: LucideIcon
   export const Check: LucideIcon
   export const X: LucideIcon
+  export const Search: LucideIcon
+  export const ChevronDown: LucideIcon
+  export const ChevronRight: LucideIcon
+  export const LayoutList: LucideIcon
 }
