@@ -94,3 +94,34 @@ export function truncate(str: string, maxLength: number): string {
   if (str.length <= maxLength) return str
   return str.slice(0, maxLength).trimEnd() + '…'
 }
+
+/**
+ * Format a weekOf ISO string (Monday) as a human-readable date range.
+ * Same month:  "21 – 25 Apr 2026"
+ * Cross-month: "28 Apr – 2 May 2026"
+ */
+export function formatWeekRange(weekOf: string): string {
+  const mon = new Date(weekOf + 'T00:00:00')
+  const fri = new Date(mon)
+  fri.setDate(mon.getDate() + 4)
+
+  const monDay   = mon.getDate()
+  const friDay   = fri.getDate()
+  const monMonth = mon.toLocaleDateString('en-AU', { month: 'short' })
+  const friMonth = fri.toLocaleDateString('en-AU', { month: 'short' })
+  const year     = fri.getFullYear()
+
+  if (monMonth === friMonth) {
+    return `${monDay} – ${friDay} ${friMonth} ${year}`
+  }
+  return `${monDay} ${monMonth} – ${friDay} ${friMonth} ${year}`
+}
+
+/** ISO Monday of the current week (YYYY-MM-DD), treating Sunday as start of next week */
+export function currentMondayISO(): string {
+  const d   = new Date()
+  const day = d.getDay()                    // 0 = Sun, 1 = Mon … 6 = Sat
+  const diff = day === 0 ? -6 : 1 - day    // offset back to Monday
+  d.setDate(d.getDate() + diff)
+  return d.toISOString().split('T')[0]
+}

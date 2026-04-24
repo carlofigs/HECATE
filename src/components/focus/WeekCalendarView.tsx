@@ -3,10 +3,13 @@
  * Mon–Fri calendar grid, one row per week.
  *
  * Layout:
- *   Week row 1:  Mon  Tue  Wed  Thu  Fri
- *   Week row 2:  Mon  Tue  Wed  Thu  Fri
+ *         Mon   Tue   Wed   Thu   Fri   ← shared column header (once)
+ *   W16   Apr 21 ...                   ← per-week: month + date
+ *   W17   Apr 28  ...  Apr 30  May 1   ← month label per cell (handles boundaries)
  *
- * - All 5 weekday columns always shown, even if empty
+ * - Day names are column headers, shown once at the top
+ * - Cell header shows short month + date number (e.g. "Apr 21", "May 2")
+ * - Handles cross-month weeks correctly via real Date arithmetic
  * - Multiple weeks stack as separate rows
  * - Today's cell highlighted
  * - Task ID references in Relevance render as chips
@@ -16,6 +19,7 @@
 import { useMemo, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { TaskIdChip } from '@/components/tasks/TaskIdChip'
+import { TASK_ID_PATTERN } from '@/lib/taskConstants'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -25,34 +29,39 @@ interface CalEvent {
   relevance: string
 }
 
-/** Key = "YYYY-MM-DD" or just a computed integer date for lookup */
 interface DayCell {
-  dayName:  string   // Mon | Tue | Wed | Thu | Fri
-  dateN:    number   // calendar date number
-  label:    string   // original label e.g. "Mon 20"
-  events:   CalEvent[]
-  isToday:  boolean
+  dayName:    string   // Mon | Tue | Wed | Thu | Fri
+  date:       Date     // actual calendar date
+  dateN:      number   // day-of-month for display
+  monthShort: string   // Jan | Feb | ... | Dec
+  events:     CalEvent[]
+  isToday:    boolean
 }
 
 interface WeekRow {
-  mondayDate: number
-  weekNum:    number
-  cells: DayCell[]   // always 5 items, Mon–Fri
+  mondayKey: string    // ISO "YYYY-MM-DD" for stable React key
+  weekNum:   number
+  cells:     DayCell[] // always 5 items, Mon–Fri
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const DOW_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+const DOW_NAMES   = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
 const DOW_INDEX: Record<string, number> = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 }
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+/** Returns midnight timestamp for a date without mutating the original */
+function midnightMs(d: Date): number {
+  return new Date(d).setHours(0, 0, 0, 0)
+}
 
 // ─── Table parser ─────────────────────────────────────────────────────────────
 
 interface ParsedRow {
-  label:    string
-  dayName:  string
-  dateN:    number
-  time:     string
-  event:    string
+  dayName:   string
+  dateN:     number
+  time:      string
+  event:     string
   relevance: string
 }
 
@@ -71,74 +80,34 @@ function parseTable(markdown: string): ParsedRow[] {
       const [label, time, event, relevance] = cells
       if (!label || label === '—') return []
 
-      const parts  = label.split(' ')
+      const parts   = label.split(' ')
       const dayName = parts[0] ?? ''
       const dateN   = parseInt(parts[1] ?? '', 10)
       if (!DOW_NAMES.includes(dayName) || isNaN(dateN)) return []
 
-      return [{ label, dayName, dateN, time: time === '—' ? '' : (time ?? ''), event: event ?? '', relevance: relevance ?? '' }]
+      return [{ dayName, dateN, time: time === '—' ? '' : (time ?? ''), event: event ?? '', relevance: relevance ?? '' }]
     })
 }
 
-// ─── Week builder ─────────────────────────────────────────────────────────────
+// ─── Date resolver ────────────────────────────────────────────────────────────
+//
+// Maps a (dayName, dateN) pair to an actual Date, anchored to weekOf.
+// Searches forward up to 6 weeks and back 2 weeks from anchorMonday.
+// This correctly handles cross-month weeks (e.g. Mon Apr 28, Fri May 2).
 
-function buildWeeks(rows: ParsedRow[], weekOf: string): WeekRow[] {
-  // Anchor: find today's date and the focus week's starting Monday
-  const anchor = new Date(`${weekOf}T00:00`)
-  // Offset anchor to Monday of that week
-  const anchorDow = anchor.getDay() === 0 ? 6 : anchor.getDay() - 1 // 0=Mon
-  const anchorMonday = new Date(anchor)
-  anchorMonday.setDate(anchor.getDate() - anchorDow)
-
-  const todayDate = new Date().getDate()
-  const todayMonth = new Date().getMonth()
-
-  // Group events by their computed Monday date
-  const weekMap = new Map<number, Map<number, CalEvent[]>>()
-
-  for (const row of rows) {
-    if (!row.event || row.event === '—') continue
-    const dow = DOW_INDEX[row.dayName] ?? 0
-    const mondayDate = row.dateN - dow
-
-    if (!weekMap.has(mondayDate)) weekMap.set(mondayDate, new Map())
-    const dayMap = weekMap.get(mondayDate)!
-    if (!dayMap.has(row.dateN)) dayMap.set(row.dateN, [])
-    dayMap.get(row.dateN)!.push({
-      time:      row.time,
-      event:     row.event,
-      relevance: row.relevance,
-    })
+function resolveDate(anchorMonday: Date, dayName: string, dateN: number): Date | null {
+  const offset = DOW_INDEX[dayName] ?? 0
+  for (let w = 0; w < 6; w++) {
+    const candidate = new Date(anchorMonday)
+    candidate.setDate(anchorMonday.getDate() + w * 7 + offset)
+    if (candidate.getDate() === dateN) return candidate
   }
-
-  // If no events parsed, synthesise one week from weekOf
-  if (weekMap.size === 0) {
-    weekMap.set(anchorMonday.getDate(), new Map())
+  for (let w = -2; w < 0; w++) {
+    const candidate = new Date(anchorMonday)
+    candidate.setDate(anchorMonday.getDate() + w * 7 + offset)
+    if (candidate.getDate() === dateN) return candidate
   }
-
-  const anchorMonth = anchorMonday.getMonth()
-
-  // Build WeekRow for each Monday found, sorted ascending
-  return [...weekMap.keys()].sort((a, b) => a - b).map(mondayDate => {
-    // Reconstruct the actual Date for this Monday to get ISO week number
-    const thisMonday = new Date(anchorMonday)
-    thisMonday.setDate(anchorMonday.getDate() + (mondayDate - anchorMonday.getDate()))
-    const weekNum = isoWeekNumber(thisMonday)
-
-    const cells: DayCell[] = DOW_NAMES.map((dayName, i) => {
-      const dateN = mondayDate + i
-      const sameMonth = anchorMonth === todayMonth
-      const isToday = sameMonth && dateN === todayDate
-      return {
-        dayName,
-        dateN,
-        label: `${dayName} ${dateN}`,
-        events: weekMap.get(mondayDate)?.get(dateN) ?? [],
-        isToday,
-      }
-    })
-    return { mondayDate, weekNum, cells }
-  })
+  return null
 }
 
 // ─── ISO week number ──────────────────────────────────────────────────────────
@@ -151,18 +120,95 @@ function isoWeekNumber(date: Date): number {
   return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
 }
 
-// ─── Inline chip renderer ─────────────────────────────────────────────────────
+// ─── Week builder ─────────────────────────────────────────────────────────────
 
-const TASK_ID_RE = /\b(t-[a-z][a-z0-9]*(?:-[a-z0-9]+)?)\b/gi
+function isoDate(d: Date): string {
+  return d.toISOString().slice(0, 10)
+}
+
+function buildWeeks(rows: ParsedRow[], weekOf: string): WeekRow[] {
+  const anchor = new Date(`${weekOf}T00:00`)
+  const anchorDow = anchor.getDay() === 0 ? 6 : anchor.getDay() - 1
+  const anchorMonday = new Date(anchor)
+  anchorMonday.setDate(anchor.getDate() - anchorDow)
+
+  const todayMs = midnightMs(new Date())
+
+  // Current Monday — used to filter out past weeks
+  const currentMondayMs = (() => {
+    const d = new Date()
+    const dow = d.getDay() === 0 ? 6 : d.getDay() - 1
+    d.setDate(d.getDate() - dow)
+    return midnightMs(d)
+  })()
+
+  // Group events by ISO monday date string → ISO day date string → events
+  const weekMap = new Map<string, Map<string, CalEvent[]>>()
+
+  for (const row of rows) {
+    if (!row.event || row.event === '—') continue
+    const date = resolveDate(anchorMonday, row.dayName, row.dateN)
+    if (!date) continue
+
+    // Find the Monday of this resolved date
+    const dow = date.getDay() === 0 ? 6 : date.getDay() - 1
+    const monday = new Date(date)
+    monday.setDate(date.getDate() - dow)
+    const mondayKey = isoDate(monday)
+    const dayKey    = isoDate(date)
+
+    if (!weekMap.has(mondayKey)) weekMap.set(mondayKey, new Map())
+    const dayMap = weekMap.get(mondayKey)!
+    if (!dayMap.has(dayKey)) dayMap.set(dayKey, [])
+    dayMap.get(dayKey)!.push({ time: row.time, event: row.event, relevance: row.relevance })
+  }
+
+  // Fallback: no events parsed → synthesise one empty week from current Monday
+  if (weekMap.size === 0) {
+    const currentMonday = new Date(); currentMonday.setHours(0,0,0,0)
+    const dow = currentMonday.getDay() === 0 ? 6 : currentMonday.getDay() - 1
+    currentMonday.setDate(currentMonday.getDate() - dow)
+    weekMap.set(isoDate(currentMonday), new Map())
+  }
+
+  // Build WeekRow for each Monday, sorted chronologically,
+  // dropping any week that ended before the current Monday (i.e. past weeks)
+  return [...weekMap.keys()].sort().filter(mondayKey => {
+    const ms = new Date(`${mondayKey}T00:00`).getTime()
+    return ms >= currentMondayMs
+  }).map(mondayKey => {
+    const thisMonday = new Date(`${mondayKey}T00:00`)
+    const weekNum    = isoWeekNumber(thisMonday)
+
+    const cells: DayCell[] = DOW_NAMES.map((_dayName, i) => {
+      const date = new Date(thisMonday)
+      date.setDate(thisMonday.getDate() + i)
+      const dayKey = isoDate(date)
+      return {
+        dayName:    _dayName,
+        date,
+        dateN:      date.getDate(),
+        monthShort: MONTH_NAMES[date.getMonth()],
+        events:     weekMap.get(mondayKey)?.get(dayKey) ?? [],
+        isToday:    midnightMs(date) === todayMs,  // midnightMs copies — does not mutate date
+      }
+    })
+
+    return { mondayKey, weekNum, cells }
+  })
+}
+
+// ─── Inline chip renderer ─────────────────────────────────────────────────────
 
 function InlineContent({ text }: { text: string }) {
   const parts: ReactNode[] = []
   let last = 0
-  const re = new RegExp(TASK_ID_RE.source, 'gi')
+  // Fresh RegExp per call — /g flag is stateful, must not share across renders
+  const re = new RegExp(TASK_ID_PATTERN, 'gi')
   let match: RegExpExecArray | null
   while ((match = re.exec(text)) !== null) {
     if (match.index > last) parts.push(text.slice(last, match.index))
-    parts.push(<TaskIdChip key={match.index} taskid={match[1]} />)
+    parts.push(<TaskIdChip key={`${match[1]}-${match.index}`} taskid={match[1]} />)
     last = match.index + match[0].length
   }
   if (last < text.length) parts.push(text.slice(last))
@@ -184,7 +230,7 @@ export function WeekCalendarView({ content, weekOf, onEdit }: Props) {
   }, [content, weekOf])
 
   return (
-    <div className="space-y-3" onClick={e => e.stopPropagation()}>
+    <div className="space-y-2 overflow-x-auto" onClick={e => e.stopPropagation()}>
       {/* Edit hint */}
       <div className="flex justify-end">
         <button
@@ -195,8 +241,24 @@ export function WeekCalendarView({ content, weekOf, onEdit }: Props) {
         </button>
       </div>
 
+      {/* Column headers — Mon through Fri, shared across all weeks */}
+      <div className="flex items-center gap-1.5 min-w-[520px]">
+        {/* Spacer matching the week-number label width */}
+        <div className="w-5 shrink-0" />
+        <div className="flex gap-1.5 flex-1">
+          {DOW_NAMES.map(day => (
+            <div key={day} className="flex-1 text-center pb-1 border-b border-border/40">
+              <span className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">
+                {day}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Week rows */}
       {weeks.map(week => (
-        <div key={week.mondayDate} className="flex items-stretch gap-1.5 overflow-x-auto pb-0.5">
+        <div key={week.mondayKey} className="flex items-stretch gap-1.5 min-w-[520px] pb-0.5">
           {/* Rotated week number */}
           <div className="flex items-center justify-center shrink-0 w-5">
             <span
@@ -206,7 +268,8 @@ export function WeekCalendarView({ content, weekOf, onEdit }: Props) {
               W{week.weekNum}
             </span>
           </div>
-          <div className="flex gap-1.5 flex-1 min-w-[520px]">
+
+          <div className="flex gap-1.5 flex-1">
             {week.cells.map(cell => (
               <div
                 key={cell.dayName}
@@ -215,24 +278,22 @@ export function WeekCalendarView({ content, weekOf, onEdit }: Props) {
                   cell.isToday ? 'border-primary/50' : 'border-border',
                 )}
               >
-                {/* Day header */}
+                {/* Date header — month + day number */}
                 <div
                   className={cn(
                     'px-2 py-1 text-center shrink-0',
-                    cell.isToday
-                      ? 'bg-primary/15'
-                      : 'bg-muted/40',
+                    cell.isToday ? 'bg-primary/15' : 'bg-muted/40',
                   )}
                 >
                   <span className={cn(
-                    'text-[10px] font-semibold',
-                    cell.isToday ? 'text-primary' : 'text-muted-foreground',
+                    'text-[10px]',
+                    cell.isToday ? 'text-primary/70' : 'text-muted-foreground/50',
                   )}>
-                    {cell.dayName}
+                    {cell.monthShort}
                   </span>
                   <span className={cn(
-                    'ml-1 text-[10px]',
-                    cell.isToday ? 'text-primary/70' : 'text-muted-foreground/50',
+                    'ml-1 text-[10px] font-semibold tabular-nums',
+                    cell.isToday ? 'text-primary' : 'text-muted-foreground',
                   )}>
                     {cell.dateN}
                   </span>
@@ -252,7 +313,7 @@ export function WeekCalendarView({ content, weekOf, onEdit }: Props) {
                   ) : (
                     cell.events.map((ev, i) => (
                       <div
-                        key={i}
+                        key={`${ev.time}-${i}`}
                         className={cn(
                           'rounded border px-1.5 py-1 space-y-0.5',
                           cell.isToday
