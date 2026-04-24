@@ -14,6 +14,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { rehypeTaskIds } from '@/lib/rehypeTaskIds'
+import { TaskIdChip } from '@/components/tasks/TaskIdChip'
 import { Pencil, Trash2, GripVertical, ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn, paletteToken, accentHeaderStyle, accentTextStyle } from '@/lib/utils'
@@ -203,7 +205,12 @@ export function FocusSectionCard({ section, colorIndex, onUpdate, onDelete, coll
                   className="prose prose-sm dark:prose-invert max-w-none cursor-text"
                   onClick={startEdit}
                 >
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeTaskIds]}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    components={{ 'task-id-chip': ({ node, ...props }: any) => <TaskIdChip taskid={String(props.taskid ?? '')} /> } as any}
+                  >
                     {section.content}
                   </ReactMarkdown>
                 </div>
