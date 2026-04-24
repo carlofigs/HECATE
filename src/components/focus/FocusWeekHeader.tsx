@@ -40,8 +40,9 @@ export function FocusWeekHeader({ data, onUpdate }: Props) {
     if (e.key === 'Escape') { setEditingLabel(false) }
   }
 
-  // Derive human-readable week range from weekOf (Monday)
-  const monday = new Date(data.weekOf)
+  // Derive human-readable week range from weekOf (Monday).
+  // Parse as local date (append T00:00 so it's treated as local, not UTC midnight).
+  const monday = new Date(`${data.weekOf}T00:00`)
   const friday = new Date(monday)
   friday.setDate(monday.getDate() + 4)
   const weekRange = `${formatDate(monday.toISOString())} – ${formatDate(friday.toISOString())}`

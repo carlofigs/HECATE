@@ -39,7 +39,7 @@ export function SyncStatus({ compact = false }: { compact?: boolean }) {
   const config = {
     idle:   { label: 'No data',  Icon: Cloud,         cls: 'text-muted-foreground' },
     dirty:  { label: 'Unsaved',  Icon: Cloud,         cls: 'text-yellow-400'       },
-    saving: { label: 'Saving…',  Icon: Loader2,       cls: 'text-primary animate-spin' },
+    saving: { label: 'Saving…',  Icon: Loader2,       cls: 'text-primary'              },
     saved:  { label: 'Saved',    Icon: CheckCircle2,  cls: 'text-emerald-400'      },
     error:  { label: 'Error',    Icon: AlertCircle,   cls: 'text-destructive'      },
   }[state]

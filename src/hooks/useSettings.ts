@@ -56,13 +56,14 @@ export function useSettings() {
     if (slice.data) {
       setData('settings', updater)
     } else {
-      // First write — initialise with defaults then apply mutation
-      const draft = { ...DEFAULT_SETTINGS }
-      updater(draft)
-      useDataStore.setState(state => {
-        state.settings.data  = draft
-        state.settings.dirty = true
-      })
+      // First write — settings.json doesn't exist yet.
+      // Seed the store with defaults + the mutation, using non-immer merge setState.
+      const seeded = { ...DEFAULT_SETTINGS }
+      updater(seeded)
+      useDataStore.setState(current => ({
+        ...current,
+        settings: { ...current.settings, data: seeded, dirty: true },
+      }))
     }
   }
 

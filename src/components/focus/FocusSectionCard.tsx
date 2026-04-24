@@ -107,7 +107,7 @@ export function FocusSectionCard({ section, onUpdate, onDelete, dragHandle, isDr
               'focus:outline-none focus:border-primary',
             )}
           />
-          {/* Content textarea */}
+          {/* Content textarea — auto-resize via CSS field-sizing */}
           <textarea
             autoFocus
             value={contentDraft}
@@ -115,9 +115,8 @@ export function FocusSectionCard({ section, onUpdate, onDelete, dragHandle, isDr
             onBlur={onTextareaBlur}
             onKeyDown={onTextareaKeyDown}
             placeholder="Markdown content…"
-            rows={Math.max(4, contentDraft.split('\n').length + 1)}
             className={cn(
-              'w-full resize-none bg-transparent text-xs text-foreground font-mono',
+              'auto-resize w-full resize-none bg-transparent text-xs text-foreground font-mono',
               'focus:outline-none placeholder:text-muted-foreground/40',
               'leading-relaxed',
             )}

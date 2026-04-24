@@ -123,7 +123,7 @@ export function TaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="sm:max-w-md" onKeyDown={onKeyDown}>
+      <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto" onKeyDown={onKeyDown}>
         <DialogHeader>
           <DialogTitle className="text-sm">
             {isCreate ? 'New task' : 'Edit task'}

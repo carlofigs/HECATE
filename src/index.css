@@ -145,3 +145,29 @@
     @apply font-mono text-xs bg-card border border-border p-3 rounded-md overflow-x-auto;
   }
 }
+
+/* ─── Native element overrides ───────────────────────────────────────────────── */
+@layer base {
+  /* Make native <select> honour the design system in both themes */
+  select {
+    color-scheme: light;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+  .dark select {
+    color-scheme: dark;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+  select option {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  /* Auto-resize textareas — add class="resize-none auto-rows" */
+  textarea.auto-resize {
+    field-sizing: content;
+    min-height: 5rem;
+    max-height: 60vh;
+  }
+}

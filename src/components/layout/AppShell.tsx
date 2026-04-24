@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Focus,
   Kanban,
@@ -11,10 +11,12 @@ import {
   Moon,
   Settings,
   MoreHorizontal,
+  X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SyncStatus } from '@/components/layout/SyncStatus'
 import { useSettings } from '@/hooks/useSettings'
+import { useDataStore } from '@/store/useDataStore'
 
 const NAV_ITEMS = [
   { to: '/focus',    label: 'Focus',    Icon: Focus        },
@@ -28,15 +30,36 @@ const NAV_ITEMS = [
 // Top 5 shown in bottom nav; rest behind "More"
 const BOTTOM_NAV_PRIMARY = NAV_ITEMS.slice(0, 5)
 
+// Items that overflow into "More" on mobile
+const MORE_ITEMS = NAV_ITEMS.slice(5)
+
 export default function AppShell() {
-  const navigate = useNavigate()
+  const navigate  = useNavigate()
+  const [moreOpen, setMoreOpen] = useState(false)
   const { settings, updateSettings, saveSettings } = useSettings()
+  const { saveFile, tasks, focus, projects, weekly_log, archive, memory } = useDataStore()
 
   // Redirect to setup if no credentials
   useEffect(() => {
     const creds = localStorage.getItem('hecate:credentials')
     if (!creds) navigate('/setup', { replace: true })
   }, [navigate])
+
+  // Cmd+S / Ctrl+S — immediately flush all dirty files
+  useEffect(() => {
+    async function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault()
+        const dirty = (
+          [['tasks', tasks], ['focus', focus], ['projects', projects],
+           ['weekly_log', weekly_log], ['archive', archive], ['memory', memory]] as const
+        ).filter(([, s]) => s.dirty).map(([name]) => name)
+        await Promise.all(dirty.map(name => saveFile(name)))
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [tasks.dirty, focus.dirty, projects.dirty, weekly_log.dirty, archive.dirty, memory.dirty]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleTheme() {
     const next = settings.theme === 'dark' ? 'light' : 'dark'
@@ -162,12 +185,57 @@ export default function AppShell() {
             </NavLink>
           ))}
 
-          {/* "More" menu — Archive + Memory */}
-          <button className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] text-muted-foreground hover:text-foreground transition-colors">
+          {/* "More" — overflow nav items */}
+          <button
+            onClick={() => setMoreOpen(v => !v)}
+            className={cn(
+              'flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] transition-colors',
+              moreOpen ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
             <MoreHorizontal className="w-5 h-5" />
             <span>More</span>
           </button>
         </nav>
+
+        {/* More overlay */}
+        {moreOpen && (
+          <>
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 z-40"
+              onClick={() => setMoreOpen(false)}
+            />
+            {/* Sheet */}
+            <div className="absolute bottom-[calc(3.5rem+env(safe-area-inset-bottom))] right-0 left-0 z-50 bg-card border-t border-border shadow-lg">
+              <div className="flex items-center justify-between px-4 py-2 border-b border-border">
+                <span className="text-xs font-medium text-muted-foreground">More</span>
+                <button
+                  onClick={() => setMoreOpen(false)}
+                  className="p-1 rounded text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              {MORE_ITEMS.map(({ to, label, Icon }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  onClick={() => setMoreOpen(false)}
+                  className={({ isActive }) =>
+                    cn(
+                      'flex items-center gap-3 px-4 py-3 text-sm transition-colors',
+                      isActive ? 'text-primary font-medium' : 'text-foreground hover:bg-accent',
+                    )
+                  }
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  {label}
+                </NavLink>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
