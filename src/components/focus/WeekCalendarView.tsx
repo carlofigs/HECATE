@@ -1,12 +1,16 @@
 /**
- * WeekCalendarView — renders the "Week at a Glance" markdown table
- * as a visual day-column calendar.
+ * WeekCalendarView — renders the "Week at a Glance" markdown table as a
+ * Mon–Fri calendar grid, one row per week.
  *
- * Parses the pipe-table from section.content, groups rows by day,
- * sorts days by date number, and renders each day as a card column.
+ * Layout:
+ *   Week row 1:  Mon  Tue  Wed  Thu  Fri
+ *   Week row 2:  Mon  Tue  Wed  Thu  Fri
  *
- * Task ID references in the Relevance column are rendered as TaskIdChips.
- * Today's column is highlighted. Edit mode falls back to the raw textarea.
+ * - All 5 weekday columns always shown, even if empty
+ * - Multiple weeks stack as separate rows
+ * - Today's cell highlighted
+ * - Task ID references in Relevance render as chips
+ * - "Edit table →" drops back to raw textarea
  */
 
 import { useMemo, type ReactNode } from 'react'
@@ -21,51 +25,120 @@ interface CalEvent {
   relevance: string
 }
 
-interface DayGroup {
-  label:  string   // e.g. "Tue 14"
-  dateN:  number   // extracted date number for sorting
-  events: CalEvent[]
+/** Key = "YYYY-MM-DD" or just a computed integer date for lookup */
+interface DayCell {
+  dayName:  string   // Mon | Tue | Wed | Thu | Fri
+  dateN:    number   // calendar date number
+  label:    string   // original label e.g. "Mon 20"
+  events:   CalEvent[]
+  isToday:  boolean
 }
+
+interface WeekRow {
+  mondayDate: number
+  cells: DayCell[]   // always 5 items, Mon–Fri
+}
+
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const DOW_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+const DOW_INDEX: Record<string, number> = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 }
 
 // ─── Table parser ─────────────────────────────────────────────────────────────
 
-function parseTable(markdown: string): DayGroup[] {
-  const rows = markdown
+interface ParsedRow {
+  label:    string
+  dayName:  string
+  dateN:    number
+  time:     string
+  event:    string
+  relevance: string
+}
+
+function parseTable(markdown: string): ParsedRow[] {
+  return markdown
     .split('\n')
     .map(l => l.trim())
     .filter(l => l.startsWith('|') && !l.match(/^\|[-\s|]+\|$/))
+    .slice(1) // skip header row
+    .flatMap(row => {
+      const cells = row
+        .split('|')
+        .map(c => c.trim())
+        .filter((_, i, a) => i > 0 && i < a.length - 1)
+      if (cells.length < 4) return []
+      const [label, time, event, relevance] = cells
+      if (!label || label === '—') return []
 
-  if (rows.length < 2) return [] // no header + data rows
+      const parts  = label.split(' ')
+      const dayName = parts[0] ?? ''
+      const dateN   = parseInt(parts[1] ?? '', 10)
+      if (!DOW_NAMES.includes(dayName) || isNaN(dateN)) return []
 
-  const dayMap = new Map<string, CalEvent[]>()
-  const dayOrder: string[] = []
-
-  for (const row of rows.slice(1)) { // skip header
-    const cells = row.split('|').map(c => c.trim()).filter((_, i, a) => i > 0 && i < a.length - 1)
-    if (cells.length < 4) continue
-    const [day, time, event, relevance] = cells
-    if (!day || day === '—') continue
-
-    if (!dayMap.has(day)) {
-      dayMap.set(day, [])
-      dayOrder.push(day)
-    }
-    // Only add if there's an actual event
-    if (event && event !== '—') {
-      dayMap.get(day)!.push({ time: time === '—' ? '' : time, event, relevance: relevance ?? '' })
-    }
-  }
-
-  return dayOrder
-    .map(label => ({
-      label,
-      dateN: parseInt(label.replace(/\D/g, ''), 10) || 0,
-      events: dayMap.get(label) ?? [],
-    }))
-    .sort((a, b) => a.dateN - b.dateN)
+      return [{ label, dayName, dateN, time: time === '—' ? '' : (time ?? ''), event: event ?? '', relevance: relevance ?? '' }]
+    })
 }
 
-// ─── Inline task ID chip renderer ─────────────────────────────────────────────
+// ─── Week builder ─────────────────────────────────────────────────────────────
+
+function buildWeeks(rows: ParsedRow[], weekOf: string): WeekRow[] {
+  // Anchor: find today's date and the focus week's starting Monday
+  const anchor = new Date(`${weekOf}T00:00`)
+  // Offset anchor to Monday of that week
+  const anchorDow = anchor.getDay() === 0 ? 6 : anchor.getDay() - 1 // 0=Mon
+  const anchorMonday = new Date(anchor)
+  anchorMonday.setDate(anchor.getDate() - anchorDow)
+
+  const todayDate = new Date().getDate()
+  const todayMonth = new Date().getMonth()
+
+  // Group events by their computed Monday date
+  const weekMap = new Map<number, Map<number, CalEvent[]>>()
+
+  for (const row of rows) {
+    if (!row.event || row.event === '—') continue
+    const dow = DOW_INDEX[row.dayName] ?? 0
+    const mondayDate = row.dateN - dow
+
+    if (!weekMap.has(mondayDate)) weekMap.set(mondayDate, new Map())
+    const dayMap = weekMap.get(mondayDate)!
+    if (!dayMap.has(row.dateN)) dayMap.set(row.dateN, [])
+    dayMap.get(row.dateN)!.push({
+      time:      row.time,
+      event:     row.event,
+      relevance: row.relevance,
+    })
+  }
+
+  // If no events parsed, synthesise one week from weekOf
+  if (weekMap.size === 0) {
+    weekMap.set(anchorMonday.getDate(), new Map())
+  }
+
+  const anchorMonth = anchorMonday.getMonth()
+
+  // Build WeekRow for each Monday found, sorted ascending
+  return [...weekMap.keys()].sort((a, b) => a - b).map(mondayDate => {
+    const cells: DayCell[] = DOW_NAMES.map((dayName, i) => {
+      const dateN = mondayDate + i
+      // Today: same date number AND same month as the anchor week
+      // (good enough for a weekly view — avoids cross-month false positives)
+      const sameMonth = anchorMonth === todayMonth
+      const isToday = sameMonth && dateN === todayDate
+
+      return {
+        dayName,
+        dateN,
+        label: `${dayName} ${dateN}`,
+        events: weekMap.get(mondayDate)?.get(dateN) ?? [],
+        isToday,
+      }
+    })
+    return { mondayDate, cells }
+  })
+}
+
+// ─── Inline chip renderer ─────────────────────────────────────────────────────
 
 const TASK_ID_RE = /\b(t-[a-z][a-z0-9]*(?:-[a-z0-9]+)?)\b/gi
 
@@ -74,7 +147,6 @@ function InlineContent({ text }: { text: string }) {
   let last = 0
   const re = new RegExp(TASK_ID_RE.source, 'gi')
   let match: RegExpExecArray | null
-
   while ((match = re.exec(text)) !== null) {
     if (match.index > last) parts.push(text.slice(last, match.index))
     parts.push(<TaskIdChip key={match.index} taskid={match[1]} />)
@@ -84,37 +156,24 @@ function InlineContent({ text }: { text: string }) {
   return <>{parts}</>
 }
 
-// ─── Today detection ──────────────────────────────────────────────────────────
-
-function isToday(dateN: number): boolean {
-  return dateN === new Date().getDate()
-}
-
 // ─── Component ───────────────────────────────────────────────────────────────
 
 interface Props {
-  content:   string
-  onEdit:    () => void
+  content: string
+  weekOf:  string   // ISO date from FocusData e.g. "2026-04-14"
+  onEdit:  () => void
 }
 
-export function WeekCalendarView({ content, onEdit }: Props) {
-  const days = useMemo(() => parseTable(content), [content])
-
-  if (!days.length) {
-    return (
-      <p className="text-xs text-muted-foreground/40 italic cursor-text" onClick={onEdit}>
-        No schedule data — click to edit
-      </p>
-    )
-  }
+export function WeekCalendarView({ content, weekOf, onEdit }: Props) {
+  const weeks = useMemo(() => {
+    const rows = parseTable(content)
+    return buildWeeks(rows, weekOf)
+  }, [content, weekOf])
 
   return (
-    <div
-      className="overflow-x-auto pb-1 cursor-default"
-      onClick={e => e.stopPropagation()} // don't fall through to startEdit on card clicks
-    >
+    <div className="space-y-3" onClick={e => e.stopPropagation()}>
       {/* Edit hint */}
-      <div className="flex justify-end mb-2">
+      <div className="flex justify-end">
         <button
           onClick={onEdit}
           className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground transition-colors"
@@ -123,66 +182,84 @@ export function WeekCalendarView({ content, onEdit }: Props) {
         </button>
       </div>
 
-      {/* Day columns */}
-      <div className="flex gap-2 min-w-0">
-        {days.map(day => {
-          const today = isToday(day.dateN)
-          return (
-            <div
-              key={day.label}
-              className={cn(
-                'flex flex-col min-w-[140px] flex-1 rounded-lg border overflow-hidden',
-                today ? 'border-primary/40' : 'border-border',
-              )}
-            >
-              {/* Day header */}
+      {weeks.map(week => (
+        <div key={week.mondayDate} className="overflow-x-auto pb-0.5">
+          <div className="flex gap-1.5 min-w-[560px]">
+            {week.cells.map(cell => (
               <div
+                key={cell.dayName}
                 className={cn(
-                  'px-2.5 py-1.5 text-center',
-                  today
-                    ? 'bg-primary/15 text-primary'
-                    : 'bg-muted/40 text-muted-foreground',
+                  'flex flex-col flex-1 min-w-0 rounded-lg border overflow-hidden',
+                  cell.isToday ? 'border-primary/50' : 'border-border',
                 )}
               >
-                <p className={cn('text-[11px] font-semibold', today && 'text-primary')}>
-                  {day.label}
-                  {today && <span className="ml-1 text-[9px] opacity-70">TODAY</span>}
-                </p>
-              </div>
+                {/* Day header */}
+                <div
+                  className={cn(
+                    'px-2 py-1 text-center shrink-0',
+                    cell.isToday
+                      ? 'bg-primary/15'
+                      : 'bg-muted/40',
+                  )}
+                >
+                  <span className={cn(
+                    'text-[10px] font-semibold',
+                    cell.isToday ? 'text-primary' : 'text-muted-foreground',
+                  )}>
+                    {cell.dayName}
+                  </span>
+                  <span className={cn(
+                    'ml-1 text-[10px]',
+                    cell.isToday ? 'text-primary/70' : 'text-muted-foreground/50',
+                  )}>
+                    {cell.dateN}
+                  </span>
+                  {cell.isToday && (
+                    <span className="ml-1 text-[8px] text-primary/60 font-medium uppercase tracking-wide">
+                      today
+                    </span>
+                  )}
+                </div>
 
-              {/* Events */}
-              <div className="flex flex-col gap-1 p-1.5 bg-card/50 flex-1">
-                {day.events.length === 0 ? (
-                  <p className="text-[10px] text-muted-foreground/30 text-center py-2 italic">
-                    Free
-                  </p>
-                ) : (
-                  day.events.map((ev, i) => (
-                    <div
-                      key={i}
-                      className="rounded-md border border-border/60 bg-background/60 px-2 py-1.5 space-y-0.5"
-                    >
-                      {ev.time && (
-                        <p className="text-[9px] text-muted-foreground/60 font-mono tabular-nums">
-                          {ev.time}
-                        </p>
-                      )}
-                      <p className="text-[11px] font-medium text-foreground leading-snug">
-                        {ev.event}
-                      </p>
-                      {ev.relevance && (
-                        <p className="text-[10px] text-muted-foreground leading-relaxed flex flex-wrap gap-1 items-center">
-                          <InlineContent text={ev.relevance} />
-                        </p>
-                      )}
+                {/* Events */}
+                <div className="flex flex-col gap-1 p-1 bg-card/50 flex-1 min-h-[3rem]">
+                  {cell.events.length === 0 ? (
+                    <div className="flex items-center justify-center h-full">
+                      <span className="text-[10px] text-muted-foreground/20">—</span>
                     </div>
-                  ))
-                )}
+                  ) : (
+                    cell.events.map((ev, i) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          'rounded border px-1.5 py-1 space-y-0.5',
+                          cell.isToday
+                            ? 'border-primary/20 bg-primary/5'
+                            : 'border-border/50 bg-background/50',
+                        )}
+                      >
+                        {ev.time && (
+                          <p className="text-[9px] font-mono text-muted-foreground/50 tabular-nums">
+                            {ev.time}
+                          </p>
+                        )}
+                        <p className="text-[11px] font-medium text-foreground leading-snug">
+                          {ev.event}
+                        </p>
+                        {ev.relevance && (
+                          <p className="text-[10px] text-muted-foreground flex flex-wrap gap-1 items-center leading-relaxed">
+                            <InlineContent text={ev.relevance} />
+                          </p>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
-          )
-        })}
-      </div>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

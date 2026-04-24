@@ -137,6 +137,7 @@ export default function FocusPage() {
                 key={section.id}
                 section={section}
                 colorIndex={index}
+                weekOf={data.weekOf}
                 onUpdate={updater => updateSection(section.id, updater)}
                 onDelete={() => deleteSection(section.id)}
                 collapsed={isCollapsed(section.id)}

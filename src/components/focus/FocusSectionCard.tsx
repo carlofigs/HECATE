@@ -25,6 +25,7 @@ import type { FocusSection } from '@/lib/schemas'
 interface Props {
   section:     FocusSection
   colorIndex:  number
+  weekOf:      string
   onUpdate:    (updater: (s: FocusSection) => void) => void
   onDelete:    () => void
   collapsed:   boolean
@@ -33,7 +34,7 @@ interface Props {
   isDragging?: boolean
 }
 
-export function FocusSectionCard({ section, colorIndex, onUpdate, onDelete, collapsed, onToggle, dragHandle, isDragging }: Props) {
+export function FocusSectionCard({ section, colorIndex, weekOf, onUpdate, onDelete, collapsed, onToggle, dragHandle, isDragging }: Props) {
   const token = paletteToken(colorIndex)
   const [editing,      setEditing]      = useState(false)
   const [titleDraft,   setTitleDraft]   = useState(section.title)
@@ -203,7 +204,7 @@ export function FocusSectionCard({ section, colorIndex, onUpdate, onDelete, coll
             <div className="px-3 py-3 rounded-b-lg border border-t-0 border-border bg-card/50">
               {section.content.trim() ? (
                 section.id === 'week-at-a-glance' ? (
-                  <WeekCalendarView content={section.content} onEdit={startEdit} />
+                  <WeekCalendarView content={section.content} weekOf={weekOf} onEdit={startEdit} />
                 ) : (
                 <div
                   className="prose prose-sm dark:prose-invert max-w-none cursor-text"
