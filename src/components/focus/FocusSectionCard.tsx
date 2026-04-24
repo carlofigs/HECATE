@@ -70,7 +70,7 @@ export function FocusSectionCard({ section, colorIndex, weekOf, onUpdate, onDele
     setEditing(false)
   }, [])
 
-  // Debounced blur — gives Save button click time to register before closing
+  // Debounced blur (200ms) — gives Save button click time to register before closing
   const onTextareaBlur = useCallback(() => {
     blurTimerRef.current = setTimeout(commit, 200)
   }, [commit])

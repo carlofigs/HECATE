@@ -1,6 +1,7 @@
 /**
- * Shared task-related constants — used by TaskCard, TaskListView, TaskDialog, etc.
- * Single source of truth for priority display config and ID formatting.
+ * Shared task-related constants — used by TaskCard, TaskListView, TaskDialog,
+ * TaskIdChip, WeekCalendarView, rehypeTaskIds, etc.
+ * Single source of truth for priority config, ID formatting, and ID regex.
  */
 
 import type { Priority } from '@/lib/schemas'
@@ -16,3 +17,15 @@ export function displayId(id: string): string {
   const s = id.toLowerCase().startsWith('t-') ? id.slice(2) : id
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
+
+/**
+ * Raw pattern string for task ID references in prose / table text.
+ * Covers: t-a47 | t-b28 | t-a-lx3k9r | t-custom-abc123
+ * Deliberately excludes bare A47/B28 (ambiguous with spreadsheet cell refs).
+ *
+ * Exported as a pattern string (not a RegExp) so callers construct their own
+ * instance with the flags they need — avoids shared /g flag statefulness bugs.
+ *
+ * Usage:  new RegExp(TASK_ID_PATTERN, 'gi')
+ */
+export const TASK_ID_PATTERN = String.raw`\b(t-[a-z][a-z0-9]*(?:-[a-z0-9]+)?)\b`

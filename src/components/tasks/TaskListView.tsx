@@ -31,16 +31,19 @@ export function TaskListView({ columns, onTaskClick, onNewTask }: Props) {
 
   // Filter tasks per column when search is active
   const filtered = useMemo(() =>
-    columns.map(col => ({
-      ...col,
-      tasks: q
-        ? col.tasks.filter(t =>
-            t.title.toLowerCase().includes(q) ||
-            t.note?.toLowerCase().includes(q) ||
-            t.tags.some(tag => tag.toLowerCase().includes(q)),
-          )
-        : col.tasks,
-    })).filter(col => col.tasks.length > 0 || !q),
+    columns
+      .map(col => ({
+        ...col,
+        tasks: q
+          ? col.tasks.filter(t =>
+              t.title.toLowerCase().includes(q) ||
+              t.note?.toLowerCase().includes(q) ||
+              t.tags.some(tag => tag.toLowerCase().includes(q)),
+            )
+          : col.tasks,
+      }))
+      // When searching, hide columns with zero matches; when not searching, show all columns
+      .filter(col => col.tasks.length > 0 || !q),
   [columns, q])
 
   const totalVisible = filtered.reduce((n, c) => n + c.tasks.length, 0)

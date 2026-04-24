@@ -19,6 +19,7 @@
 import { useMemo, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { TaskIdChip } from '@/components/tasks/TaskIdChip'
+import { TASK_ID_PATTERN } from '@/lib/taskConstants'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -48,6 +49,11 @@ interface WeekRow {
 const DOW_NAMES   = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
 const DOW_INDEX: Record<string, number> = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 }
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+/** Returns midnight timestamp for a date without mutating the original */
+function midnightMs(d: Date): number {
+  return new Date(d).setHours(0, 0, 0, 0)
+}
 
 // ─── Table parser ─────────────────────────────────────────────────────────────
 
@@ -126,14 +132,14 @@ function buildWeeks(rows: ParsedRow[], weekOf: string): WeekRow[] {
   const anchorMonday = new Date(anchor)
   anchorMonday.setDate(anchor.getDate() - anchorDow)
 
-  const todayMs = (() => { const d = new Date(); d.setHours(0,0,0,0); return d.getTime() })()
+  const todayMs = midnightMs(new Date())
 
   // Current Monday — used to filter out past weeks
   const currentMondayMs = (() => {
-    const d = new Date(); d.setHours(0,0,0,0)
+    const d = new Date()
     const dow = d.getDay() === 0 ? 6 : d.getDay() - 1
     d.setDate(d.getDate() - dow)
-    return d.getTime()
+    return midnightMs(d)
   })()
 
   // Group events by ISO monday date string → ISO day date string → events
@@ -184,7 +190,7 @@ function buildWeeks(rows: ParsedRow[], weekOf: string): WeekRow[] {
         dateN:      date.getDate(),
         monthShort: MONTH_NAMES[date.getMonth()],
         events:     weekMap.get(mondayKey)?.get(dayKey) ?? [],
-        isToday:    date.setHours(0,0,0,0) === todayMs,
+        isToday:    midnightMs(date) === todayMs,  // midnightMs copies — does not mutate date
       }
     })
 
@@ -194,16 +200,15 @@ function buildWeeks(rows: ParsedRow[], weekOf: string): WeekRow[] {
 
 // ─── Inline chip renderer ─────────────────────────────────────────────────────
 
-const TASK_ID_RE = /\b(t-[a-z][a-z0-9]*(?:-[a-z0-9]+)?)\b/gi
-
 function InlineContent({ text }: { text: string }) {
   const parts: ReactNode[] = []
   let last = 0
-  const re = new RegExp(TASK_ID_RE.source, 'gi')
+  // Fresh RegExp per call — /g flag is stateful, must not share across renders
+  const re = new RegExp(TASK_ID_PATTERN, 'gi')
   let match: RegExpExecArray | null
   while ((match = re.exec(text)) !== null) {
     if (match.index > last) parts.push(text.slice(last, match.index))
-    parts.push(<TaskIdChip key={match.index} taskid={match[1]} />)
+    parts.push(<TaskIdChip key={`${match[1]}-${match.index}`} taskid={match[1]} />)
     last = match.index + match[0].length
   }
   if (last < text.length) parts.push(text.slice(last))
@@ -308,7 +313,7 @@ export function WeekCalendarView({ content, weekOf, onEdit }: Props) {
                   ) : (
                     cell.events.map((ev, i) => (
                       <div
-                        key={i}
+                        key={`${ev.time}-${i}`}
                         className={cn(
                           'rounded border px-1.5 py-1 space-y-0.5',
                           cell.isToday

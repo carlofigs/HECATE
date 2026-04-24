@@ -14,15 +14,15 @@
 
 import { visit } from 'unist-util-visit'
 import type { Root, Text, Element, Node, Parent } from 'hast'
-
-// Matches: t-a47 | t-b28 | t-a-lx3k9r | t-custom-abc123
-const TASK_ID_RE = /\b(t-[a-z][a-z0-9]*(?:-[a-z0-9]+)?)\b/gi
+import { TASK_ID_PATTERN } from '@/lib/taskConstants'
 
 function isElement(node: Node): node is Element {
   return node.type === 'element'
 }
 
 export function rehypeTaskIds() {
+  const TASK_ID_RE = new RegExp(TASK_ID_PATTERN, 'gi')
+
   return (tree: Root) => {
     visit(tree, 'text', (node: Text, index, parent: Parent | undefined) => {
       if (!parent || index === undefined) return
@@ -36,7 +36,7 @@ export function rehypeTaskIds() {
       let last = 0
 
       for (const match of matches) {
-        const start = match.index!
+        const start = match.index ?? 0
         if (start > last) {
           parts.push({ type: 'text', value: node.value.slice(last, start) })
         }
