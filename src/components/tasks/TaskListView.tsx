@@ -12,7 +12,7 @@
 import { useState, useMemo } from 'react'
 import { Search, Plus, ChevronDown, ChevronRight, Clock } from 'lucide-react'
 import { cn, daysSince, columnAccentClass, accentTextStyle } from '@/lib/utils'
-import { PRIORITY_CONFIG } from '@/lib/taskConstants'
+import { PRIORITY_CONFIG, displayId } from '@/lib/taskConstants'
 import { useCollapsed } from '@/hooks/useCollapsed'
 import type { Column, Task } from '@/lib/schemas'
 
@@ -31,16 +31,19 @@ export function TaskListView({ columns, onTaskClick, onNewTask }: Props) {
 
   // Filter tasks per column when search is active
   const filtered = useMemo(() =>
-    columns.map(col => ({
-      ...col,
-      tasks: q
-        ? col.tasks.filter(t =>
-            t.title.toLowerCase().includes(q) ||
-            t.note?.toLowerCase().includes(q) ||
-            t.tags.some(tag => tag.toLowerCase().includes(q)),
-          )
-        : col.tasks,
-    })).filter(col => col.tasks.length > 0 || !q),
+    columns
+      .map(col => ({
+        ...col,
+        tasks: q
+          ? col.tasks.filter(t =>
+              t.title.toLowerCase().includes(q) ||
+              t.note?.toLowerCase().includes(q) ||
+              t.tags.some(tag => tag.toLowerCase().includes(q)),
+            )
+          : col.tasks,
+      }))
+      // When searching, hide columns with zero matches; when not searching, show all columns
+      .filter(col => col.tasks.length > 0 || !q),
   [columns, q])
 
   const totalVisible = filtered.reduce((n, c) => n + c.tasks.length, 0)
@@ -171,6 +174,11 @@ function TaskListRow({
         'w-1.5 h-1.5 rounded-full shrink-0',
         task.priority ? PRIORITY_CONFIG[task.priority].dot : 'bg-muted-foreground/20',
       )} />
+
+      {/* ID */}
+      <span className="font-mono text-[10px] text-muted-foreground/50 shrink-0 tabular-nums w-8">
+        {displayId(task.id)}
+      </span>
 
       {/* Title */}
       <span className="flex-1 min-w-0 text-xs text-foreground truncate">

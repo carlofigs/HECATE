@@ -22,6 +22,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Trash2 } from 'lucide-react'
 import { todayISO, nowISO, generateTaskId } from '@/lib/utils'
+import { displayId } from '@/lib/taskConstants'
 import type { Task, Priority, Column } from '@/lib/schemas'
 
 interface Props {
@@ -125,9 +126,16 @@ export function TaskDialog({
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
       <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto" onKeyDown={onKeyDown}>
         <DialogHeader>
-          <DialogTitle className="text-sm">
-            {isCreate ? 'New task' : 'Edit task'}
-          </DialogTitle>
+          <div className="flex items-center justify-between gap-3">
+            <DialogTitle className="text-sm">
+              {isCreate ? 'New task' : 'Edit task'}
+            </DialogTitle>
+            {!isCreate && task && (
+              <span className="font-mono text-xs text-muted-foreground/50 shrink-0 select-all">
+                {displayId(task.id)}
+              </span>
+            )}
+          </div>
         </DialogHeader>
 
         <div className="space-y-3 py-1">

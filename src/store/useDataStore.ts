@@ -12,6 +12,7 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { getFile, putFile, loadCredentials } from '@/lib/github'
 import type {
+  DataFileName,
   FileSlice,
   TasksData,
   FocusData,
@@ -42,7 +43,7 @@ export interface DataStore {
 
 // ─── Utility types ──────────────────────────────────────────────────────────
 
-type DataFileName = 'tasks' | 'focus' | 'projects' | 'weekly_log' | 'archive' | 'memory' | 'settings'
+// DataFileName is imported from schemas — single source of truth
 
 // Map file name → data type
 type SliceData<K extends DataFileName> =

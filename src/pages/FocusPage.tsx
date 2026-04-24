@@ -90,7 +90,8 @@ export default function FocusPage() {
       {[80, 120, 60, 100].map((h, i) => (
         <div key={i} className="rounded-lg border border-border bg-card p-3 space-y-2">
           <div className="h-3 w-24 rounded bg-muted animate-pulse" />
-          <div className={`h-${Math.round(h / 20)} w-full rounded bg-muted/60 animate-pulse`} />
+          {/* inline style — Tailwind can't purge dynamically constructed class names */}
+          <div style={{ height: `${Math.round(h / 20) * 0.25}rem` }} className="w-full rounded bg-muted/60 animate-pulse" />
         </div>
       ))}
     </div>
@@ -137,6 +138,7 @@ export default function FocusPage() {
                 key={section.id}
                 section={section}
                 colorIndex={index}
+                weekOf={data.weekOf}
                 onUpdate={updater => updateSection(section.id, updater)}
                 onDelete={() => deleteSection(section.id)}
                 collapsed={isCollapsed(section.id)}

@@ -11,9 +11,13 @@
  * - Blur from textarea (after 150ms debounce) → commit silently
  */
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useCallback } from 'react'
+import { useInlineEdit } from '@/hooks/useInlineEdit'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { rehypeTaskIds } from '@/lib/rehypeTaskIds'
+import { TaskIdChip } from '@/components/tasks/TaskIdChip'
+import { WeekCalendarView } from '@/components/focus/WeekCalendarView'
 import { Pencil, Trash2, GripVertical, ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn, paletteToken, accentHeaderStyle, accentTextStyle } from '@/lib/utils'
@@ -22,6 +26,7 @@ import type { FocusSection } from '@/lib/schemas'
 interface Props {
   section:     FocusSection
   colorIndex:  number
+  weekOf:      string
   onUpdate:    (updater: (s: FocusSection) => void) => void
   onDelete:    () => void
   collapsed:   boolean
@@ -30,56 +35,33 @@ interface Props {
   isDragging?: boolean
 }
 
-export function FocusSectionCard({ section, colorIndex, onUpdate, onDelete, collapsed, onToggle, dragHandle, isDragging }: Props) {
+export function FocusSectionCard({ section, colorIndex, weekOf, onUpdate, onDelete, collapsed, onToggle, dragHandle, isDragging }: Props) {
   const token = paletteToken(colorIndex)
-  const [editing,      setEditing]      = useState(false)
-  const [titleDraft,   setTitleDraft]   = useState(section.title)
-  const [contentDraft, setContentDraft] = useState(section.content)
-  const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Keep a stable ref to the latest drafts so commit() never captures stale values
-  const draftsRef = useRef({ titleDraft, contentDraft })
-  useEffect(() => { draftsRef.current = { titleDraft, contentDraft } }, [titleDraft, contentDraft])
+  // ── Inline edit ───────────────────────────────────────────────────────────
 
-  // ── Edit helpers ──────────────────────────────────────────────────────────
-
-  function startEdit() {
-    setTitleDraft(section.title)
-    setContentDraft(section.content)
-    setEditing(true)
-  }
-
-  const commit = useCallback(() => {
-    if (blurTimerRef.current) clearTimeout(blurTimerRef.current)
-    const { titleDraft: t, contentDraft: c } = draftsRef.current
-    const title   = t.trim() || section.title
-    const content = c
-    onUpdate(s => {
-      s.title   = title
-      s.content = content
-    })
-    setEditing(false)
-  }, [section.title, onUpdate])
-
-  const discard = useCallback(() => {
-    if (blurTimerRef.current) clearTimeout(blurTimerRef.current)
-    setEditing(false)
-  }, [])
-
-  // Debounced blur — gives Save button click time to register before closing
-  const onTextareaBlur = useCallback(() => {
-    blurTimerRef.current = setTimeout(commit, 200)
-  }, [commit])
-
-  const onTextareaKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); commit() }
-    if (e.key === 'Escape') { e.preventDefault(); discard() }
-  }, [commit, discard])
-
-  const onTitleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') { e.preventDefault(); /* focus textarea */ }
-    if (e.key === 'Escape') { e.preventDefault(); discard() }
-  }, [discard])
+  const {
+    editing,
+    draft,
+    setDraft,
+    startEdit,
+    commit,
+    discard,
+    onTextareaBlur,
+    onTextareaKeyDown,
+    onTitleKeyDown,
+  } = useInlineEdit(
+    { title: section.title, content: section.content },
+    useCallback(
+      ({ title, content }: { title: string; content: string }) => {
+        onUpdate(s => {
+          s.title   = title.trim() || section.title
+          s.content = content
+        })
+      },
+      [onUpdate, section.title],
+    ),
+  )
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -107,8 +89,8 @@ export function FocusSectionCard({ section, colorIndex, onUpdate, onDelete, coll
         <div className="p-3 space-y-2">
           {/* Title */}
           <input
-            value={titleDraft}
-            onChange={e => setTitleDraft(e.target.value)}
+            value={draft.title}
+            onChange={e => setDraft(d => ({ ...d, title: e.target.value }))}
             onKeyDown={onTitleKeyDown}
             placeholder="Section title"
             className={cn(
@@ -120,8 +102,8 @@ export function FocusSectionCard({ section, colorIndex, onUpdate, onDelete, coll
           {/* Content textarea — auto-resize via CSS field-sizing */}
           <textarea
             autoFocus
-            value={contentDraft}
-            onChange={e => setContentDraft(e.target.value)}
+            value={draft.content}
+            onChange={e => setDraft(d => ({ ...d, content: e.target.value }))}
             onBlur={onTextareaBlur}
             onKeyDown={onTextareaKeyDown}
             placeholder="Markdown content…"
@@ -199,14 +181,23 @@ export function FocusSectionCard({ section, colorIndex, onUpdate, onDelete, coll
           {!collapsed && (
             <div className="px-3 py-3 rounded-b-lg border border-t-0 border-border bg-card/50">
               {section.content.trim() ? (
+                section.id === 'week-at-a-glance' ? (
+                  <WeekCalendarView content={section.content} weekOf={weekOf} onEdit={startEdit} />
+                ) : (
                 <div
                   className="prose prose-sm dark:prose-invert max-w-none cursor-text"
                   onClick={startEdit}
                 >
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeTaskIds]}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    components={{ 'task-id-chip': ({ node, ...props }: any) => <TaskIdChip taskid={String(props.taskid ?? '')} /> } as any}
+                  >
                     {section.content}
                   </ReactMarkdown>
                 </div>
+                )
               ) : (
                 <p
                   className="text-xs text-muted-foreground/40 italic cursor-text"
