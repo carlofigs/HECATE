@@ -16,6 +16,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { rehypeTaskIds } from '@/lib/rehypeTaskIds'
 import { TaskIdChip } from '@/components/tasks/TaskIdChip'
+import { WeekCalendarView } from '@/components/focus/WeekCalendarView'
 import { Pencil, Trash2, GripVertical, ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn, paletteToken, accentHeaderStyle, accentTextStyle } from '@/lib/utils'
@@ -201,6 +202,9 @@ export function FocusSectionCard({ section, colorIndex, onUpdate, onDelete, coll
           {!collapsed && (
             <div className="px-3 py-3 rounded-b-lg border border-t-0 border-border bg-card/50">
               {section.content.trim() ? (
+                section.id === 'week-at-a-glance' ? (
+                  <WeekCalendarView content={section.content} onEdit={startEdit} />
+                ) : (
                 <div
                   className="prose prose-sm dark:prose-invert max-w-none cursor-text"
                   onClick={startEdit}
@@ -214,6 +218,7 @@ export function FocusSectionCard({ section, colorIndex, onUpdate, onDelete, coll
                     {section.content}
                   </ReactMarkdown>
                 </div>
+                )
               ) : (
                 <p
                   className="text-xs text-muted-foreground/40 italic cursor-text"
