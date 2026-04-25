@@ -84,7 +84,10 @@ export function TaskSnapshotRow({
 
       {/* Inline human ID chip parsed from title (week log context only) */}
       {titleChip && (
-        <span className="font-mono text-[10px] text-muted-foreground/60 bg-muted/60 rounded px-1.5 py-0.5 shrink-0 tabular-nums">
+        <span
+          className="font-mono text-[10px] text-muted-foreground/60 bg-muted/60 rounded px-1.5 py-0.5 shrink-0 tabular-nums hover:bg-muted transition-colors cursor-default"
+          title={snapshot.title}
+        >
           {titleChip}
         </span>
       )}

@@ -97,7 +97,7 @@ function TaskSnapshotSection({ completed, carriedForward, delayed }: TaskSnapsho
                   </p>
                   <div className="divide-y divide-border/20">
                     {completed.map((t, i) => (
-                      <TaskSnapshotRow key={`c-${t.id ?? i}`} snapshot={t} accent="green" showId={false} showTags={false} />
+                      <TaskSnapshotRow key={`c-${t.id ?? i}`} snapshot={t} accent="muted" showId={false} showTags={false} />
                     ))}
                   </div>
                 </div>
