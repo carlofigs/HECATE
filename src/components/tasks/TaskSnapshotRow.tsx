@@ -9,53 +9,75 @@
  *              render an empty w-8 placeholder so all titles align.
  *              When false (Week Log context), the title is parsed for a leading
  *              human ID token (e.g. "A65 – BAU validation") and rendered as a
- *              styled pill chip separate from the remaining title text.
+ *              styled pill chip with a rich mini-card tooltip (title, tags, note).
  *   showTags — show tag pills (default true). Pass false in Week Log context.
  */
 
+import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 import { cn } from '@/lib/utils'
 import { displayId } from '@/lib/taskConstants'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 
-/**
- * Minimal shape accepted — structurally satisfied by both TaskSnapshot and
- * ArchivedTask so no union import is needed. `note` is intentionally omitted
- * from the row render; callers pass the full object without extra casting.
- */
 interface SnapshotLike {
   id:    string | null
   title: string
   tags:  string[]
+  note?: string | null
 }
 
 interface Props {
   snapshot: SnapshotLike
-  /** Faint left accent colour for visual grouping (e.g. done vs not-doing) */
-  accent?: 'green' | 'muted'
-  /**
-   * Whether to render the structured ID chip column. Defaults true (Archive view).
-   * When true, null-ID rows receive an empty w-8 placeholder so all titles align.
-   * When false (Week Log), the title is parsed for a leading token like "A65 –"
-   * and that token is rendered as a pill chip instead.
-   */
-  showId?: boolean
-  /**
-   * Whether to render tag pills. Defaults true (Archive view).
-   * Pass false in Week Log context to reduce visual noise.
-   */
+  accent?:  'green' | 'muted'
+  showId?:  boolean
   showTags?: boolean
 }
 
 /**
  * Parse a task title for a leading human ID token.
- * Matches patterns like: "A65 – title", "B30 title", "A47 – memo"
- * Returns { chip, text } — chip is null when no leading ID is found.
+ * Matches: "A65 – title", "B30 title", "A47 – memo"
  */
 function parseTitleId(title: string): { chip: string | null; text: string } {
-  // [uppercase letter][digits] optionally followed by em/en/hyphen dash + space
   const m = title.match(/^([A-Z]\d+)\s*(?:[–\-—]\s*)?(.+)$/)
   if (m && m[2].trim()) return { chip: m[1], text: m[2].trim() }
   return { chip: null, text: title }
+}
+
+// ─── Mini snapshot card shown inside the tooltip ──────────────────────────────
+
+function SnapshotPreview({ snapshot }: { snapshot: SnapshotLike }) {
+  return (
+    <div>
+      {/* Title */}
+      <div className="px-3 py-2.5 border-b border-border bg-muted/20">
+        <p className="text-xs font-medium text-foreground leading-snug">
+          {snapshot.title}
+        </p>
+      </div>
+
+      {/* Tags + note */}
+      <div className="px-3 pt-2 pb-2.5 space-y-1.5">
+        {snapshot.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {snapshot.tags.map(tag => (
+              <span
+                key={tag}
+                className="text-[10px] bg-muted text-muted-foreground rounded px-1.5 py-0.5"
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
+        {snapshot.note && (
+          <p className="text-[10px] text-muted-foreground leading-relaxed line-clamp-3">
+            {snapshot.note}
+          </p>
+        )}
+        {!snapshot.tags.length && !snapshot.note && (
+          <p className="text-[10px] text-muted-foreground/40 italic">No tags or notes</p>
+        )}
+      </div>
+    </div>
+  )
 }
 
 export function TaskSnapshotRow({
@@ -64,8 +86,6 @@ export function TaskSnapshotRow({
   showId   = true,
   showTags = true,
 }: Props) {
-  // In week log context (showId=false), parse the human ID from the title text.
-  // In archive context (showId=true), leave the title untouched.
   const { chip: titleChip, text: titleText } = showId
     ? { chip: null, text: snapshot.title }
     : parseTitleId(snapshot.title)
@@ -76,31 +96,49 @@ export function TaskSnapshotRow({
       accent === 'green' ? 'border-l-green-500/40' : 'border-l-border',
     )}>
 
-      {/* Structured ID chip (archive context) — always reserves w-8 for alignment */}
+      {/* Structured ID chip (archive) — w-8 reserved for alignment */}
       {showId && (
         <span className="font-mono text-[10px] text-muted-foreground/50 shrink-0 tabular-nums w-8">
           {snapshot.id ? displayId(snapshot.id) : ''}
         </span>
       )}
 
-      {/* Inline human ID chip parsed from title (week log context only) */}
+      {/* Human ID chip with rich mini-card tooltip (week log) */}
       {titleChip && (
-        <span className="font-mono text-[10px] text-muted-foreground/60 bg-muted/60 rounded px-1.5 py-0.5 shrink-0 tabular-nums hover:bg-muted transition-colors cursor-default">
-          {titleChip}
-        </span>
+        <TooltipPrimitive.Root delayDuration={250}>
+          <TooltipPrimitive.Trigger asChild>
+            <span className={cn(
+              'inline-flex items-center font-mono text-[10px] px-1.5 py-0.5 rounded shrink-0 tabular-nums',
+              'border transition-colors cursor-default',
+              'border-primary/30 bg-primary/10 text-primary/80',
+              'hover:bg-primary/20 hover:border-primary/50',
+            )}>
+              {titleChip}
+            </span>
+          </TooltipPrimitive.Trigger>
+          <TooltipPrimitive.Portal>
+            <TooltipPrimitive.Content
+              sideOffset={6}
+              collisionPadding={12}
+              className={cn(
+                'z-50 w-56 rounded-lg border border-border bg-card shadow-xl p-0 overflow-hidden',
+                'animate-in fade-in-0 zoom-in-95',
+                'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
+                'data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2',
+              )}
+            >
+              <SnapshotPreview snapshot={snapshot} />
+            </TooltipPrimitive.Content>
+          </TooltipPrimitive.Portal>
+        </TooltipPrimitive.Root>
       )}
 
-      {/* Title — tooltip reveals full text when truncated */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="flex-1 min-w-0 text-foreground truncate cursor-default">
-            {titleText}
-          </span>
-        </TooltipTrigger>
-        <TooltipContent>{snapshot.title}</TooltipContent>
-      </Tooltip>
+      {/* Title */}
+      <span className="flex-1 min-w-0 text-foreground truncate">
+        {titleText}
+      </span>
 
-      {/* Tags — omitted in Week Log context (showTags=false) */}
+      {/* Tags */}
       {showTags && snapshot.tags.length > 0 && (
         <div className="hidden sm:flex items-center gap-1 shrink-0">
           {snapshot.tags.slice(0, 3).map(tag => (
