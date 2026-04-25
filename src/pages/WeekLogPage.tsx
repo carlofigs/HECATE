@@ -42,33 +42,36 @@ interface TaskSnapshotSectionProps {
 }
 
 function TaskSnapshotSection({ completed, carriedForward, delayed }: TaskSnapshotSectionProps) {
-  const [expanded, setExpanded] = useState(false)
+  const [sectionOpen, setSectionOpen]   = useState(false)
+  // Single key for the open row: "<prefix>-<index>" e.g. "c-2", "cf-0", "d-1"
+  const [expandedKey, setExpandedKey]   = useState<string | null>(null)
 
   const hasAny = completed.length + carriedForward.length + delayed.length > 0
+
+  function toggle(key: string) {
+    setExpandedKey(k => k === key ? null : key)
+  }
 
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
 
-      {/* ── Collapsed header / toggle ── */}
+      {/* ── Collapsed header / section toggle ── */}
       <button
-        onClick={() => setExpanded(e => !e)}
+        onClick={() => { setSectionOpen(o => !o); setExpandedKey(null) }}
         className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted/30 transition-colors"
-        aria-expanded={expanded}
+        aria-expanded={sectionOpen}
       >
         <div className="flex items-center gap-3 text-[11px]">
-          {/* Done */}
           <span className="flex items-center gap-1">
             <span className="font-semibold text-green-500/80">{completed.length}</span>
             <span className="text-muted-foreground/50">done</span>
           </span>
           <span className="text-border">·</span>
-          {/* Carried */}
           <span className="flex items-center gap-1">
             <span className="font-semibold text-sky-500/80">{carriedForward.length}</span>
             <span className="text-muted-foreground/50">carried</span>
           </span>
           <span className="text-border">·</span>
-          {/* Delayed */}
           <span className="flex items-center gap-1">
             <span className="font-semibold text-amber-500/70">{delayed.length}</span>
             <span className="text-muted-foreground/50">delayed</span>
@@ -77,13 +80,13 @@ function TaskSnapshotSection({ completed, carriedForward, delayed }: TaskSnapsho
         <ChevronDown
           className={cn(
             'w-3.5 h-3.5 text-muted-foreground/30 transition-transform duration-150',
-            expanded && 'rotate-180',
+            sectionOpen && 'rotate-180',
           )}
         />
       </button>
 
       {/* ── Expanded lists ── */}
-      {expanded && (
+      {sectionOpen && (
         <div className="border-t border-border/40">
           {!hasAny ? (
             <p className="px-3 py-3 text-xs text-muted-foreground/30 italic">No tasks recorded</p>
@@ -96,9 +99,20 @@ function TaskSnapshotSection({ completed, carriedForward, delayed }: TaskSnapsho
                     ✓ Completed
                   </p>
                   <div className="divide-y divide-border/20">
-                    {completed.map((t, i) => (
-                      <TaskSnapshotRow key={`c-${t.id ?? i}`} snapshot={t} accent="muted" showId={false} showTags={false} />
-                    ))}
+                    {completed.map((t, i) => {
+                      const key = `c-${i}`
+                      return (
+                        <TaskSnapshotRow
+                          key={`c-${t.id ?? i}`}
+                          snapshot={t}
+                          accent="muted"
+                          showId={false}
+                          showTags={false}
+                          expanded={expandedKey === key}
+                          onToggle={() => toggle(key)}
+                        />
+                      )
+                    })}
                   </div>
                 </div>
               )}
@@ -110,9 +124,20 @@ function TaskSnapshotSection({ completed, carriedForward, delayed }: TaskSnapsho
                     → Carried Forward
                   </p>
                   <div className="divide-y divide-border/20">
-                    {carriedForward.map((t, i) => (
-                      <TaskSnapshotRow key={`cf-${t.id ?? i}`} snapshot={t} accent="muted" showId={false} showTags={false} />
-                    ))}
+                    {carriedForward.map((t, i) => {
+                      const key = `cf-${i}`
+                      return (
+                        <TaskSnapshotRow
+                          key={`cf-${t.id ?? i}`}
+                          snapshot={t}
+                          accent="muted"
+                          showId={false}
+                          showTags={false}
+                          expanded={expandedKey === key}
+                          onToggle={() => toggle(key)}
+                        />
+                      )
+                    })}
                   </div>
                 </div>
               )}
@@ -124,9 +149,20 @@ function TaskSnapshotSection({ completed, carriedForward, delayed }: TaskSnapsho
                     ⚠ Delayed
                   </p>
                   <div className="divide-y divide-border/20">
-                    {delayed.map((t, i) => (
-                      <TaskSnapshotRow key={`d-${t.id ?? i}`} snapshot={t} accent="muted" showId={false} showTags={false} />
-                    ))}
+                    {delayed.map((t, i) => {
+                      const key = `d-${i}`
+                      return (
+                        <TaskSnapshotRow
+                          key={`d-${t.id ?? i}`}
+                          snapshot={t}
+                          accent="muted"
+                          showId={false}
+                          showTags={false}
+                          expanded={expandedKey === key}
+                          onToggle={() => toggle(key)}
+                        />
+                      )
+                    })}
                   </div>
                 </div>
               )}
