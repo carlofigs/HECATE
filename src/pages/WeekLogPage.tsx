@@ -21,6 +21,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import { CalendarDays, ChevronDown } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { Button } from '@/components/ui/button'
 import { useDataFile } from '@/hooks/useDataFile'
 import { useSettings } from '@/hooks/useSettings'
@@ -182,6 +184,8 @@ interface NextWeekEditorProps {
 }
 
 function NextWeekEditor({ items, onUpdate }: NextWeekEditorProps) {
+  const [collapsed, setCollapsed] = useState(true)
+
   const joined = items.join('\n')
   const splitAndUpdate = useCallback(
     (val: string) => onUpdate(val.split('\n').filter(l => l.trim() !== '')),
@@ -190,48 +194,70 @@ function NextWeekEditor({ items, onUpdate }: NextWeekEditorProps) {
   const { editing, draft, setDraft, startEdit, commit, discard, onTextareaBlur, onTextareaKeyDown } =
     useInlineEdit(joined, splitAndUpdate)
 
+  function handleStartEdit() {
+    if (collapsed) setCollapsed(false)
+    startEdit()
+  }
+
+  // Render items as a markdown bullet list for display
+  const markdown = items.map(i => `- ${i}`).join('\n')
+
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border/40 bg-muted/20">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Next Week
-        </h3>
+
+      {/* Header */}
+      <div className={cn(
+        'flex items-center justify-between px-3 py-2 bg-muted/20',
+        !collapsed && 'border-b border-border/40',
+      )}>
+        <div
+          className="flex items-center gap-1.5 flex-1 min-w-0 cursor-pointer"
+          onClick={editing ? undefined : () => setCollapsed(c => !c)}
+        >
+          {!editing && (
+            <ChevronDown className={cn(
+              'w-3 h-3 text-muted-foreground/40 transition-transform duration-150 shrink-0',
+              collapsed && '-rotate-90',
+            )} />
+          )}
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Next Week
+          </h3>
+        </div>
       </div>
 
-      {editing ? (
-        <div className="p-3 space-y-2">
-          <textarea
-            autoFocus
-            value={draft}
-            onChange={e => setDraft(e.target.value)}
-            onBlur={onTextareaBlur}
-            onKeyDown={onTextareaKeyDown}
-            placeholder="One item per line…"
-            className="auto-resize w-full resize-none bg-transparent text-xs text-foreground font-mono focus:outline-none placeholder:text-muted-foreground/40 leading-relaxed min-h-[80px]"
-          />
-          <div className="flex items-center justify-between pt-1 border-t border-border/40">
-            <span className="text-[10px] text-muted-foreground/40">One item per line · ⌘↵ save</span>
-            <div className="flex items-center gap-1.5">
-              <Button variant="ghost" size="sm" onClick={discard} className="h-6 px-2 text-xs">Discard</Button>
-              <Button size="sm" onMouseDown={e => { e.preventDefault(); commit() }} className="h-6 px-2 text-xs">Save</Button>
+      {/* Body */}
+      {!collapsed && (
+        editing ? (
+          <div className="p-3 space-y-2">
+            <textarea
+              autoFocus
+              value={draft}
+              onChange={e => setDraft(e.target.value)}
+              onBlur={onTextareaBlur}
+              onKeyDown={onTextareaKeyDown}
+              placeholder="One item per line…"
+              className="auto-resize w-full resize-none bg-transparent text-xs text-foreground font-mono focus:outline-none placeholder:text-muted-foreground/40 leading-relaxed min-h-[80px]"
+            />
+            <div className="flex items-center justify-between pt-1 border-t border-border/40">
+              <span className="text-[10px] text-muted-foreground/40">One item per line · ⌘↵ save</span>
+              <div className="flex items-center gap-1.5">
+                <Button variant="ghost" size="sm" onClick={discard} className="h-6 px-2 text-xs">Discard</Button>
+                <Button size="sm" onMouseDown={e => { e.preventDefault(); commit() }} className="h-6 px-2 text-xs">Save</Button>
+              </div>
             </div>
           </div>
-        </div>
-      ) : (
-        <div className="px-3 py-3 cursor-text min-h-[48px]" onClick={startEdit}>
-          {items.length === 0 ? (
-            <p className="text-xs text-muted-foreground/30 italic">Empty — click to add next week's priorities</p>
-          ) : (
-            <ul className="space-y-1">
-              {items.map((item, i) => (
-                <li key={i} className="text-xs text-foreground flex gap-2">
-                  <span className="text-muted-foreground/40 shrink-0 mt-0.5">→</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        ) : (
+          <div className="px-3 py-3 cursor-text min-h-[48px]" onClick={handleStartEdit} title="Click to edit">
+            {items.length === 0 ? (
+              <p className="text-xs text-muted-foreground/30 italic">Empty — click to add next week's priorities</p>
+            ) : (
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
+              </div>
+            )}
+          </div>
+        )
       )}
     </div>
   )
@@ -260,6 +286,7 @@ function OneOnOneCard({ weekOf, person, content, onUpdate }: OneOnOneCardProps) 
       content={content}
       onUpdate={handleUpdate}
       minEditHeight={100}
+      collapsible
     />
   )
 }
@@ -499,16 +526,19 @@ export default function WeekLogPage() {
               content={selectedWeek.narrative.meetingsAndDiscussions}
               onUpdate={onUpdateMeetings}
               minEditHeight={160}
+              collapsible
             />
             <NarrativeCard
               label="Decisions Made"
               content={selectedWeek.narrative.decisionsMade}
               onUpdate={onUpdateDecisions}
+              collapsible
             />
             <NarrativeCard
               label="Frustrations"
               content={selectedWeek.narrative.frustrations}
               onUpdate={onUpdateFrustrations}
+              collapsible
             />
 
             {/* 1:1 Prep */}
