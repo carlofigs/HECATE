@@ -23,9 +23,14 @@ interface Props {
   snapshot: SnapshotLike
   /** Faint left accent colour for visual grouping (e.g. done vs not-doing) */
   accent?: 'green' | 'muted'
+  /**
+   * Whether to render tags. Defaults true (Archive view).
+   * Pass false in Week Log context to reduce visual noise.
+   */
+  showTags?: boolean
 }
 
-export function TaskSnapshotRow({ snapshot, accent = 'muted' }: Props) {
+export function TaskSnapshotRow({ snapshot, accent = 'muted', showTags = true }: Props) {
   return (
     <div className={cn(
       'flex items-center gap-2.5 px-3 py-1.5 text-xs border-l-2',
@@ -43,8 +48,8 @@ export function TaskSnapshotRow({ snapshot, accent = 'muted' }: Props) {
         {snapshot.title}
       </span>
 
-      {/* Tags */}
-      {snapshot.tags.length > 0 && (
+      {/* Tags — omitted in Week Log context (showTags=false) */}
+      {showTags && snapshot.tags.length > 0 && (
         <div className="hidden sm:flex items-center gap-1 shrink-0">
           {snapshot.tags.slice(0, 3).map(tag => (
             <span

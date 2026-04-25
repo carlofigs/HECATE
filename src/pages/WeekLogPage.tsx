@@ -20,7 +20,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CalendarDays } from 'lucide-react'
+import { CalendarDays, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useDataFile } from '@/hooks/useDataFile'
 import { useSettings } from '@/hooks/useSettings'
@@ -31,40 +31,109 @@ import { GenerateWeekDialog } from '@/components/weeklog/GenerateWeekDialog'
 import { cn, formatWeekRange, currentMondayISO, nowISO } from '@/lib/utils'
 import type { WeekEntry, TaskSnapshot } from '@/lib/schemas'
 
-// ─── Task list card ───────────────────────────────────────────────────────────
+// ─── Task snapshot section (collapsible) ─────────────────────────────────────
+// Collapsed by default — shows count chips only. Click header to expand full lists.
+// Tags are suppressed (showTags=false) to keep rows readable without 3-column pressure.
 
-interface TaskListCardProps {
-  label:  string
-  tasks:  TaskSnapshot[]
-  accent: 'green' | 'amber' | 'muted'
+interface TaskSnapshotSectionProps {
+  completed:      TaskSnapshot[]
+  carriedForward: TaskSnapshot[]
+  delayed:        TaskSnapshot[]
 }
 
-function TaskListCard({ label, tasks, accent }: TaskListCardProps) {
-  const headerColour =
-    accent === 'green' ? 'text-green-500/70' :
-    accent === 'amber' ? 'text-amber-500/70' :
-    'text-muted-foreground/40'
+function TaskSnapshotSection({ completed, carriedForward, delayed }: TaskSnapshotSectionProps) {
+  const [expanded, setExpanded] = useState(false)
+
+  const hasAny = completed.length + carriedForward.length + delayed.length > 0
 
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden flex flex-col">
-      <div className="px-3 py-2 border-b border-border/40 bg-muted/20 shrink-0">
-        <p className={cn('text-[10px] font-semibold uppercase tracking-wider', headerColour)}>
-          {label} ({tasks.length})
-        </p>
-      </div>
-      <div className="flex-1 overflow-y-auto divide-y divide-border/30" style={{ maxHeight: '240px' }}>
-        {tasks.length === 0 ? (
-          <p className="px-3 py-3 text-xs text-muted-foreground/30 italic">None</p>
-        ) : (
-          tasks.map((task, i) => (
-            <TaskSnapshotRow
-              key={`${task.id ?? 'null'}-${i}`}
-              snapshot={task}
-              accent={accent === 'green' ? 'green' : 'muted'}
-            />
-          ))
-        )}
-      </div>
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
+
+      {/* ── Collapsed header / toggle ── */}
+      <button
+        onClick={() => setExpanded(e => !e)}
+        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted/30 transition-colors"
+        aria-expanded={expanded}
+      >
+        <div className="flex items-center gap-3 text-[11px]">
+          {/* Done */}
+          <span className="flex items-center gap-1">
+            <span className="font-semibold text-green-500/80">{completed.length}</span>
+            <span className="text-muted-foreground/50">done</span>
+          </span>
+          <span className="text-border">·</span>
+          {/* Carried */}
+          <span className="flex items-center gap-1">
+            <span className="font-semibold text-foreground/70">{carriedForward.length}</span>
+            <span className="text-muted-foreground/50">carried</span>
+          </span>
+          <span className="text-border">·</span>
+          {/* Delayed */}
+          <span className="flex items-center gap-1">
+            <span className="font-semibold text-amber-500/70">{delayed.length}</span>
+            <span className="text-muted-foreground/50">delayed</span>
+          </span>
+        </div>
+        <ChevronDown
+          className={cn(
+            'w-3.5 h-3.5 text-muted-foreground/30 transition-transform duration-150',
+            expanded && 'rotate-180',
+          )}
+        />
+      </button>
+
+      {/* ── Expanded lists ── */}
+      {expanded && (
+        <div className="border-t border-border/40">
+          {!hasAny ? (
+            <p className="px-3 py-3 text-xs text-muted-foreground/30 italic">No tasks recorded</p>
+          ) : (
+            <>
+              {/* Completed */}
+              {completed.length > 0 && (
+                <div>
+                  <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-green-500/60 bg-muted/10 border-b border-border/20">
+                    ✓ Completed
+                  </p>
+                  <div className="divide-y divide-border/20">
+                    {completed.map((t, i) => (
+                      <TaskSnapshotRow key={`c-${t.id ?? i}`} snapshot={t} accent="green" showTags={false} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Carried Forward */}
+              {carriedForward.length > 0 && (
+                <div className={cn(completed.length > 0 && 'border-t border-border/30')}>
+                  <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/40 bg-muted/10 border-b border-border/20">
+                    → Carried Forward
+                  </p>
+                  <div className="divide-y divide-border/20">
+                    {carriedForward.map((t, i) => (
+                      <TaskSnapshotRow key={`cf-${t.id ?? i}`} snapshot={t} accent="muted" showTags={false} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Delayed */}
+              {delayed.length > 0 && (
+                <div className={cn((completed.length > 0 || carriedForward.length > 0) && 'border-t border-border/30')}>
+                  <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-amber-500/60 bg-muted/10 border-b border-border/20">
+                    ⚠ Delayed
+                  </p>
+                  <div className="divide-y divide-border/20">
+                    {delayed.map((t, i) => (
+                      <TaskSnapshotRow key={`d-${t.id ?? i}`} snapshot={t} accent="muted" showTags={false} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -375,12 +444,12 @@ export default function WeekLogPage() {
         ) : (
           <div className="max-w-3xl mx-auto px-4 py-4 space-y-4">
 
-            {/* Task snapshot grid */}
-            <div className="grid grid-cols-3 gap-3">
-              <TaskListCard label="Completed"      tasks={selectedWeek.completed}       accent="green" />
-              <TaskListCard label="Carried Forward" tasks={selectedWeek.carriedForward} accent="muted" />
-              <TaskListCard label="Delayed"         tasks={selectedWeek.delayed}        accent="amber" />
-            </div>
+            {/* Task snapshot — collapsible, no tags */}
+            <TaskSnapshotSection
+              completed={selectedWeek.completed}
+              carriedForward={selectedWeek.carriedForward}
+              delayed={selectedWeek.delayed}
+            />
 
             {/* Next Week */}
             <NextWeekEditor
