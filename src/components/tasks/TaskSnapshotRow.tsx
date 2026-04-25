@@ -15,6 +15,7 @@
 
 import { cn } from '@/lib/utils'
 import { displayId } from '@/lib/taskConstants'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 
 /**
  * Minimal shape accepted — structurally satisfied by both TaskSnapshot and
@@ -84,12 +85,14 @@ export function TaskSnapshotRow({
 
       {/* Inline human ID chip parsed from title (week log context only) */}
       {titleChip && (
-        <span
-          className="font-mono text-[10px] text-muted-foreground/60 bg-muted/60 rounded px-1.5 py-0.5 shrink-0 tabular-nums hover:bg-muted transition-colors cursor-default"
-          title={snapshot.title}
-        >
-          {titleChip}
-        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="font-mono text-[10px] text-muted-foreground/60 bg-muted/60 rounded px-1.5 py-0.5 shrink-0 tabular-nums hover:bg-muted transition-colors cursor-default">
+              {titleChip}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{snapshot.title}</TooltipContent>
+        </Tooltip>
       )}
 
       {/* Title — remainder after ID extraction, or full title */}
