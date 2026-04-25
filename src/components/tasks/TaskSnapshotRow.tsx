@@ -3,6 +3,11 @@
  *
  * Renders an id chip, title, and tags. No click, no drag, no edit.
  * Mirrors the visual weight of TaskListRow but is purely presentational.
+ *
+ * Props:
+ *   showId   — show the ID chip column (default true). When true, null-ID rows
+ *              render an empty w-8 placeholder so all titles align.
+ *   showTags — show tag pills (default true). Pass false in Week Log context.
  */
 
 import { cn } from '@/lib/utils'
@@ -24,22 +29,34 @@ interface Props {
   /** Faint left accent colour for visual grouping (e.g. done vs not-doing) */
   accent?: 'green' | 'muted'
   /**
-   * Whether to render tags. Defaults true (Archive view).
+   * Whether to render the ID chip column. Defaults true (Archive view).
+   * When true, null-ID rows receive an empty w-8 placeholder so all titles
+   * align on the same column. Pass false in Week Log (narrative) context.
+   */
+  showId?: boolean
+  /**
+   * Whether to render tag pills. Defaults true (Archive view).
    * Pass false in Week Log context to reduce visual noise.
    */
   showTags?: boolean
 }
 
-export function TaskSnapshotRow({ snapshot, accent = 'muted', showTags = true }: Props) {
+export function TaskSnapshotRow({
+  snapshot,
+  accent   = 'muted',
+  showId   = true,
+  showTags = true,
+}: Props) {
   return (
     <div className={cn(
       'flex items-center gap-2.5 px-3 py-1.5 text-xs border-l-2',
       accent === 'green' ? 'border-l-green-500/40' : 'border-l-border',
     )}>
-      {/* ID chip */}
-      {snapshot.id && (
+
+      {/* ID chip — always reserves w-8 when showId=true so titles stay aligned */}
+      {showId && (
         <span className="font-mono text-[10px] text-muted-foreground/50 shrink-0 tabular-nums w-8">
-          {displayId(snapshot.id)}
+          {snapshot.id ? displayId(snapshot.id) : ''}
         </span>
       )}
 
@@ -66,6 +83,7 @@ export function TaskSnapshotRow({ snapshot, accent = 'muted', showTags = true }:
           )}
         </div>
       )}
+
     </div>
   )
 }

@@ -97,7 +97,7 @@ function TaskSnapshotSection({ completed, carriedForward, delayed }: TaskSnapsho
                   </p>
                   <div className="divide-y divide-border/20">
                     {completed.map((t, i) => (
-                      <TaskSnapshotRow key={`c-${t.id ?? i}`} snapshot={t} accent="green" showTags={false} />
+                      <TaskSnapshotRow key={`c-${t.id ?? i}`} snapshot={t} accent="green" showId={false} showTags={false} />
                     ))}
                   </div>
                 </div>
@@ -106,12 +106,12 @@ function TaskSnapshotSection({ completed, carriedForward, delayed }: TaskSnapsho
               {/* Carried Forward */}
               {carriedForward.length > 0 && (
                 <div className={cn(completed.length > 0 && 'border-t border-border/30')}>
-                  <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/40 bg-muted/10 border-b border-border/20">
+                  <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 bg-muted/10 border-b border-border/20">
                     → Carried Forward
                   </p>
                   <div className="divide-y divide-border/20">
                     {carriedForward.map((t, i) => (
-                      <TaskSnapshotRow key={`cf-${t.id ?? i}`} snapshot={t} accent="muted" showTags={false} />
+                      <TaskSnapshotRow key={`cf-${t.id ?? i}`} snapshot={t} accent="muted" showId={false} showTags={false} />
                     ))}
                   </div>
                 </div>
@@ -125,7 +125,7 @@ function TaskSnapshotSection({ completed, carriedForward, delayed }: TaskSnapsho
                   </p>
                   <div className="divide-y divide-border/20">
                     {delayed.map((t, i) => (
-                      <TaskSnapshotRow key={`d-${t.id ?? i}`} snapshot={t} accent="muted" showTags={false} />
+                      <TaskSnapshotRow key={`d-${t.id ?? i}`} snapshot={t} accent="muted" showId={false} showTags={false} />
                     ))}
                   </div>
                 </div>
