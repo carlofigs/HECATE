@@ -64,7 +64,7 @@ function TaskSnapshotSection({ completed, carriedForward, delayed }: TaskSnapsho
           <span className="text-border">·</span>
           {/* Carried */}
           <span className="flex items-center gap-1">
-            <span className="font-semibold text-foreground/70">{carriedForward.length}</span>
+            <span className="font-semibold text-sky-500/80">{carriedForward.length}</span>
             <span className="text-muted-foreground/50">carried</span>
           </span>
           <span className="text-border">·</span>
@@ -106,7 +106,7 @@ function TaskSnapshotSection({ completed, carriedForward, delayed }: TaskSnapsho
               {/* Carried Forward */}
               {carriedForward.length > 0 && (
                 <div className={cn(completed.length > 0 && 'border-t border-border/30')}>
-                  <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 bg-muted/10 border-b border-border/20">
+                  <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-sky-500/70 bg-muted/10 border-b border-border/20">
                     → Carried Forward
                   </p>
                   <div className="divide-y divide-border/20">
