@@ -85,20 +85,20 @@ export function TaskSnapshotRow({
 
       {/* Inline human ID chip parsed from title (week log context only) */}
       {titleChip && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="font-mono text-[10px] text-muted-foreground/60 bg-muted/60 rounded px-1.5 py-0.5 shrink-0 tabular-nums hover:bg-muted transition-colors cursor-default">
-              {titleChip}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>{snapshot.title}</TooltipContent>
-        </Tooltip>
+        <span className="font-mono text-[10px] text-muted-foreground/60 bg-muted/60 rounded px-1.5 py-0.5 shrink-0 tabular-nums hover:bg-muted transition-colors cursor-default">
+          {titleChip}
+        </span>
       )}
 
-      {/* Title — remainder after ID extraction, or full title */}
-      <span className="flex-1 min-w-0 text-foreground truncate">
-        {titleText}
-      </span>
+      {/* Title — tooltip reveals full text when truncated */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="flex-1 min-w-0 text-foreground truncate cursor-default">
+            {titleText}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>{snapshot.title}</TooltipContent>
+      </Tooltip>
 
       {/* Tags — omitted in Week Log context (showTags=false) */}
       {showTags && snapshot.tags.length > 0 && (
