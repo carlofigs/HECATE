@@ -22,6 +22,12 @@ interface Props {
   minEditHeight?: number
   /** When true the header is a collapse toggle; starts collapsed. */
   collapsible?: boolean
+  /**
+   * Tailwind text-colour class applied to the section label and chevron.
+   * Defaults to text-muted-foreground when omitted.
+   * e.g. 'text-sky-500/70', 'text-violet-400/70'
+   */
+  accent?: string
 }
 
 export function NarrativeCard({
@@ -30,6 +36,7 @@ export function NarrativeCard({
   onUpdate,
   minEditHeight = 120,
   collapsible   = false,
+  accent,
 }: Props) {
   const [collapsed, setCollapsed] = useState(collapsible)
 
@@ -69,11 +76,15 @@ export function NarrativeCard({
         >
           {collapsible && !editing && (
             <ChevronDown className={cn(
-              'w-3 h-3 text-muted-foreground/40 transition-transform duration-150 shrink-0',
+              'w-3 h-3 transition-transform duration-150 shrink-0 opacity-60',
+              accent ?? 'text-muted-foreground',
               collapsed && '-rotate-90',
             )} />
           )}
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
+          <h3 className={cn(
+            'text-[11px] font-semibold uppercase tracking-wider truncate',
+            accent ?? 'text-muted-foreground',
+          )}>
             {label}
           </h3>
         </div>

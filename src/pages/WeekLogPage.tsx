@@ -64,6 +64,12 @@ function TaskSnapshotSection({ completed, carriedForward, delayed }: TaskSnapsho
         aria-expanded={sectionOpen}
       >
         <div className="flex items-center gap-3 text-[11px]">
+          <ChevronDown
+            className={cn(
+              'w-3 h-3 text-muted-foreground/40 transition-transform duration-150 shrink-0',
+              sectionOpen && 'rotate-180',
+            )}
+          />
           <span className="flex items-center gap-1">
             <span className="font-semibold text-green-500/80">{completed.length}</span>
             <span className="text-muted-foreground/50">done</span>
@@ -79,12 +85,6 @@ function TaskSnapshotSection({ completed, carriedForward, delayed }: TaskSnapsho
             <span className="text-muted-foreground/50">delayed</span>
           </span>
         </div>
-        <ChevronDown
-          className={cn(
-            'w-3.5 h-3.5 text-muted-foreground/30 transition-transform duration-150',
-            sectionOpen && 'rotate-180',
-          )}
-        />
       </button>
 
       {/* ── Expanded lists ── */}
@@ -199,8 +199,9 @@ function NextWeekEditor({ items, onUpdate }: NextWeekEditorProps) {
     startEdit()
   }
 
-  // Render items as a markdown bullet list for display
-  const markdown = items.map(i => `- ${i}`).join('\n')
+  // Join items with double-newline so each renders as its own paragraph.
+  // Users can write markdown directly (- bullets, **bold**, etc.).
+  const markdown = items.join('\n\n')
 
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
@@ -220,7 +221,7 @@ function NextWeekEditor({ items, onUpdate }: NextWeekEditorProps) {
               collapsed && '-rotate-90',
             )} />
           )}
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-sky-500/70">
             Next Week
           </h3>
         </div>
@@ -287,6 +288,7 @@ function OneOnOneCard({ weekOf, person, content, onUpdate }: OneOnOneCardProps) 
       onUpdate={handleUpdate}
       minEditHeight={100}
       collapsible
+      accent="text-teal-400/70"
     />
   )
 }
@@ -527,18 +529,21 @@ export default function WeekLogPage() {
               onUpdate={onUpdateMeetings}
               minEditHeight={160}
               collapsible
+              accent="text-violet-400/70"
             />
             <NarrativeCard
               label="Decisions Made"
               content={selectedWeek.narrative.decisionsMade}
               onUpdate={onUpdateDecisions}
               collapsible
+              accent="text-emerald-500/70"
             />
             <NarrativeCard
               label="Frustrations"
               content={selectedWeek.narrative.frustrations}
               onUpdate={onUpdateFrustrations}
               collapsible
+              accent="text-rose-400/70"
             />
 
             {/* 1:1 Prep */}
