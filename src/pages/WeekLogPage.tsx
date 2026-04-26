@@ -20,7 +20,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CalendarDays, ChevronDown, Check, ChevronRight, Clock } from 'lucide-react'
+import { CalendarDays, ChevronDown, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useDataFile } from '@/hooks/useDataFile'
 import { useSettings } from '@/hooks/useSettings'
@@ -66,7 +66,7 @@ function TaskSnapshotSection({ completed, carriedForward, delayed }: TaskSnapsho
           <ChevronDown
             className={cn(
               'w-3 h-3 text-muted-foreground/40 transition-transform duration-150 shrink-0',
-              sectionOpen && 'rotate-180',
+              !sectionOpen && '-rotate-90',
             )}
           />
           <span className="flex items-center gap-1.5">
@@ -75,12 +75,12 @@ function TaskSnapshotSection({ completed, carriedForward, delayed }: TaskSnapsho
           </span>
           <span className="text-border">·</span>
           <span className="flex items-center gap-1.5">
-            <ChevronRight className="w-3 h-3 text-sky-500/70" />
+            <span className="text-sky-500/80 font-medium select-none">→</span>
             <span className="font-semibold text-sky-500/80">{carriedForward.length}</span>
           </span>
           <span className="text-border">·</span>
           <span className="flex items-center gap-1.5">
-            <Clock className="w-3 h-3 text-amber-500/60" />
+            <span className="text-amber-500/70 select-none">⚠</span>
             <span className="font-semibold text-amber-500/70">{delayed.length}</span>
           </span>
         </div>
