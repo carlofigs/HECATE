@@ -24,7 +24,7 @@ import remarkGfm from 'remark-gfm'
 import { useDataFile } from '@/hooks/useDataFile'
 import { cn } from '@/lib/utils'
 import { displayId } from '@/lib/taskConstants'
-import type { Project, OpenQuestion, Model, ProjectSection } from '@/lib/schemas'
+import type { Project, OpenQuestion, Model, ProjectSection, TimelineEntry, TimelineStatus } from '@/lib/schemas'
 
 // ─── Status config ────────────────────────────────────────────────────────────
 
@@ -332,6 +332,180 @@ function ProjectSectionCard({ section }: { section: ProjectSection }) {
   )
 }
 
+// ─── Roadmap (phase timeline + Gantt) ────────────────────────────────────────
+
+const TIMELINE_CFG: Record<TimelineStatus, {
+  dot:  string
+  fill: string
+  bar:  string
+  text: string
+}> = {
+  completed: { dot: 'bg-green-500 text-white',            fill: 'bg-green-500',    bar: 'bg-green-500/70',  text: 'text-green-600 dark:text-green-400' },
+  active:    { dot: 'bg-amber-400 text-white',            fill: 'bg-amber-400/60', bar: 'bg-amber-400',     text: 'text-amber-600 dark:text-amber-400' },
+  pending:   { dot: 'bg-muted text-muted-foreground',     fill: 'bg-transparent',  bar: 'bg-muted/40',      text: 'text-muted-foreground' },
+  deferred:  { dot: 'bg-muted/60 text-muted-foreground/60', fill: 'bg-transparent', bar: 'bg-muted/20',     text: 'text-muted-foreground/50' },
+}
+
+function toMs(s: string | null): number | null {
+  if (!s) return null
+  const d = new Date(s)
+  return isNaN(d.getTime()) ? null : d.getTime()
+}
+
+function fmtShort(ms: number) {
+  return new Date(ms).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
+}
+
+function RoadmapSection({ timeline }: { timeline: TimelineEntry[] }) {
+  const [collapsed, setCollapsed] = useState(false)
+  if (timeline.length === 0) return null
+
+  // Gantt: only entries with both start + end dates
+  const dated = timeline
+    .map((t, i) => ({ ...t, i, startMs: toMs(t.start), endMs: toMs(t.end) }))
+    .filter((t): t is typeof t & { startMs: number; endMs: number } =>
+      t.startMs !== null && t.endMs !== null,
+    )
+
+  const allMs   = dated.flatMap(t => [t.startMs, t.endMs])
+  const minMs   = allMs.length ? Math.min(...allMs) : 0
+  const maxMs   = allMs.length ? Math.max(...allMs) : 1
+  const spanMs  = maxMs - minMs || 1
+  const todayMs = Date.now()
+  const todayPct = Math.max(0, Math.min(100, ((todayMs - minMs) / spanMs) * 100))
+
+  return (
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <button
+        onClick={() => setCollapsed(c => !c)}
+        className="w-full flex items-center gap-2 px-3 py-2 bg-muted/10 hover:bg-muted/20 transition-colors"
+      >
+        <ChevronDown className={cn(
+          'w-3 h-3 text-muted-foreground/40 transition-transform duration-150 shrink-0',
+          collapsed && '-rotate-90',
+        )} />
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex-1 text-left">
+          Roadmap
+        </span>
+        <span className="text-[10px] text-muted-foreground/40">{timeline.length} phases</span>
+      </button>
+
+      {!collapsed && (
+        <div className="p-3 border-t border-border/40">
+          <div className="grid gap-x-4 gap-y-0" style={{ gridTemplateColumns: '190px 1fr' }}>
+
+            {/* ── Left: phase timeline ── */}
+            <div className="flex flex-col">
+              {timeline.map((entry, idx) => {
+                const cfg    = TIMELINE_CFG[entry.status]
+                const isLast = idx === timeline.length - 1
+                const fillPct = entry.status === 'completed' ? 100
+                              : entry.status === 'active'    ? 55
+                              : 0
+
+                return (
+                  <div
+                    key={idx}
+                    className="grid gap-x-2"
+                    style={{ gridTemplateColumns: '20px 1fr', paddingBottom: isLast ? 0 : 10 }}
+                  >
+                    {/* Dot + connector */}
+                    <div className="flex flex-col items-center">
+                      <div className={cn(
+                        'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0',
+                        cfg.dot,
+                      )}>
+                        {idx + 1}
+                      </div>
+                      {!isLast && <div className="w-px flex-1 bg-border/40 mt-0.5" />}
+                    </div>
+                    {/* Name + mini progress bar */}
+                    <div className="pb-0.5">
+                      <p className={cn('text-[11px] font-medium leading-snug', cfg.text)}>
+                        {entry.phase}
+                      </p>
+                      <div className="mt-1 h-1 rounded-full bg-muted/30 overflow-hidden">
+                        <div
+                          className={cn('h-full rounded-full', cfg.fill)}
+                          style={{ width: `${fillPct}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* ── Right: Gantt ── */}
+            {dated.length > 0 && (
+              <div className="flex flex-col gap-1.5 min-w-0">
+                {/* Axis */}
+                <div className="flex justify-between text-[10px] text-muted-foreground/40 pb-1 border-b border-border/20 mb-0.5">
+                  <span>{fmtShort(minMs)}</span>
+                  <span>{fmtShort(minMs + spanMs / 2)}</span>
+                  <span>{fmtShort(maxMs)}</span>
+                </div>
+
+                {/* One row per timeline entry */}
+                {timeline.map((entry, idx) => {
+                  const sMs = toMs(entry.start)
+                  const eMs = toMs(entry.end)
+                  const cfg = TIMELINE_CFG[entry.status]
+
+                  if (!sMs || !eMs) {
+                    // Deferred / no date → dashed placeholder full-width
+                    return (
+                      <div key={idx} className="relative h-[18px]">
+                        <div className="absolute inset-y-1 inset-x-0 rounded border border-dashed border-border/40 bg-muted/10" />
+                      </div>
+                    )
+                  }
+
+                  const left  = ((sMs - minMs) / spanMs * 100).toFixed(1)
+                  const width = Math.max(1.5, (eMs - sMs) / spanMs * 100).toFixed(1)
+
+                  return (
+                    <div key={idx} className="relative h-[18px]">
+                      {/* Bar */}
+                      <div
+                        className={cn('absolute top-0.5 bottom-0.5 rounded flex items-center px-1.5 overflow-hidden', cfg.bar)}
+                        style={{ left: `${left}%`, width: `${width}%`, minWidth: 6 }}
+                      >
+                        <span className="text-[10px] font-medium text-foreground/70 truncate whitespace-nowrap leading-none">
+                          {entry.phase}
+                        </span>
+                      </div>
+                      {/* Today line — shown on every row but sits on top */}
+                      {todayPct > 0 && todayPct < 100 && (
+                        <div
+                          className="absolute top-0 bottom-0 w-px bg-amber-400/70 z-10 pointer-events-none"
+                          style={{ left: `${todayPct.toFixed(1)}%` }}
+                        />
+                      )}
+                    </div>
+                  )
+                })}
+
+                {/* Today label */}
+                {todayPct > 0 && todayPct < 100 && (
+                  <div className="relative h-3">
+                    <span
+                      className="absolute text-[9px] text-amber-500/80 -translate-x-1/2 font-medium"
+                      style={{ left: `${todayPct.toFixed(1)}%` }}
+                    >
+                      today
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Project Detail ───────────────────────────────────────────────────────────
 
 function ProjectDetail({ project }: { project: Project }) {
@@ -392,6 +566,11 @@ function ProjectDetail({ project }: { project: Project }) {
               </div>
             )}
           </div>
+        )}
+
+        {/* ── Roadmap ── */}
+        {project.timeline.length > 0 && (
+          <RoadmapSection timeline={project.timeline} />
         )}
 
         {/* ── Linked Tasks ── */}
