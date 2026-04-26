@@ -19,6 +19,7 @@ import {
   AlertCircle, Check, CheckCircle2, ChevronDown, ChevronRight,
   Clock, Search, X,
 } from 'lucide-react'
+import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useDataFile } from '@/hooks/useDataFile'
@@ -339,11 +340,12 @@ const TIMELINE_CFG: Record<TimelineStatus, {
   fill: string
   bar:  string
   text: string
+  label: string
 }> = {
-  completed: { dot: 'bg-green-500 text-white',            fill: 'bg-green-500',    bar: 'bg-green-500/70',  text: 'text-green-600 dark:text-green-400' },
-  active:    { dot: 'bg-amber-400 text-white',            fill: 'bg-amber-400/60', bar: 'bg-amber-400',     text: 'text-amber-600 dark:text-amber-400' },
-  pending:   { dot: 'bg-muted text-muted-foreground',     fill: 'bg-transparent',  bar: 'bg-muted/40',      text: 'text-muted-foreground' },
-  deferred:  { dot: 'bg-muted/60 text-muted-foreground/60', fill: 'bg-transparent', bar: 'bg-muted/20',     text: 'text-muted-foreground/50' },
+  completed: { dot: 'bg-green-500 text-white',              fill: 'bg-green-500',    bar: 'bg-green-500/70',  text: 'text-green-600 dark:text-green-400',    label: 'Complete'    },
+  active:    { dot: 'bg-amber-400 text-white',              fill: 'bg-amber-400/60', bar: 'bg-amber-400',     text: 'text-amber-600 dark:text-amber-400',    label: 'In Progress' },
+  pending:   { dot: 'bg-muted text-muted-foreground',       fill: 'bg-transparent',  bar: 'bg-muted/40',      text: 'text-muted-foreground',                 label: 'Pending'     },
+  deferred:  { dot: 'bg-muted/60 text-muted-foreground/60', fill: 'bg-transparent',  bar: 'bg-muted/20',      text: 'text-muted-foreground/50',              label: 'Deferred'    },
 }
 
 function toMs(s: string | null): number | null {
@@ -356,26 +358,36 @@ function fmtShort(ms: number) {
   return new Date(ms).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
 }
 
+function fmtDuration(startMs: number, endMs: number) {
+  const days = Math.round((endMs - startMs) / 86_400_000)
+  return days === 1 ? '1d' : `${days}d`
+}
+
 function RoadmapSection({ timeline }: { timeline: TimelineEntry[] }) {
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed,     setCollapsed]     = useState(false)
+  const [expandedPhase, setExpandedPhase] = useState<number | null>(null)
+
   if (timeline.length === 0) return null
 
-  // Gantt: only entries with both start + end dates
+  // Gantt bounds — only entries with both start + end dates
   const dated = timeline
     .map((t, i) => ({ ...t, i, startMs: toMs(t.start), endMs: toMs(t.end) }))
     .filter((t): t is typeof t & { startMs: number; endMs: number } =>
       t.startMs !== null && t.endMs !== null,
     )
 
-  const allMs   = dated.flatMap(t => [t.startMs, t.endMs])
-  const minMs   = allMs.length ? Math.min(...allMs) : 0
-  const maxMs   = allMs.length ? Math.max(...allMs) : 1
-  const spanMs  = maxMs - minMs || 1
-  const todayMs = Date.now()
+  const allMs    = dated.flatMap(t => [t.startMs, t.endMs])
+  const minMs    = allMs.length ? Math.min(...allMs) : 0
+  const maxMs    = allMs.length ? Math.max(...allMs) : 1
+  const spanMs   = maxMs - minMs || 1
+  const todayMs  = Date.now()
   const todayPct = Math.max(0, Math.min(100, ((todayMs - minMs) / spanMs) * 100))
+  const showToday = todayPct > 0 && todayPct < 100
 
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
+
+      {/* ── Header ── */}
       <button
         onClick={() => setCollapsed(c => !c)}
         className="w-full flex items-center gap-2 px-3 py-2 bg-muted/10 hover:bg-muted/20 transition-colors"
@@ -392,22 +404,24 @@ function RoadmapSection({ timeline }: { timeline: TimelineEntry[] }) {
 
       {!collapsed && (
         <div className="p-3 border-t border-border/40">
-          <div className="grid gap-x-4 gap-y-0" style={{ gridTemplateColumns: '190px 1fr' }}>
+          <div className="grid gap-x-5" style={{ gridTemplateColumns: '190px 1fr' }}>
 
-            {/* ── Left: phase timeline ── */}
+            {/* ── Left: clickable phase timeline ── */}
             <div className="flex flex-col">
               {timeline.map((entry, idx) => {
-                const cfg    = TIMELINE_CFG[entry.status]
-                const isLast = idx === timeline.length - 1
-                const fillPct = entry.status === 'completed' ? 100
-                              : entry.status === 'active'    ? 55
-                              : 0
+                const cfg      = TIMELINE_CFG[entry.status]
+                const isLast   = idx === timeline.length - 1
+                const expanded = expandedPhase === idx
+                const sMs      = toMs(entry.start)
+                const eMs      = toMs(entry.end)
+                const fillPct  = entry.status === 'completed' ? 100
+                               : entry.status === 'active'    ? 55 : 0
 
                 return (
                   <div
                     key={idx}
                     className="grid gap-x-2"
-                    style={{ gridTemplateColumns: '20px 1fr', paddingBottom: isLast ? 0 : 10 }}
+                    style={{ gridTemplateColumns: '20px 1fr', paddingBottom: isLast ? 0 : 8 }}
                   >
                     {/* Dot + connector */}
                     <div className="flex flex-col items-center">
@@ -419,44 +433,91 @@ function RoadmapSection({ timeline }: { timeline: TimelineEntry[] }) {
                       </div>
                       {!isLast && <div className="w-px flex-1 bg-border/40 mt-0.5" />}
                     </div>
-                    {/* Name + mini progress bar */}
-                    <div className="pb-0.5">
-                      <p className={cn('text-[11px] font-medium leading-snug', cfg.text)}>
-                        {entry.phase}
-                      </p>
+
+                    {/* Clickable body */}
+                    <div
+                      className="pb-0.5 cursor-pointer select-none"
+                      onClick={() => setExpandedPhase(i => i === idx ? null : idx)}
+                    >
+                      <div className="flex items-center gap-1 group/ph">
+                        <p className={cn('text-[11px] font-medium leading-snug flex-1', cfg.text)}>
+                          {entry.phase}
+                        </p>
+                        <ChevronRight className={cn(
+                          'w-2.5 h-2.5 text-muted-foreground/25 shrink-0 transition-transform duration-150',
+                          expanded && 'rotate-90',
+                        )} />
+                      </div>
+
+                      {/* Mini progress bar */}
                       <div className="mt-1 h-1 rounded-full bg-muted/30 overflow-hidden">
                         <div
                           className={cn('h-full rounded-full', cfg.fill)}
                           style={{ width: `${fillPct}%` }}
                         />
                       </div>
+
+                      {/* Expanded: dates + duration */}
+                      {expanded && (
+                        <div className="mt-1.5 space-y-0.5">
+                          {sMs && eMs && (
+                            <p className="text-[10px] text-muted-foreground/60">
+                              {fmtShort(sMs)} → {fmtShort(eMs)}
+                              <span className="ml-1.5 text-muted-foreground/40">· {fmtDuration(sMs, eMs)}</span>
+                            </p>
+                          )}
+                          {sMs && !eMs && (
+                            <p className="text-[10px] text-muted-foreground/60">{fmtShort(sMs)} → TBD</p>
+                          )}
+                          <p className={cn('text-[10px] font-medium', cfg.text)}>{cfg.label}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )
               })}
             </div>
 
-            {/* ── Right: Gantt ── */}
+            {/* ── Right: Gantt with tooltips ── */}
             {dated.length > 0 && (
-              <div className="flex flex-col gap-1.5 min-w-0">
+              <div className="flex flex-col gap-[3px] min-w-0">
+
+                {/* Today date flag above axis */}
+                <div className="relative h-4">
+                  {showToday && (
+                    <span
+                      className="absolute text-[9px] text-amber-500 font-medium -translate-x-1/2 leading-none"
+                      style={{ left: `${todayPct.toFixed(1)}%` }}
+                    >
+                      {fmtShort(todayMs)}
+                    </span>
+                  )}
+                </div>
+
                 {/* Axis */}
-                <div className="flex justify-between text-[10px] text-muted-foreground/40 pb-1 border-b border-border/20 mb-0.5">
+                <div className="flex justify-between text-[10px] text-muted-foreground/40 pb-1 border-b border-border/20">
                   <span>{fmtShort(minMs)}</span>
                   <span>{fmtShort(minMs + spanMs / 2)}</span>
                   <span>{fmtShort(maxMs)}</span>
                 </div>
 
-                {/* One row per timeline entry */}
+                {/* One Gantt row per timeline entry */}
                 {timeline.map((entry, idx) => {
                   const sMs = toMs(entry.start)
                   const eMs = toMs(entry.end)
                   const cfg = TIMELINE_CFG[entry.status]
 
+                  // No end date → dashed placeholder
                   if (!sMs || !eMs) {
-                    // Deferred / no date → dashed placeholder full-width
                     return (
                       <div key={idx} className="relative h-[18px]">
                         <div className="absolute inset-y-1 inset-x-0 rounded border border-dashed border-border/40 bg-muted/10" />
+                        {showToday && (
+                          <div
+                            className="absolute top-0 bottom-0 w-px bg-amber-400/60 z-10 pointer-events-none"
+                            style={{ left: `${todayPct.toFixed(1)}%` }}
+                          />
+                        )}
                       </div>
                     )
                   }
@@ -465,38 +526,52 @@ function RoadmapSection({ timeline }: { timeline: TimelineEntry[] }) {
                   const width = Math.max(1.5, (eMs - sMs) / spanMs * 100).toFixed(1)
 
                   return (
-                    <div key={idx} className="relative h-[18px]">
-                      {/* Bar */}
-                      <div
-                        className={cn('absolute top-0.5 bottom-0.5 rounded flex items-center px-1.5 overflow-hidden', cfg.bar)}
-                        style={{ left: `${left}%`, width: `${width}%`, minWidth: 6 }}
-                      >
-                        <span className="text-[10px] font-medium text-foreground/70 truncate whitespace-nowrap leading-none">
-                          {entry.phase}
-                        </span>
+                    <TooltipPrimitive.Root key={idx} delayDuration={120}>
+                      <div className="relative h-[18px]">
+                        <TooltipPrimitive.Trigger asChild>
+                          <div
+                            className={cn(
+                              'absolute top-0.5 bottom-0.5 rounded flex items-center px-1.5 overflow-hidden cursor-default',
+                              cfg.bar,
+                            )}
+                            style={{ left: `${left}%`, width: `${width}%`, minWidth: 6 }}
+                          >
+                            <span className="text-[10px] font-medium text-foreground/70 truncate whitespace-nowrap leading-none">
+                              {entry.phase}
+                            </span>
+                          </div>
+                        </TooltipPrimitive.Trigger>
+
+                        {showToday && (
+                          <div
+                            className="absolute top-0 bottom-0 w-px bg-amber-400/60 z-10 pointer-events-none"
+                            style={{ left: `${todayPct.toFixed(1)}%` }}
+                          />
+                        )}
                       </div>
-                      {/* Today line — shown on every row but sits on top */}
-                      {todayPct > 0 && todayPct < 100 && (
-                        <div
-                          className="absolute top-0 bottom-0 w-px bg-amber-400/70 z-10 pointer-events-none"
-                          style={{ left: `${todayPct.toFixed(1)}%` }}
-                        />
-                      )}
-                    </div>
+
+                      <TooltipPrimitive.Portal>
+                        <TooltipPrimitive.Content
+                          sideOffset={6}
+                          collisionPadding={12}
+                          className={cn(
+                            'z-50 rounded-lg border border-border bg-card shadow-xl px-3 py-2 space-y-0.5',
+                            'animate-in fade-in-0 zoom-in-95',
+                            'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
+                            'data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2',
+                          )}
+                        >
+                          <p className="text-xs font-medium text-foreground">{entry.phase}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {fmtShort(sMs)} → {fmtShort(eMs)}
+                            <span className="ml-1.5 text-muted-foreground/60">· {fmtDuration(sMs, eMs)}</span>
+                          </p>
+                          <p className={cn('text-[11px] font-medium', cfg.text)}>{cfg.label}</p>
+                        </TooltipPrimitive.Content>
+                      </TooltipPrimitive.Portal>
+                    </TooltipPrimitive.Root>
                   )
                 })}
-
-                {/* Today label */}
-                {todayPct > 0 && todayPct < 100 && (
-                  <div className="relative h-3">
-                    <span
-                      className="absolute text-[9px] text-amber-500/80 -translate-x-1/2 font-medium"
-                      style={{ left: `${todayPct.toFixed(1)}%` }}
-                    >
-                      today
-                    </span>
-                  </div>
-                )}
               </div>
             )}
           </div>
