@@ -62,8 +62,7 @@ export function NarrativeCard({
 
       {/* ── Header ── */}
       <div className={cn(
-        'flex items-center justify-between px-3 py-2',
-        accent ?? 'bg-muted/20',
+        'flex items-center justify-between px-3 py-2 bg-muted/10',
         !collapsed && 'border-b border-border/40',
       )}>
 
@@ -77,11 +76,15 @@ export function NarrativeCard({
         >
           {collapsible && !editing && (
             <ChevronDown className={cn(
-              'w-3 h-3 text-muted-foreground/40 transition-transform duration-150 shrink-0',
+              'w-3 h-3 transition-transform duration-150 shrink-0',
+              accent ?? 'text-muted-foreground/40',
               collapsed && '-rotate-90',
             )} />
           )}
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
+          <h3 className={cn(
+            'text-[11px] font-semibold uppercase tracking-wider truncate',
+            accent ?? 'text-muted-foreground',
+          )}>
             {label}
           </h3>
         </div>

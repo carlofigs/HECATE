@@ -20,15 +20,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CalendarDays, ChevronDown } from 'lucide-react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+import { CalendarDays, ChevronDown, Check, ChevronRight, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useDataFile } from '@/hooks/useDataFile'
 import { useSettings } from '@/hooks/useSettings'
 import { useInlineEdit } from '@/hooks/useInlineEdit'
 import { TaskSnapshotRow } from '@/components/tasks/TaskSnapshotRow'
 import { NarrativeCard } from '@/components/weeklog/NarrativeCard'
+import { MeetingsCard } from '@/components/weeklog/MeetingsCard'
 import { GenerateWeekDialog } from '@/components/weeklog/GenerateWeekDialog'
 import { cn, formatWeekRange, currentMondayISO, nowISO } from '@/lib/utils'
 import type { WeekEntry, TaskSnapshot } from '@/lib/schemas'
@@ -70,19 +69,19 @@ function TaskSnapshotSection({ completed, carriedForward, delayed }: TaskSnapsho
               sectionOpen && 'rotate-180',
             )}
           />
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1.5">
+            <Check className="w-3 h-3 text-green-500/70" />
             <span className="font-semibold text-green-500/80">{completed.length}</span>
-            <span className="text-muted-foreground/50">done</span>
           </span>
           <span className="text-border">·</span>
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1.5">
+            <ChevronRight className="w-3 h-3 text-sky-500/70" />
             <span className="font-semibold text-sky-500/80">{carriedForward.length}</span>
-            <span className="text-muted-foreground/50">carried</span>
           </span>
           <span className="text-border">·</span>
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1.5">
+            <Clock className="w-3 h-3 text-amber-500/60" />
             <span className="font-semibold text-amber-500/70">{delayed.length}</span>
-            <span className="text-muted-foreground/50">delayed</span>
           </span>
         </div>
       </button>
@@ -199,16 +198,12 @@ function NextWeekEditor({ items, onUpdate }: NextWeekEditorProps) {
     startEdit()
   }
 
-  // Join items with double-newline so each renders as its own paragraph.
-  // Users can write markdown directly (- bullets, **bold**, etc.).
-  const markdown = items.join('\n\n')
-
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
 
       {/* Header */}
       <div className={cn(
-        'flex items-center justify-between px-3 py-2 bg-sky-500/15',
+        'flex items-center justify-between px-3 py-2 bg-muted/10',
         !collapsed && 'border-b border-border/40',
       )}>
         <div
@@ -217,11 +212,11 @@ function NextWeekEditor({ items, onUpdate }: NextWeekEditorProps) {
         >
           {!editing && (
             <ChevronDown className={cn(
-              'w-3 h-3 text-muted-foreground/40 transition-transform duration-150 shrink-0',
+              'w-3 h-3 text-sky-500/70 transition-transform duration-150 shrink-0',
               collapsed && '-rotate-90',
             )} />
           )}
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-sky-500/70">
             Next Week
           </h3>
         </div>
@@ -253,9 +248,14 @@ function NextWeekEditor({ items, onUpdate }: NextWeekEditorProps) {
             {items.length === 0 ? (
               <p className="text-xs text-muted-foreground/30 italic">Empty — click to add next week's priorities</p>
             ) : (
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
-              </div>
+              <ul className="space-y-1.5">
+                {items.map((item, i) => (
+                  <li key={i} className="flex items-start gap-2 text-xs text-foreground">
+                    <span className="text-sky-400/60 shrink-0 mt-px select-none">→</span>
+                    <span className="leading-relaxed">{item.replace(/\*\*/g, '').trim()}</span>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         )
@@ -288,7 +288,7 @@ function OneOnOneCard({ weekOf, person, content, onUpdate }: OneOnOneCardProps) 
       onUpdate={handleUpdate}
       minEditHeight={100}
       collapsible
-      accent="bg-teal-400/15"
+      accent="text-teal-400/70"
     />
   )
 }
@@ -523,27 +523,23 @@ export default function WeekLogPage() {
             />
 
             {/* Narrative sections */}
-            <NarrativeCard
-              label="Meetings & Discussions"
+            <MeetingsCard
               content={selectedWeek.narrative.meetingsAndDiscussions}
               onUpdate={onUpdateMeetings}
-              minEditHeight={160}
-              collapsible
-              accent="bg-violet-400/15"
             />
             <NarrativeCard
               label="Decisions Made"
               content={selectedWeek.narrative.decisionsMade}
               onUpdate={onUpdateDecisions}
               collapsible
-              accent="bg-emerald-500/15"
+              accent="text-emerald-500/70"
             />
             <NarrativeCard
               label="Frustrations"
               content={selectedWeek.narrative.frustrations}
               onUpdate={onUpdateFrustrations}
               collapsible
-              accent="bg-rose-400/15"
+              accent="text-rose-400/70"
             />
 
             {/* 1:1 Prep */}
