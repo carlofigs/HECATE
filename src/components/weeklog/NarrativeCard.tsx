@@ -23,9 +23,9 @@ interface Props {
   /** When true the header is a collapse toggle; starts collapsed. */
   collapsible?: boolean
   /**
-   * Tailwind text-colour class applied to the section label and chevron.
-   * Defaults to text-muted-foreground when omitted.
-   * e.g. 'text-sky-500/70', 'text-violet-400/70'
+   * Tailwind bg-colour class applied to the header background.
+   * Replaces the default bg-muted/20 when provided.
+   * e.g. 'bg-violet-400/15', 'bg-sky-500/15'
    */
   accent?: string
 }
@@ -62,7 +62,8 @@ export function NarrativeCard({
 
       {/* ── Header ── */}
       <div className={cn(
-        'flex items-center justify-between px-3 py-2 bg-muted/20',
+        'flex items-center justify-between px-3 py-2',
+        accent ?? 'bg-muted/20',
         !collapsed && 'border-b border-border/40',
       )}>
 
@@ -76,15 +77,11 @@ export function NarrativeCard({
         >
           {collapsible && !editing && (
             <ChevronDown className={cn(
-              'w-3 h-3 transition-transform duration-150 shrink-0 opacity-60',
-              accent ?? 'text-muted-foreground',
+              'w-3 h-3 text-muted-foreground/40 transition-transform duration-150 shrink-0',
               collapsed && '-rotate-90',
             )} />
           )}
-          <h3 className={cn(
-            'text-[11px] font-semibold uppercase tracking-wider truncate',
-            accent ?? 'text-muted-foreground',
-          )}>
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
             {label}
           </h3>
         </div>

@@ -208,7 +208,7 @@ function NextWeekEditor({ items, onUpdate }: NextWeekEditorProps) {
 
       {/* Header */}
       <div className={cn(
-        'flex items-center justify-between px-3 py-2 bg-muted/20',
+        'flex items-center justify-between px-3 py-2 bg-sky-500/15',
         !collapsed && 'border-b border-border/40',
       )}>
         <div
@@ -221,7 +221,7 @@ function NextWeekEditor({ items, onUpdate }: NextWeekEditorProps) {
               collapsed && '-rotate-90',
             )} />
           )}
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-sky-500/70">
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             Next Week
           </h3>
         </div>
@@ -288,7 +288,7 @@ function OneOnOneCard({ weekOf, person, content, onUpdate }: OneOnOneCardProps) 
       onUpdate={handleUpdate}
       minEditHeight={100}
       collapsible
-      accent="text-teal-400/70"
+      accent="bg-teal-400/15"
     />
   )
 }
@@ -529,21 +529,21 @@ export default function WeekLogPage() {
               onUpdate={onUpdateMeetings}
               minEditHeight={160}
               collapsible
-              accent="text-violet-400/70"
+              accent="bg-violet-400/15"
             />
             <NarrativeCard
               label="Decisions Made"
               content={selectedWeek.narrative.decisionsMade}
               onUpdate={onUpdateDecisions}
               collapsible
-              accent="text-emerald-500/70"
+              accent="bg-emerald-500/15"
             />
             <NarrativeCard
               label="Frustrations"
               content={selectedWeek.narrative.frustrations}
               onUpdate={onUpdateFrustrations}
               collapsible
-              accent="text-rose-400/70"
+              accent="bg-rose-400/15"
             />
 
             {/* 1:1 Prep */}
