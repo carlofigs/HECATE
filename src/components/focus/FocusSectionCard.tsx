@@ -19,6 +19,8 @@ import { rehypeTaskIds } from '@/lib/rehypeTaskIds'
 import { TaskIdChip } from '@/components/tasks/TaskIdChip'
 import { WeekCalendarView } from '@/components/focus/WeekCalendarView'
 import { ThisWeekView } from '@/components/focus/ThisWeekView'
+import { WaitingOnView } from '@/components/focus/WaitingOnView'
+import { KeepInMindView } from '@/components/focus/KeepInMindView'
 import { Pencil, Trash2, GripVertical, ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn, paletteToken, accentHeaderStyle, accentTextStyle } from '@/lib/utils'
@@ -186,6 +188,10 @@ export function FocusSectionCard({ section, colorIndex, weekOf, onUpdate, onDele
                   <WeekCalendarView content={section.content} weekOf={weekOf} onEdit={startEdit} />
                 ) : section.id === 'this-week' ? (
                   <ThisWeekView content={section.content} onEdit={startEdit} />
+                ) : section.id === 'waiting-on' ? (
+                  <WaitingOnView content={section.content} onEdit={startEdit} />
+                ) : section.id === 'keep-in-mind' ? (
+                  <KeepInMindView content={section.content} onEdit={startEdit} />
                 ) : (
                 <div
                   className="prose prose-sm dark:prose-invert max-w-none cursor-text"

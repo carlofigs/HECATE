@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import {
   Focus,
   Kanban,
@@ -12,6 +12,7 @@ import {
   Settings,
   MoreHorizontal,
   X,
+  Command,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SyncStatus } from '@/components/layout/SyncStatus'
@@ -33,9 +34,119 @@ const BOTTOM_NAV_PRIMARY = NAV_ITEMS.slice(0, 5)
 // Items that overflow into "More" on mobile
 const MORE_ITEMS = NAV_ITEMS.slice(5)
 
+// ─── Keyboard shortcuts overlay ───────────────────────────────────────────────
+
+const SHORTCUT_SECTIONS = [
+  {
+    heading: 'Navigation (press G, then…)',
+    rows: [
+      ['G  F', 'Focus'],
+      ['G  T', 'Tasks'],
+      ['G  P', 'Projects'],
+      ['G  W', 'Week Log'],
+      ['G  A', 'Archive'],
+      ['G  M', 'Memory'],
+    ],
+  },
+  {
+    heading: 'Tasks',
+    rows: [
+      ['N', 'New task (in first active column)'],
+    ],
+  },
+  {
+    heading: 'Global',
+    rows: [
+      ['⌘ S  /  Ctrl S', 'Save all dirty files immediately'],
+      ['?', 'Toggle this shortcuts overlay'],
+    ],
+  },
+]
+
+function ShortcutsOverlay({ onClose }: { onClose: () => void }) {
+  // Close on Escape
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape' || e.key === '?') { e.preventDefault(); onClose() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-50 bg-background/70 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      {/* Panel */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div className="pointer-events-auto w-full max-w-sm rounded-xl border border-border bg-card shadow-2xl overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <div className="flex items-center gap-2">
+              <Command className="w-3.5 h-3.5 text-muted-foreground/60" />
+              <span className="text-xs font-semibold text-foreground">Keyboard shortcuts</span>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          {/* Shortcut sections */}
+          <div className="px-4 py-3 space-y-4 max-h-[70vh] overflow-y-auto">
+            {SHORTCUT_SECTIONS.map(sec => (
+              <div key={sec.heading}>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/40 mb-2">
+                  {sec.heading}
+                </p>
+                <div className="space-y-1">
+                  {sec.rows.map(([keys, desc]) => (
+                    <div key={keys} className="flex items-center justify-between gap-4">
+                      <span className="text-[11px] text-muted-foreground">{desc}</span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {keys.split(/\s{2,}/).map(k => (
+                          <kbd
+                            key={k}
+                            className="px-1.5 py-0.5 rounded border border-border bg-muted text-[10px] font-mono text-foreground"
+                          >
+                            {k}
+                          </kbd>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="px-4 py-2.5 border-t border-border">
+            <p className="text-[10px] text-muted-foreground/40">Press <kbd className="px-1 rounded border border-border bg-muted text-[9px] font-mono">?</kbd> or <kbd className="px-1 rounded border border-border bg-muted text-[9px] font-mono">Esc</kbd> to close</p>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ─── Nav key → route mapping ──────────────────────────────────────────────────
+
+const G_NAV: Record<string, string> = {
+  f: '/focus', t: '/tasks', p: '/projects',
+  w: '/weeklog', a: '/archive', m: '/memory',
+}
+
+// ─── Shell ────────────────────────────────────────────────────────────────────
+
 export default function AppShell() {
   const navigate  = useNavigate()
   const [moreOpen, setMoreOpen] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const gMode   = useRef(false)
+  const gTimer  = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { settings, updateSettings, saveSettings } = useSettings()
   const { saveFile, tasks, focus, projects, weekly_log, archive, memory } = useDataStore()
 
@@ -45,9 +156,14 @@ export default function AppShell() {
     if (!creds) navigate('/setup', { replace: true })
   }, [navigate])
 
-  // Cmd+S / Ctrl+S — immediately flush all dirty files
+  // Global keyboard shortcuts
   useEffect(() => {
     async function onKeyDown(e: KeyboardEvent) {
+      // Ignore when typing in inputs
+      const tag = (e.target as HTMLElement).tagName
+      const isTyping = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable
+
+      // Cmd+S / Ctrl+S — save all dirty files (allowed even while typing)
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault()
         const dirty = (
@@ -55,11 +171,41 @@ export default function AppShell() {
            ['weekly_log', weekly_log], ['archive', archive], ['memory', memory]] as const
         ).filter(([, s]) => s.dirty).map(([name]) => name)
         await Promise.all(dirty.map(name => saveFile(name)))
+        return
+      }
+
+      if (isTyping || e.metaKey || e.ctrlKey || e.altKey) return
+
+      // ? — toggle shortcuts overlay
+      if (e.key === '?') {
+        e.preventDefault()
+        setShortcutsOpen(v => !v)
+        return
+      }
+
+      // G-prefix navigation: press G, then a letter within 1.5s
+      if (e.key === 'g' || e.key === 'G') {
+        e.preventDefault()
+        gMode.current = true
+        if (gTimer.current) clearTimeout(gTimer.current)
+        gTimer.current = setTimeout(() => { gMode.current = false }, 1500)
+        return
+      }
+
+      if (gMode.current) {
+        const dest = G_NAV[e.key.toLowerCase()]
+        if (dest) {
+          e.preventDefault()
+          gMode.current = false
+          if (gTimer.current) clearTimeout(gTimer.current)
+          navigate(dest)
+        }
+        return
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [saveFile, tasks.dirty, focus.dirty, projects.dirty, weekly_log.dirty, archive.dirty, memory.dirty])
+  }, [navigate, saveFile, tasks.dirty, focus.dirty, projects.dirty, weekly_log.dirty, archive.dirty, memory.dirty])
 
   function toggleTheme() {
     const next = settings.theme === 'dark' ? 'light' : 'dark'
@@ -124,6 +270,13 @@ export default function AppShell() {
             >
               <Settings className="w-4 h-4 shrink-0" />
               Settings
+            </button>
+            <button
+              onClick={() => setShortcutsOpen(true)}
+              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            >
+              <Command className="w-4 h-4 shrink-0" />
+              Shortcuts
             </button>
           </div>
         </div>
@@ -237,6 +390,9 @@ export default function AppShell() {
           </>
         )}
       </div>
+
+      {/* ── Keyboard shortcuts overlay ───────────────────────────────── */}
+      {shortcutsOpen && <ShortcutsOverlay onClose={() => setShortcutsOpen(false)} />}
     </div>
   )
 }

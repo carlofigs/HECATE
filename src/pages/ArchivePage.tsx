@@ -23,6 +23,7 @@ import { useDataFile } from '@/hooks/useDataFile'
 import { useDataStore } from '@/store/useDataStore'
 import { TaskSnapshotRow } from '@/components/tasks/TaskSnapshotRow'
 import { CloseSprintDialog } from '@/components/archive/CloseSprintDialog'
+import { SprintVelocityChart } from '@/components/archive/SprintVelocityChart'
 import { cn, formatWeekRange, currentMondayISO, nowISO } from '@/lib/utils'
 import type { ArchivedTask, ArchiveWeek } from '@/lib/schemas'
 
@@ -304,6 +305,12 @@ export default function ArchivePage() {
         ) : (
           /* Week list */
           <div className="max-w-2xl mx-auto px-4 py-4 space-y-2">
+            {/* Velocity chart — shown when there are ≥2 sprints */}
+            {sortedWeeks.length >= 2 && (
+              <div className="rounded-lg border border-border bg-card px-4 py-3 mb-4">
+                <SprintVelocityChart weeks={archiveData!.weeks} />
+              </div>
+            )}
             {sortedWeeks.map(week => (
               <WeekRow
                 key={week.weekOf}

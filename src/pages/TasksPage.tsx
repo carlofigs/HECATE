@@ -72,6 +72,27 @@ export default function TasksPage() {
     setDialogOpen(true)
   }, [])
 
+  // ── Keyboard shortcut: N → new task in first active column ───────────────
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      // Ignore when typing in an input / textarea / contenteditable
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault()
+        if (!data) return
+        // Pick first non-done, non-not-doing column
+        const col = data.columns.find(c => c.columnType !== 'done' && c.columnType !== 'not-doing')
+                 ?? data.columns[0]
+        if (col) openNew(col.id)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [data, openNew])
+
   // ── Auto-open from ?open=<taskId> (linked from TaskIdChip) ───────────────
 
   useEffect(() => {

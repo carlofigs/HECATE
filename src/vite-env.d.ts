@@ -41,6 +41,8 @@ declare module 'lucide-react' {
   export const Loader2: LucideIcon
   export const LayoutList: LucideIcon
   export const CheckCircle2: LucideIcon
+  export const Command: LucideIcon
+  export const Hash: LucideIcon
   export const Cloud: LucideIcon
   export const CloudUpload: LucideIcon
   export const WifiOff: LucideIcon
