@@ -50,4 +50,6 @@ declare module 'lucide-react' {
   export const LayoutGrid: LucideIcon
   export const FileText: LucideIcon
   export const Repeat: LucideIcon
+  export const ArrowUpAZ: LucideIcon
+  export const ArrowDownAZ: LucideIcon
 }
