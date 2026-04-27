@@ -9,7 +9,7 @@
  * - Toast notifications on mutations
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Kanban, LayoutList, Plus } from 'lucide-react'
@@ -18,11 +18,12 @@ import { PageShell } from '@/components/layout/PageShell'
 import { TaskBoard } from '@/components/tasks/TaskBoard'
 import { TaskListView } from '@/components/tasks/TaskListView'
 import { TaskDialog } from '@/components/tasks/TaskDialog'
+import { TagFilterBar } from '@/components/tasks/TagFilterBar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { nowISO, generateTaskId } from '@/lib/utils'
 import { cn } from '@/lib/utils'
-import type { Task } from '@/lib/schemas'
+import type { Task, TasksData } from '@/lib/schemas'
 
 type View = 'board' | 'list'
 
@@ -52,6 +53,7 @@ export default function TasksPage() {
   const [dialogOpen,  setDialogOpen]  = useState(false)
   const [dialogTask,  setDialogTask]  = useState<Task | null>(null)
   const [dialogColId, setDialogColId] = useState<string | null>(null)
+  const [activeTags,  setActiveTags]  = useState<Set<string>>(new Set())
 
   function switchView(v: View) {
     setView(v)
@@ -163,6 +165,33 @@ export default function TasksPage() {
     toast.success('Task added')
   }, [setData])
 
+  // ── Tag filter ────────────────────────────────────────────────────────────
+
+  const allTags = useMemo(() => {
+    const tags = new Set<string>()
+    data?.columns.forEach(col => col.tasks.forEach(t => t.tags.forEach(tag => tags.add(tag))))
+    return [...tags].sort()
+  }, [data])
+
+  const filteredData = useMemo((): TasksData | null => {
+    if (!data || activeTags.size === 0) return data
+    return {
+      ...data,
+      columns: data.columns.map(col => ({
+        ...col,
+        tasks: col.tasks.filter(t => t.tags.some(tag => activeTags.has(tag))),
+      })),
+    }
+  }, [data, activeTags])
+
+  function toggleTag(tag: string) {
+    setActiveTags(prev => {
+      const next = new Set(prev)
+      next.has(tag) ? next.delete(tag) : next.add(tag)
+      return next
+    })
+  }
+
   // ── Header actions ─────────────────────────────────────────────────────────
 
   const firstColId = data?.columns[0]?.id ?? null
@@ -221,19 +250,29 @@ export default function TasksPage() {
         title="Tasks"
         actions={actions}
       >
-        {data && (
-          view === 'board'
-            ? <TaskBoard
-                data={data}
-                setData={setData}
-                onTaskClick={openEdit}
-                onQuickAdd={handleQuickAdd}
-              />
-            : <TaskListView
-                columns={data.columns}
-                onTaskClick={openEdit}
-                onNewTask={openNew}
-              />
+        {data && filteredData && (
+          <div className="flex flex-col h-full overflow-hidden">
+            <TagFilterBar
+              allTags={allTags}
+              active={activeTags}
+              onToggle={toggleTag}
+              onClear={() => setActiveTags(new Set())}
+            />
+            {view === 'board'
+              ? <TaskBoard
+                  data={filteredData}
+                  setData={setData}
+                  onTaskClick={openEdit}
+                  onQuickAdd={handleQuickAdd}
+                />
+              : <TaskListView
+                  columns={filteredData.columns}
+                  onTaskClick={openEdit}
+                  onNewTask={openNew}
+                  onQuickAdd={handleQuickAdd}
+                />
+            }
+          </div>
         )}
       </PageShell>
 

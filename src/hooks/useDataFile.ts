@@ -17,6 +17,14 @@ import { toast } from 'sonner'
 import { useDataStore } from '@/store/useDataStore'
 import type { DataFileName, SliceData } from '@/lib/schemas'
 
+// Read the global auto-save debounce from the settings slice (if loaded).
+// Falls back to 2000ms so the hook works correctly before settings.json is fetched.
+function useAutoSaveMs(override?: number): number {
+  const settingsMs = useDataStore(s => s.settings.data?.autoSaveDebounceMs)
+  if (override !== undefined) return override
+  return settingsMs ?? 2000
+}
+
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 // SliceData<K> and DataFileName imported from schemas — single source of truth
@@ -38,7 +46,8 @@ export function useDataFile<K extends DataFileName>(
   name: K,
   options?: { autoSaveMs?: number; disableAutoSave?: boolean },
 ): UseDataFileResult<SliceData<K>> {
-  const { autoSaveMs = 2000, disableAutoSave = false } = options ?? {}
+  const { autoSaveMs: autoSaveMsOverride, disableAutoSave = false } = options ?? {}
+  const autoSaveMs = useAutoSaveMs(autoSaveMsOverride)
 
   const slice    = useDataStore(s => s[name])
   const loadFile = useDataStore(s => s.loadFile)
