@@ -47,4 +47,7 @@ declare module 'lucide-react' {
   export const CloudUpload: LucideIcon
   export const WifiOff: LucideIcon
   export const AlertTriangle: LucideIcon
+  export const LayoutGrid: LucideIcon
+  export const FileText: LucideIcon
+  export const Repeat: LucideIcon
 }
