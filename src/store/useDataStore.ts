@@ -14,6 +14,7 @@ import { getFile, putFile, loadCredentials } from '@/lib/github'
 import type {
   DataFileName,
   FileSlice,
+  SliceData,
   TasksData,
   FocusData,
   ProjectsData,
@@ -22,6 +23,8 @@ import type {
   MemoryData,
   SettingsData,
 } from '@/lib/schemas'
+
+// Individual data types kept to type the store shape (tasks, focus, etc. slices)
 
 // ─── Store shape ────────────────────────────────────────────────────────────
 
@@ -43,18 +46,7 @@ export interface DataStore {
 
 // ─── Utility types ──────────────────────────────────────────────────────────
 
-// DataFileName is imported from schemas — single source of truth
-
-// Map file name → data type
-type SliceData<K extends DataFileName> =
-  K extends 'tasks'      ? TasksData      :
-  K extends 'focus'      ? FocusData      :
-  K extends 'projects'   ? ProjectsData   :
-  K extends 'weekly_log' ? WeeklyLogData  :
-  K extends 'archive'    ? ArchiveData    :
-  K extends 'memory'     ? MemoryData     :
-  K extends 'settings'   ? SettingsData   :
-  never
+// SliceData<K> and DataFileName are both imported from schemas — single source of truth
 
 // ─── Initial slice factory ──────────────────────────────────────────────────
 

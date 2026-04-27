@@ -248,6 +248,20 @@ export type DataFileContent =
   | MemoryData
   | SettingsData
 
+/**
+ * Maps a DataFileName literal → its concrete data type.
+ * Single source of truth — imported by useDataStore and useDataFile.
+ */
+export type SliceData<K extends DataFileName> =
+  K extends 'tasks'      ? TasksData      :
+  K extends 'focus'      ? FocusData      :
+  K extends 'projects'   ? ProjectsData   :
+  K extends 'weekly_log' ? WeeklyLogData  :
+  K extends 'archive'    ? ArchiveData    :
+  K extends 'memory'     ? MemoryData     :
+  K extends 'settings'   ? SettingsData   :
+  never
+
 /** Per-file state slice shape used by the Zustand data store */
 export interface FileSlice<T> {
   data: T | null

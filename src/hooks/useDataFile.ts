@@ -15,30 +15,11 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { toast } from 'sonner'
 import { useDataStore } from '@/store/useDataStore'
-import type {
-  DataFileName,
-  TasksData,
-  FocusData,
-  ProjectsData,
-  WeeklyLogData,
-  ArchiveData,
-  MemoryData,
-  SettingsData,
-} from '@/lib/schemas'
+import type { DataFileName, SliceData } from '@/lib/schemas'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-// DataFileName is imported from schemas — single source of truth
-
-type SliceData<K extends DataFileName> =
-  K extends 'tasks'      ? TasksData      :
-  K extends 'focus'      ? FocusData      :
-  K extends 'projects'   ? ProjectsData   :
-  K extends 'weekly_log' ? WeeklyLogData  :
-  K extends 'archive'    ? ArchiveData    :
-  K extends 'memory'     ? MemoryData     :
-  K extends 'settings'   ? SettingsData   :
-  never
+// SliceData<K> and DataFileName imported from schemas — single source of truth
 
 export interface UseDataFileResult<T> {
   data:     T | null

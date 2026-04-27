@@ -148,7 +148,16 @@ export default function AppShell() {
   const gMode   = useRef(false)
   const gTimer  = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { settings, updateSettings, saveSettings } = useSettings()
-  const { saveFile, tasks, focus, projects, weekly_log, archive, memory } = useDataStore()
+
+  // Targeted selectors — each subscription is isolated to a single boolean so AppShell
+  // only re-renders when that specific dirty flag changes, not on any store write.
+  const saveFile      = useDataStore(s => s.saveFile)
+  const tasksDirty    = useDataStore(s => s.tasks.dirty)
+  const focusDirty    = useDataStore(s => s.focus.dirty)
+  const projectsDirty = useDataStore(s => s.projects.dirty)
+  const weekLogDirty  = useDataStore(s => s.weekly_log.dirty)
+  const archiveDirty  = useDataStore(s => s.archive.dirty)
+  const memoryDirty   = useDataStore(s => s.memory.dirty)
 
   // Redirect to setup if no credentials
   useEffect(() => {
@@ -158,6 +167,16 @@ export default function AppShell() {
 
   // Global keyboard shortcuts
   useEffect(() => {
+    // Build the dirty-file list at event time using the closure over reactive booleans
+    const dirtyMap: Array<[import('@/lib/schemas').DataFileName, boolean]> = [
+      ['tasks',      tasksDirty],
+      ['focus',      focusDirty],
+      ['projects',   projectsDirty],
+      ['weekly_log', weekLogDirty],
+      ['archive',    archiveDirty],
+      ['memory',     memoryDirty],
+    ]
+
     async function onKeyDown(e: KeyboardEvent) {
       // Ignore when typing in inputs
       const tag = (e.target as HTMLElement).tagName
@@ -166,11 +185,8 @@ export default function AppShell() {
       // Cmd+S / Ctrl+S — save all dirty files (allowed even while typing)
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault()
-        const dirty = (
-          [['tasks', tasks], ['focus', focus], ['projects', projects],
-           ['weekly_log', weekly_log], ['archive', archive], ['memory', memory]] as const
-        ).filter(([, s]) => s.dirty).map(([name]) => name)
-        await Promise.all(dirty.map(name => saveFile(name)))
+        const toSave = dirtyMap.filter(([, dirty]) => dirty).map(([name]) => name)
+        await Promise.all(toSave.map(name => saveFile(name)))
         return
       }
 
@@ -205,7 +221,7 @@ export default function AppShell() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [navigate, saveFile, tasks.dirty, focus.dirty, projects.dirty, weekly_log.dirty, archive.dirty, memory.dirty])
+  }, [navigate, saveFile, tasksDirty, focusDirty, projectsDirty, weekLogDirty, archiveDirty, memoryDirty])
 
   function toggleTheme() {
     const next = settings.theme === 'dark' ? 'light' : 'dark'

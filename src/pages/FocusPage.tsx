@@ -17,6 +17,14 @@
 
 import { useCallback } from 'react'
 import { Plus } from 'lucide-react'
+import {
+  DndContext, PointerSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext, useSortable, verticalListSortingStrategy, arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useDataFile } from '@/hooks/useDataFile'
 import { useCollapsed } from '@/hooks/useCollapsed'
 import { PageShell } from '@/components/layout/PageShell'
@@ -25,6 +33,42 @@ import { FocusSectionCard } from '@/components/focus/FocusSectionCard'
 import { Button } from '@/components/ui/button'
 import { nowISO } from '@/lib/utils'
 import type { FocusData, FocusSection } from '@/lib/schemas'
+
+// ─── Sortable wrapper ─────────────────────────────────────────────────────────
+
+interface SortableSectionProps {
+  section:    FocusSection
+  colorIndex: number
+  weekOf:     string
+  onUpdate:   (updater: (s: FocusSection) => void) => void
+  onDelete:   () => void
+  collapsed:  boolean
+  onToggle:   () => void
+}
+
+function SortableSectionWrapper(props: SortableSectionProps) {
+  const {
+    attributes, listeners, setNodeRef,
+    transform, transition, isDragging,
+  } = useSortable({ id: props.section.id })
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <FocusSectionCard
+        {...props}
+        dragHandle={{ ...attributes, ...listeners } as React.HTMLAttributes<HTMLDivElement>}
+        isDragging={isDragging}
+      />
+    </div>
+  )
+}
+
+// ─── Page helpers ─────────────────────────────────────────────────────────────
 
 function slugify(title: string): string {
   return title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
@@ -84,6 +128,27 @@ export default function FocusPage() {
     })
   }, [setData])
 
+  const reorderSections = useCallback((sections: FocusSection[]) => {
+    setData(draft => {
+      draft.sections  = sections
+      draft.updatedAt = nowISO()
+    })
+  }, [setData])
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  )
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || !data || active.id === over.id) return
+    const oldIdx = data.sections.findIndex(s => s.id === active.id)
+    const newIdx = data.sections.findIndex(s => s.id === over.id)
+    if (oldIdx !== -1 && newIdx !== -1) {
+      reorderSections(arrayMove(data.sections, oldIdx, newIdx))
+    }
+  }
+
   // ── Skeleton tailored to Focus layout ────────────────────────────────────
   const FocusSkeleton = (
     <div className="p-4 space-y-3">
@@ -133,18 +198,25 @@ export default function FocusPage() {
               </div>
             )}
 
-            {data.sections.map((section, index) => (
-              <FocusSectionCard
-                key={section.id}
-                section={section}
-                colorIndex={index}
-                weekOf={data.weekOf}
-                onUpdate={updater => updateSection(section.id, updater)}
-                onDelete={() => deleteSection(section.id)}
-                collapsed={isCollapsed(section.id)}
-                onToggle={() => toggle(section.id)}
-              />
-            ))}
+            <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+              <SortableContext
+                items={data.sections.map(s => s.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {data.sections.map((section, index) => (
+                  <SortableSectionWrapper
+                    key={section.id}
+                    section={section}
+                    colorIndex={index}
+                    weekOf={data.weekOf}
+                    onUpdate={updater => updateSection(section.id, updater)}
+                    onDelete={() => deleteSection(section.id)}
+                    collapsed={isCollapsed(section.id)}
+                    onToggle={() => toggle(section.id)}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
 
             {/* Add section */}
             {data.sections.length > 0 && (

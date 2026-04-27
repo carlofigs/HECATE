@@ -763,8 +763,7 @@ function ProjectDetail({
                 className="absolute inset-0 opacity-0 cursor-pointer w-full h-full text-[11px]"
                 value={project.status}
                 onChange={e => onUpdate(p => {
-                  p.status    = e.target.value as Project['status']
-                  p.updatedAt = new Date().toISOString().slice(0, 10)
+                  p.status = e.target.value as Project['status']
                 })}
               >
                 {Object.entries(STATUS_CONFIG).map(([v, c]) => (
@@ -779,7 +778,7 @@ function ProjectDetail({
             <InlineTextField
               value={project.summary}
               placeholder="Add a summary — what is this project about?"
-              onSave={v => onUpdate(p => { p.summary = v; p.updatedAt = new Date().toISOString().slice(0, 10) })}
+              onSave={v => onUpdate(p => { p.summary = v })}
             />
           </div>
 
@@ -811,7 +810,7 @@ function ProjectDetail({
             <InlineTextField
               value={project.currentFocus}
               placeholder="What's the current focus of this project?"
-              onSave={v => onUpdate(p => { p.currentFocus = v; p.updatedAt = new Date().toISOString().slice(0, 10) })}
+              onSave={v => onUpdate(p => { p.currentFocus = v })}
             />
           </div>
           {(project.currentFocus || project.nextAction) && (
@@ -822,7 +821,7 @@ function ProjectDetail({
             <InlineTextField
               value={project.nextAction}
               placeholder="What's the immediate next action?"
-              onSave={v => onUpdate(p => { p.nextAction = v; p.updatedAt = new Date().toISOString().slice(0, 10) })}
+              onSave={v => onUpdate(p => { p.nextAction = v })}
             />
           </div>
         </div>
@@ -1019,7 +1018,10 @@ export default function ProjectsPage() {
     if (!resolvedId) return
     setData(draft => {
       const p = draft.projects.find(pr => pr.id === resolvedId)
-      if (p) fn(p)
+      if (!p) return
+      fn(p)
+      // Always stamp updatedAt — call sites don't need to do this individually
+      p.updatedAt = new Date().toISOString().slice(0, 10)
     })
   }, [resolvedId, setData])
 
