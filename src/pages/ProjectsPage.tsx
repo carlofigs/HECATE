@@ -852,21 +852,19 @@ function ProjectDetail({
           </div>
         </div>
 
-        {/* ── Roadmap ── */}
-        {project.timeline.length > 0 && <RoadmapSection timeline={project.timeline} />}
-
         {/* ── Linked Tasks ── */}
         <LinkedTasksSection tag={project.tag} />
+
+        {/* ── Open Questions (full CRUD) ── */}
+        <OpenQuestionsSection questions={project.openQuestions} onUpdate={onUpdate} />
+
+        {/* ── Roadmap ── */}
+        {project.timeline.length > 0 && <RoadmapSection timeline={project.timeline} />}
 
         {/* ── Sections (markdown, inline-editable) ── */}
         {project.sections.map(section => (
           <ProjectSectionCard key={section.id} section={section} onUpdate={onUpdate} />
         ))}
-
-        {/* ── Open Questions (full CRUD) ── */}
-        {project.openQuestions.length > 0 || true ? (
-          <OpenQuestionsSection questions={project.openQuestions} onUpdate={onUpdate} />
-        ) : null}
 
         {/* ── Models ── */}
         {project.models && project.models.length > 0 && (
