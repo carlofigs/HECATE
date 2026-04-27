@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+# Local data — never commit; sensitive work data lives in the configured private GitHub repo
+data/
+
 # Build output
 dist/
 
