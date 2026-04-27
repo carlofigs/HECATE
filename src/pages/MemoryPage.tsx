@@ -5,13 +5,14 @@
  *
  * People:     searchable list (expand-in-place) + grid (compact cards)
  * Terms:      searchable, expand-in-place
+ * Projects:   left panel list + right markdown render
  * References: left file tree (grouped by dir) + right markdown render
  *
  * All tabs are read-only — Memory is managed by the memory-pipeline skill,
  * not edited inline in HECATE.
  */
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback, memo } from 'react'
 import {
   Search, X, ChevronDown, ChevronRight,
   LayoutList, LayoutGrid, FileText,
@@ -20,6 +21,7 @@ import {
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useDataFile } from '@/hooks/useDataFile'
+import { PageShell } from '@/components/layout/PageShell'
 import { cn } from '@/lib/utils'
 import type { Person, Term, ProjectSummary, Responsibility } from '@/lib/schemas'
 
@@ -34,10 +36,15 @@ type TabId =
   | 'preferences'
   | 'references'
 
-type PeopleView = 'list' | 'grid'
-type SortDir    = 'asc'  | 'desc'
+type PeopleView    = 'list' | 'grid'
+type SortDir       = 'asc'  | 'desc'
+type RecurringSortBy = 'name' | 'cadence'
 
-const TABS: { id: TabId; label: string; count?: number }[] = [
+const VALID_TABS = new Set<TabId>([
+  'me', 'people', 'terms', 'projects', 'recurring', 'preferences', 'references',
+])
+
+const TABS: { id: TabId; label: string }[] = [
   { id: 'me',          label: 'Me'          },
   { id: 'people',      label: 'People'      },
   { id: 'terms',       label: 'Terms'       },
@@ -49,13 +56,20 @@ const TABS: { id: TabId; label: string; count?: number }[] = [
 
 const TAB_KEY = 'hecate:memory:tab'
 
-// ─── Shared sort toggle ───────────────────────────────────────────────────────
+function readStoredTab(): TabId {
+  const raw = localStorage.getItem(TAB_KEY)
+  return raw && VALID_TABS.has(raw as TabId) ? (raw as TabId) : 'me'
+}
+
+// ─── Shared: sort toggle ──────────────────────────────────────────────────────
 
 function SortToggle({ dir, onToggle }: { dir: SortDir; onToggle: () => void }) {
+  const label = dir === 'asc' ? 'A → Z' : 'Z → A'
   return (
     <button
       onClick={onToggle}
-      title={dir === 'asc' ? 'A → Z  (click to reverse)' : 'Z → A  (click to reverse)'}
+      aria-label={`${label} — click to reverse`}
+      title={`${label} — click to reverse`}
       className="p-1.5 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0"
     >
       {dir === 'asc'
@@ -66,12 +80,53 @@ function SortToggle({ dir, onToggle }: { dir: SortDir; onToggle: () => void }) {
   )
 }
 
-// ─── Shared markdown renderer ─────────────────────────────────────────────────
+function toggleDir(d: SortDir): SortDir { return d === 'asc' ? 'desc' : 'asc' }
 
-function Prose({ content, className }: { content: string; className?: string }) {
+// ─── Shared: markdown renderer (memoised — content rarely changes) ────────────
+
+const Prose = memo(function Prose({
+  content,
+  className,
+}: {
+  content:   string
+  className?: string
+}) {
   return (
     <div className={cn('prose prose-sm dark:prose-invert max-w-none', className)}>
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+    </div>
+  )
+})
+
+// ─── Shared: search input ─────────────────────────────────────────────────────
+
+function SearchInput({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value:       string
+  onChange:    (v: string) => void
+  placeholder: string
+}) {
+  return (
+    <div className="relative flex-1 max-w-sm">
+      <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/40" />
+      <input
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full h-7 bg-muted/30 rounded pl-7 pr-6 text-xs text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-1 focus:ring-ring"
+      />
+      {value && (
+        <button
+          onClick={() => onChange('')}
+          aria-label="Clear search"
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground/40 hover:text-foreground"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      )}
     </div>
   )
 }
@@ -164,9 +219,7 @@ function PersonGridCard({
             </span>
           ))}
           {person.aliases.length > 3 && (
-            <span className="text-[9px] text-muted-foreground/35">
-              +{person.aliases.length - 3}
-            </span>
+            <span className="text-[9px] text-muted-foreground/35">+{person.aliases.length - 3}</span>
           )}
         </div>
       )}
@@ -196,46 +249,41 @@ function PeopleTab({ people }: { people: Person[] }) {
     })
   }, [people, search, sortDir])
 
-  function toggle(name: string) {
+  // Collapse rows that are no longer visible when search changes
+  const filteredNames = useMemo(() => new Set(filtered.map(p => p.name)), [filtered])
+  const visibleExpanded = useMemo(
+    () => new Set([...expanded].filter(n => filteredNames.has(n))),
+    [expanded, filteredNames],
+  )
+
+  const toggle = useCallback((name: string) => {
     setExpanded(prev => {
       const next = new Set(prev)
       next.has(name) ? next.delete(name) : next.add(name)
       return next
     })
-  }
+  }, [])
 
-  /** Grid card click: switch to list + auto-expand */
-  function handleGridClick(name: string) {
+  const handleGridClick = useCallback((name: string) => {
     setView('list')
     setExpanded(prev => new Set([...prev, name]))
-  }
+  }, [])
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Toolbar */}
       <div className="shrink-0 flex items-center gap-2 px-4 py-2 border-b border-border/50 bg-card/30">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/40" />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder={`Search ${people.length} people…`}
-            className="w-full h-7 bg-muted/30 rounded pl-7 pr-6 text-xs text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-1 focus:ring-ring"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground/40 hover:text-foreground"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          )}
-        </div>
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder={`Search ${people.length} people…`}
+        />
 
         {/* View toggle */}
         <div className="flex items-center rounded-md border border-border overflow-hidden shrink-0">
           <button
             onClick={() => setView('list')}
+            aria-label="List view"
             title="List view"
             className={cn(
               'p-1.5 transition-colors',
@@ -248,6 +296,7 @@ function PeopleTab({ people }: { people: Person[] }) {
           </button>
           <button
             onClick={() => setView('grid')}
+            aria-label="Grid view"
             title="Grid view"
             className={cn(
               'p-1.5 transition-colors',
@@ -260,9 +309,9 @@ function PeopleTab({ people }: { people: Person[] }) {
           </button>
         </div>
 
-        <SortToggle dir={sortDir} onToggle={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')} />
+        <SortToggle dir={sortDir} onToggle={() => setSortDir(toggleDir)} />
 
-        {filtered.length !== people.length && (
+        {search && (
           <span className="text-[11px] text-muted-foreground/40 shrink-0">
             {filtered.length} of {people.length}
           </span>
@@ -281,7 +330,7 @@ function PeopleTab({ people }: { people: Person[] }) {
               <PersonListRow
                 key={p.name}
                 person={p}
-                expanded={expanded.has(p.name)}
+                expanded={visibleExpanded.has(p.name)}
                 onToggle={() => toggle(p.name)}
               />
             ))}
@@ -323,38 +372,31 @@ function TermsTab({ terms }: { terms: Term[] }) {
     })
   }, [terms, search, sortDir])
 
-  function toggle(term: string) {
+  const toggle = useCallback((term: string) => {
     setExpanded(prev => {
       const next = new Set(prev)
       next.has(term) ? next.delete(term) : next.add(term)
       return next
     })
-  }
+  }, [])
 
-  // Auto-expand single match
+  // Auto-expand when search narrows to a single result
   const autoExpand = filtered.length === 1
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="shrink-0 flex items-center gap-2 px-4 py-2 border-b border-border/50 bg-card/30">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/40" />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder={`Search ${terms.length} terms…`}
-            className="w-full h-7 bg-muted/30 rounded pl-7 pr-6 text-xs text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-1 focus:ring-ring"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground/40 hover:text-foreground"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          )}
-        </div>
-        <SortToggle dir={sortDir} onToggle={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')} />
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder={`Search ${terms.length} terms…`}
+        />
+        <SortToggle dir={sortDir} onToggle={() => setSortDir(toggleDir)} />
+        {search && (
+          <span className="text-[11px] text-muted-foreground/40 shrink-0">
+            {filtered.length} of {terms.length}
+          </span>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0 px-4 py-3">
@@ -398,7 +440,8 @@ function TermsTab({ terms }: { terms: Term[] }) {
 // ─── Projects tab ─────────────────────────────────────────────────────────────
 
 function ProjectsTab({ projects }: { projects: ProjectSummary[] }) {
-  const [sortDir,  setSortDir]  = useState<SortDir>('asc')
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
+
   const sorted = useMemo(() =>
     [...projects].sort((a, b) => {
       const cmp = a.name.localeCompare(b.name)
@@ -414,27 +457,25 @@ function ProjectsTab({ projects }: { projects: ProjectSummary[] }) {
 
       {/* ── Left: project list ── */}
       <div className="w-44 shrink-0 border-r border-border flex flex-col bg-card/30">
-        {/* Sort toggle */}
-        <div className="shrink-0 flex items-center justify-between px-3 py-1.5 border-b border-border/50">
-          <span className="text-[10px] text-muted-foreground/35 uppercase tracking-wider">Projects</span>
-          <SortToggle dir={sortDir} onToggle={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')} />
+        <div className="shrink-0 flex items-center justify-end px-2 py-1.5 border-b border-border/50">
+          <SortToggle dir={sortDir} onToggle={() => setSortDir(toggleDir)} />
         </div>
         <div className="flex-1 overflow-y-auto py-1">
-        {sorted.map(p => (
-          <button
-            key={p.name}
-            onClick={() => setSelected(p.name)}
-            className={cn(
-              'w-full flex items-start gap-1.5 px-3 py-1.5 text-left transition-colors text-[11px] leading-snug',
-              selected === p.name
-                ? 'bg-primary/8 text-primary border-r-2 border-r-primary font-medium'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/30',
-            )}
-          >
-            <FileText className="w-3 h-3 shrink-0 opacity-50 mt-px" />
-            <span className="break-words min-w-0">{p.name}</span>
-          </button>
-        ))}
+          {sorted.map(p => (
+            <button
+              key={p.name}
+              onClick={() => setSelected(p.name)}
+              className={cn(
+                'w-full flex items-start gap-1.5 px-3 py-1.5 text-left transition-colors text-[11px] leading-snug',
+                selected === p.name
+                  ? 'bg-primary/8 text-primary border-r-2 border-r-primary font-medium'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/30',
+              )}
+            >
+              <FileText className="w-3 h-3 shrink-0 opacity-50 mt-px" />
+              <span className="break-words min-w-0">{p.name}</span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -467,14 +508,12 @@ const CADENCE_ORDER: Record<string, number> = {
   Weekly: 0, Monthly: 1, 'As needed': 2,
 }
 
-type RecurringSortBy = 'name' | 'cadence'
-
 function RecurringTab({ responsibilities }: { responsibilities: Responsibility[] }) {
   const [sortBy,  setSortBy]  = useState<RecurringSortBy>('name')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
 
-  const sorted = useMemo(() => {
-    return [...responsibilities].sort((a, b) => {
+  const sorted = useMemo(() =>
+    [...responsibilities].sort((a, b) => {
       let cmp = 0
       if (sortBy === 'name') {
         cmp = a.name.localeCompare(b.name)
@@ -484,8 +523,8 @@ function RecurringTab({ responsibilities }: { responsibilities: Responsibility[]
         cmp = ao !== bo ? ao - bo : a.name.localeCompare(b.name)
       }
       return sortDir === 'asc' ? cmp : -cmp
-    })
-  }, [responsibilities, sortBy, sortDir])
+    }),
+  [responsibilities, sortBy, sortDir])
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -508,17 +547,16 @@ function RecurringTab({ responsibilities }: { responsibilities: Responsibility[]
             </button>
           ))}
         </div>
-        <SortToggle dir={sortDir} onToggle={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')} />
+        <SortToggle dir={sortDir} onToggle={() => setSortDir(toggleDir)} />
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0">
-      <div className="space-y-3 max-w-2xl mx-auto px-4 py-4">
-        {sorted.length === 0 ? (
-          <p className="text-xs text-muted-foreground/40 italic text-center py-8">
-            No recurring responsibilities logged
-          </p>
-        ) : (
-          sorted.map(r => (
+        <div className="space-y-3 max-w-2xl mx-auto px-4 py-4">
+          {sorted.length === 0 ? (
+            <p className="text-xs text-muted-foreground/40 italic text-center py-8">
+              No recurring responsibilities logged
+            </p>
+          ) : sorted.map(r => (
             <div key={r.name} className="rounded-lg border border-border bg-card p-3 space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-xs font-semibold text-foreground flex-1 min-w-0">{r.name}</p>
@@ -533,9 +571,8 @@ function RecurringTab({ responsibilities }: { responsibilities: Responsibility[]
               </div>
               {r.notes && <Prose content={r.notes} />}
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -576,7 +613,7 @@ function PreferencesTab({
 
 // ─── References tab ───────────────────────────────────────────────────────────
 
-/** Group reference file keys by directory prefix */
+/** Group reference file keys by top-level directory prefix */
 function groupRefFiles(files: Record<string, string>): { dir: string; files: string[] }[] {
   const groups: Record<string, string[]> = { '': [] }
   for (const key of Object.keys(files).sort()) {
@@ -598,19 +635,22 @@ function groupRefFiles(files: Record<string, string>): { dir: string; files: str
     })
 }
 
-function basename(path: string): string {
+function fileLabel(path: string): string {
   const slash = path.lastIndexOf('/')
-  return slash === -1 ? path : path.slice(slash + 1)
-}
-
-function label(path: string): string {
-  return basename(path).replace(/\.md$/, '')
+  const base  = slash === -1 ? path : path.slice(slash + 1)
+  return base.replace(/\.md$/, '')
 }
 
 function ReferencesTab({ files }: { files: Record<string, string> }) {
-  const keys    = Object.keys(files).sort()
-  const [selected, setSelected] = useState<string>(keys[0] ?? '')
-  const groups  = useMemo(() => groupRefFiles(files), [files])
+  const groups = useMemo(() => groupRefFiles(files), [files])
+
+  // Stable initial selection: first file in the sorted tree
+  const firstFile = useMemo(
+    () => groups[0]?.files[0] ?? '',
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [], // intentionally only on mount
+  )
+  const [selected, setSelected] = useState<string>(firstFile)
 
   return (
     <div className="flex h-full overflow-hidden">
@@ -636,7 +676,7 @@ function ReferencesTab({ files }: { files: Record<string, string> }) {
                 )}
               >
                 <FileText className="w-3 h-3 shrink-0 opacity-50 mt-px" />
-                <span className="break-words min-w-0">{label(path)}</span>
+                <span className="break-words min-w-0">{fileLabel(path)}</span>
               </button>
             ))}
           </div>
@@ -667,18 +707,16 @@ function ReferencesTab({ files }: { files: Record<string, string> }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function MemoryPage() {
-  const { data, loading } = useDataFile('memory')
+  const { data, loading, error, reload } = useDataFile('memory')
 
-  const [activeTab, setActiveTab] = useState<TabId>(
-    () => (localStorage.getItem(TAB_KEY) as TabId | null) ?? 'me',
-  )
+  const [activeTab, setActiveTab] = useState<TabId>(readStoredTab)
 
-  function switchTab(id: TabId) {
+  const switchTab = useCallback((id: TabId) => {
     setActiveTab(id)
     localStorage.setItem(TAB_KEY, id)
-  }
+  }, [])
 
-  // ── Counts for tab labels ────────────────────────────────────────────────────
+  // Count badges derived from loaded data
   const counts: Partial<Record<TabId, number>> = data
     ? {
         people:     data.people.length,
@@ -689,71 +727,69 @@ export default function MemoryPage() {
       }
     : {}
 
-  // ── Loading state ────────────────────────────────────────────────────────────
-
-  if (loading || !data) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="space-y-2 w-64">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-8 rounded-lg bg-muted/40 animate-pulse" />
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  // ── Render ───────────────────────────────────────────────────────────────────
-
-  return (
-    <div className="flex flex-col h-full overflow-hidden bg-background">
-
-      {/* ── Tab bar ── */}
-      <div className="shrink-0 flex items-end border-b border-border bg-card overflow-x-auto scrollbar-none">
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => switchTab(tab.id)}
-            className={cn(
-              'shrink-0 flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium',
-              'border-b-2 transition-colors whitespace-nowrap',
-              activeTab === tab.id
-                ? 'border-b-primary text-primary'
-                : 'border-b-transparent text-muted-foreground hover:text-foreground hover:border-b-border/60',
-            )}
-          >
-            {tab.label}
-            {counts[tab.id] !== undefined && (
-              <span
-                className={cn(
-                  'text-[10px] px-1.5 py-0.5 rounded-full tabular-nums leading-none',
-                  activeTab === tab.id
-                    ? 'bg-primary/15 text-primary'
-                    : 'bg-muted/60 text-muted-foreground/50',
-                )}
-              >
-                {counts[tab.id]}
-              </span>
-            )}
-          </button>
+  const skeleton = (
+    <div className="flex h-full items-center justify-center">
+      <div className="space-y-2 w-64">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="h-8 rounded-lg bg-muted/40 animate-pulse" />
         ))}
       </div>
-
-      {/* ── Tab content ── */}
-      <div className="flex-1 overflow-hidden">
-        {activeTab === 'me'          && <MeTab content={data.me} />}
-        {activeTab === 'people'      && <PeopleTab people={data.people} />}
-        {activeTab === 'terms'       && <TermsTab terms={data.terms} />}
-        {activeTab === 'projects'    && <ProjectsTab projects={data.projects} />}
-        {activeTab === 'recurring'   && <RecurringTab responsibilities={data.recurringResponsibilities} />}
-        {activeTab === 'preferences' && (
-          <PreferencesTab
-            preferences={data.preferences}
-            productivitySystem={data.productivitySystem}
-          />
-        )}
-        {activeTab === 'references'  && <ReferencesTab files={data.referenceFiles} />}
-      </div>
     </div>
+  )
+
+  return (
+    <PageShell loading={loading} error={error} onRetry={reload} skeleton={skeleton}>
+      {data && (
+        <div className="flex flex-col h-full overflow-hidden bg-background">
+
+          {/* ── Tab bar ── */}
+          <div className="shrink-0 flex items-end border-b border-border bg-card overflow-x-auto scrollbar-none">
+            {TABS.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => switchTab(tab.id)}
+                className={cn(
+                  'shrink-0 flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium',
+                  'border-b-2 transition-colors whitespace-nowrap',
+                  activeTab === tab.id
+                    ? 'border-b-primary text-primary'
+                    : 'border-b-transparent text-muted-foreground hover:text-foreground hover:border-b-border/60',
+                )}
+              >
+                {tab.label}
+                {counts[tab.id] !== undefined && (
+                  <span
+                    className={cn(
+                      'text-[10px] px-1.5 py-0.5 rounded-full tabular-nums leading-none',
+                      activeTab === tab.id
+                        ? 'bg-primary/15 text-primary'
+                        : 'bg-muted/60 text-muted-foreground/50',
+                    )}
+                  >
+                    {counts[tab.id]}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* ── Tab content ── */}
+          <div className="flex-1 overflow-hidden">
+            {activeTab === 'me'          && <MeTab content={data.me} />}
+            {activeTab === 'people'      && <PeopleTab people={data.people} />}
+            {activeTab === 'terms'       && <TermsTab terms={data.terms} />}
+            {activeTab === 'projects'    && <ProjectsTab projects={data.projects} />}
+            {activeTab === 'recurring'   && <RecurringTab responsibilities={data.recurringResponsibilities} />}
+            {activeTab === 'preferences' && (
+              <PreferencesTab
+                preferences={data.preferences}
+                productivitySystem={data.productivitySystem}
+              />
+            )}
+            {activeTab === 'references'  && <ReferencesTab files={data.referenceFiles} />}
+          </div>
+        </div>
+      )}
+    </PageShell>
   )
 }
