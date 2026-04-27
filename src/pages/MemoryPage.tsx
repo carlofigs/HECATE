@@ -377,14 +377,14 @@ function ProjectsTab({ projects }: { projects: ProjectSummary[] }) {
             key={p.name}
             onClick={() => setSelected(p.name)}
             className={cn(
-              'w-full flex items-center gap-1.5 px-3 py-1.5 text-left transition-colors text-[11px] leading-snug',
+              'w-full flex items-start gap-1.5 px-3 py-1.5 text-left transition-colors text-[11px] leading-snug',
               selected === p.name
                 ? 'bg-primary/8 text-primary border-r-2 border-r-primary font-medium'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/30',
             )}
           >
-            <FileText className="w-3 h-3 shrink-0 opacity-50" />
-            <span className="truncate">{p.name}</span>
+            <FileText className="w-3 h-3 shrink-0 opacity-50 mt-px" />
+            <span className="break-words min-w-0">{p.name}</span>
           </button>
         ))}
       </div>
@@ -533,14 +533,14 @@ function ReferencesTab({ files }: { files: Record<string, string> }) {
                 key={path}
                 onClick={() => setSelected(path)}
                 className={cn(
-                  'w-full flex items-center gap-1.5 px-3 py-1.5 text-left transition-colors text-[11px] leading-snug',
+                  'w-full flex items-start gap-1.5 px-3 py-1.5 text-left transition-colors text-[11px] leading-snug',
                   selected === path
                     ? 'bg-primary/8 text-primary border-r-2 border-r-primary font-medium'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/30',
                 )}
               >
-                <FileText className="w-3 h-3 shrink-0 opacity-50" />
-                <span className="truncate">{label(path)}</span>
+                <FileText className="w-3 h-3 shrink-0 opacity-50 mt-px" />
+                <span className="break-words min-w-0">{label(path)}</span>
               </button>
             ))}
           </div>
