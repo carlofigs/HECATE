@@ -13,6 +13,7 @@
  */
 
 import { useDataStore } from '@/store/useDataStore'
+import { useShallow } from 'zustand/react/shallow'
 import { cn } from '@/lib/utils'
 import { Loader2, CheckCircle2, AlertCircle, Cloud } from 'lucide-react'
 
@@ -21,13 +22,16 @@ type SyncState = 'idle' | 'dirty' | 'saving' | 'saved' | 'error'
 const FILE_NAMES = ['tasks', 'focus', 'projects', 'weekly_log', 'archive', 'memory', 'settings'] as const
 
 export function SyncStatus({ compact = false }: { compact?: boolean }) {
-  const store = useDataStore()
-
-  const slices = FILE_NAMES.map(name => store[name])
-  const hasError   = slices.some(s => s.error !== null)
-  const isSaving   = slices.some(s => s.loading)
-  const isDirty    = slices.some(s => s.dirty)
-  const hasLoaded  = slices.some(s => s.data !== null)
+  // Shallow selector over derived booleans — component only re-renders when
+  // one of these four values changes, not on every store write.
+  const { hasError, isSaving, isDirty, hasLoaded } = useDataStore(
+    useShallow(s => ({
+      hasError:  FILE_NAMES.some(n => s[n].error !== null),
+      isSaving:  FILE_NAMES.some(n => s[n].loading),
+      isDirty:   FILE_NAMES.some(n => s[n].dirty),
+      hasLoaded: FILE_NAMES.some(n => s[n].data !== null),
+    }))
+  )
 
   const state: SyncState =
     hasError  ? 'error'  :

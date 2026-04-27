@@ -17,7 +17,7 @@
  *   Auto-triggers if navigated from Archive with { state: { fromArchive: true } }.
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import { CalendarDays, ChevronDown, Check, Copy } from 'lucide-react'
@@ -44,7 +44,9 @@ function generateWeekMarkdown(week: WeekEntry): string {
   function snapshotLines(items: typeof week.completed) {
     return items.map(t => {
       const id = t.id ? ` \`${displayId(t.id)}\`` : ''
-      const note = t.note ? `\n  > ${t.note}` : ''
+      const note = t.note
+        ? '\n' + t.note.split('\n').map(l => `  > ${l}`).join('\n')
+        : ''
       return `- ${t.title}${id}${note}`
     })
   }
@@ -357,14 +359,17 @@ export default function WeekLogPage() {
     data: logData,
     setData: setLog,
     save: saveLog,
+    error: logError,
+    reload: reloadLog,
   } = useDataFile('weekly_log')
   const { data: tasksData } = useDataFile('tasks')
   const { settings }        = useSettings()
 
   // ── Week navigation ───────────────────────────────────────────────────────
-  const sortedWeeks: WeekEntry[] = logData
-    ? [...logData.weeks].sort((a, b) => b.weekOf.localeCompare(a.weekOf))
-    : []
+  const sortedWeeks: WeekEntry[] = useMemo(
+    () => logData ? [...logData.weeks].sort((a, b) => b.weekOf.localeCompare(a.weekOf)) : [],
+    [logData?.weeks],
+  )
 
   const [selectedWeekOf, setSelectedWeekOf] = useState<string | null>(null)
 
@@ -562,7 +567,18 @@ export default function WeekLogPage() {
 
       {/* ── Body ── */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        {!logData ? (
+        {logError ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-20 text-muted-foreground">
+            <p className="text-sm text-destructive">Failed to load week log</p>
+            <p className="text-xs opacity-60">{logError}</p>
+            <button
+              onClick={reloadLog}
+              className="mt-2 text-xs underline underline-offset-2 hover:text-foreground transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        ) : !logData ? (
           <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
             {[1, 2, 3].map(i => (
               <div key={i} className="h-16 rounded-lg bg-muted/40 animate-pulse" />

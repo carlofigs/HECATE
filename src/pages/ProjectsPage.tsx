@@ -17,7 +17,7 @@
  * All edits auto-stamp updatedAt and flow through the shared setData → auto-save.
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertCircle, Check, CheckCircle2, ChevronDown, ChevronRight,
@@ -414,7 +414,7 @@ function LinkedTasksSection({ tag }: { tag: string }) {
   const [collapsed, setCollapsed] = useState(false)
   const { data: tasksData, loading } = useDataFile('tasks')
 
-  const linked = (() => {
+  const linked = useMemo(() => {
     if (!tasksData) return []
     const results: {
       colName:   string
@@ -431,7 +431,7 @@ function LinkedTasksSection({ tag }: { tag: string }) {
       }
     }
     return results
-  })()
+  }, [tasksData, tag])
 
   const grouped = linked.reduce<Record<string, typeof linked>>((acc, t) => {
     ;(acc[t.colName] ??= []).push(t)
@@ -1016,7 +1016,7 @@ function ProjectList({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ProjectsPage() {
-  const { data: projectsData, setData } = useDataFile('projects')
+  const { data: projectsData, setData, error: projectsError, reload: reloadProjects } = useDataFile('projects')
 
   const projects    = projectsData?.projects ?? []
   const [selectedId,      setSelectedId]      = useState<string | null>(null)
@@ -1045,6 +1045,21 @@ export default function ProjectsPage() {
     setSelectedId(project.id)
     setNewProjectOpen(false)
   }, [setData])
+
+  if (projectsError) {
+    return (
+      <div className="flex flex-col h-full items-center justify-center gap-2 text-muted-foreground">
+        <p className="text-sm text-destructive">Failed to load projects</p>
+        <p className="text-xs opacity-60">{projectsError}</p>
+        <button
+          onClick={reloadProjects}
+          className="mt-2 text-xs underline underline-offset-2 hover:text-foreground transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    )
+  }
 
   if (!projectsData) {
     return (

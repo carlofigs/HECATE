@@ -44,7 +44,8 @@ const BoardSkeleton = (
 export default function TasksPage() {
   const { data, loading, error, setData, reload } = useDataFile('tasks')
   const [searchParams, setSearchParams] = useSearchParams()
-  const autoOpenHandled = useRef(false)
+  // Track the last-handled ?open= id so re-navigation to a different task id works.
+  const autoOpenHandled = useRef<string | null>(null)
 
   const [view, setView] = useState<View>(
     () => (localStorage.getItem(TASKS_VIEW_STORAGE_KEY) as View | null) ?? 'board',
@@ -98,8 +99,8 @@ export default function TasksPage() {
 
   useEffect(() => {
     const openId = searchParams.get('open')
-    if (!openId || !data || autoOpenHandled.current) return
-    autoOpenHandled.current = true
+    if (!openId || !data || autoOpenHandled.current === openId) return
+    autoOpenHandled.current = openId
 
     for (const col of data.columns) {
       const task = col.tasks.find(t => t.id === openId)
@@ -183,13 +184,13 @@ export default function TasksPage() {
     }
   }, [data, activeTags])
 
-  function toggleTag(tag: string) {
+  const toggleTag = useCallback((tag: string) => {
     setActiveTags(prev => {
       const next = new Set(prev)
       next.has(tag) ? next.delete(tag) : next.add(tag)
       return next
     })
-  }
+  }, [])
 
   // ── Header actions ─────────────────────────────────────────────────────────
 

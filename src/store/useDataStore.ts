@@ -101,6 +101,11 @@ export const useDataStore = create<DataStore>()(
       const slice = get()[name] as FileSlice<unknown>
       if (!slice.data) return
 
+      // Snapshot the data reference before the async gap.
+      // immer produces a new object on every mutation, so a reference inequality
+      // after the await means concurrent edits landed during the in-flight PUT.
+      const dataAtStart = slice.data
+
       set(state => {
         ;(state[name] as FileSlice<unknown>).loading = true
         ;(state[name] as FileSlice<unknown>).error   = null
@@ -108,16 +113,21 @@ export const useDataStore = create<DataStore>()(
 
       try {
         const newSha = await putFile(creds, name, slice.data, slice.sha, message)
+        // Re-read current data after the await to detect concurrent mutations
+        const dataAfterSave = (get()[name] as FileSlice<unknown>).data
         set(state => {
-          ;(state[name] as FileSlice<unknown>).sha     = newSha
-          ;(state[name] as FileSlice<unknown>).dirty   = false
-          ;(state[name] as FileSlice<unknown>).loading = false
+          const s = state[name] as FileSlice<unknown>
+          s.sha     = newSha
+          s.loading = false
+          // Only clear dirty if no new edits arrived during the request.
+          // If data changed, leave dirty=true so the auto-save debounce re-fires.
+          if (dataAfterSave === dataAtStart) s.dirty = false
         })
       } catch (err: unknown) {
-        const message = (err as { message?: string })?.message ?? 'Unknown error'
+        const errMessage = (err as { message?: string })?.message ?? 'Unknown error'
         set(state => {
           ;(state[name] as FileSlice<unknown>).loading = false
-          ;(state[name] as FileSlice<unknown>).error   = message
+          ;(state[name] as FileSlice<unknown>).error   = errMessage
         })
         throw err   // re-throw so callers can show toasts
       }

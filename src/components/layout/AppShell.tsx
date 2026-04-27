@@ -190,7 +190,18 @@ export default function AppShell() {
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault()
         const toSave = dirtyMap.filter(([, dirty]) => dirty).map(([name]) => name)
-        await Promise.all(toSave.map(name => saveFile(name)))
+        if (toSave.length === 0) return
+        try {
+          const results = await Promise.allSettled(toSave.map(name => saveFile(name)))
+          const failed  = results.filter(r => r.status === 'rejected')
+          if (failed.length > 0) {
+            toast.error(`${failed.length} file(s) failed to save`)
+          } else {
+            toast.success('All files saved')
+          }
+        } catch {
+          toast.error('Save failed')
+        }
         return
       }
 
