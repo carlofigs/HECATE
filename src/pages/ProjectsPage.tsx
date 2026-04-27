@@ -21,9 +21,16 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertCircle, Check, CheckCircle2, ChevronDown, ChevronRight,
-  Clock, Search, X, Pencil, Plus,
+  Clock, GripVertical, Search, X, Pencil, Plus,
 } from 'lucide-react'
-import * as TooltipPrimitive from '@radix-ui/react-tooltip'
+import {
+  DndContext, PointerSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext, useSortable, verticalListSortingStrategy, arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useDataFile } from '@/hooks/useDataFile'
@@ -618,22 +625,21 @@ function fmtShort(ms: number) { return new Date(ms).toLocaleDateString('en-AU', 
 function fmtDuration(sMs: number, eMs: number) { const d = Math.round((eMs - sMs) / 86_400_000); return d === 1 ? '1d' : `${d}d` }
 
 function RoadmapSection({ timeline }: { timeline: TimelineEntry[] }) {
-  const [collapsed,     setCollapsed]     = useState(false)
-  const [expandedPhase, setExpandedPhase] = useState<number | null>(null)
+  const [collapsed, setCollapsed] = useState(false)
 
   if (timeline.length === 0) return null
 
-  const dated = timeline
-    .map((t, i) => ({ ...t, i, startMs: toMs(t.start), endMs: toMs(t.end) }))
-    .filter((t): t is typeof t & { startMs: number; endMs: number } => t.startMs !== null && t.endMs !== null)
-
-  const allMs   = dated.flatMap(t => [t.startMs, t.endMs])
+  // Build date bounds across all phases that have both start + end
+  const allMs = timeline
+    .flatMap(t => [toMs(t.start), toMs(t.end)])
+    .filter((ms): ms is number => ms !== null)
   const minMs   = allMs.length ? Math.min(...allMs) : 0
   const maxMs   = allMs.length ? Math.max(...allMs) : 1
   const spanMs  = maxMs - minMs || 1
   const todayMs = Date.now()
   const todayPct = Math.max(0, Math.min(100, ((todayMs - minMs) / spanMs) * 100))
-  const showToday = todayPct > 0 && todayPct < 100
+  const showToday   = allMs.length >= 2 && todayPct > 0 && todayPct < 100
+  const showGantt   = allMs.length >= 2
 
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
@@ -647,106 +653,75 @@ function RoadmapSection({ timeline }: { timeline: TimelineEntry[] }) {
       </button>
 
       {!collapsed && (
-        <div className="p-3 border-t border-border/40">
-          <div className="grid gap-x-5" style={{ gridTemplateColumns: '190px 1fr' }}>
+        <div className="px-3 py-3 border-t border-border/40 space-y-2">
+          {timeline.map((entry, idx) => {
+            const cfg      = TIMELINE_CFG[entry.status]
+            const sMs      = toMs(entry.start)
+            const eMs      = toMs(entry.end)
+            const hasDates = sMs !== null && eMs !== null
+            const barLeft  = sMs !== null ? ((sMs - minMs) / spanMs * 100) : 0
+            const barWidth = hasDates ? Math.max(1.5, (eMs! - sMs!) / spanMs * 100) : 0
 
-            {/* Left: clickable phase timeline */}
-            <div className="flex flex-col">
-              {timeline.map((entry, idx) => {
-                const cfg    = TIMELINE_CFG[entry.status]
-                const isLast = idx === timeline.length - 1
-                const exp    = expandedPhase === idx
-                const sMs    = toMs(entry.start)
-                const eMs    = toMs(entry.end)
-                const fillPct = entry.status === 'completed' ? 100 : entry.status === 'active' ? 55 : 0
-
-                return (
-                  <div key={idx} className="grid gap-x-2" style={{ gridTemplateColumns: '20px 1fr', paddingBottom: isLast ? 0 : 8 }}>
-                    <div className="flex flex-col items-center">
-                      <div className={cn('w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0', cfg.dot)}>
-                        {idx + 1}
-                      </div>
-                      {!isLast && <div className="w-px flex-1 bg-border/40 mt-0.5" />}
-                    </div>
-                    <div className="pb-0.5 cursor-pointer select-none" onClick={() => setExpandedPhase(i => i === idx ? null : idx)}>
-                      <div className="flex items-center gap-1">
-                        <p className={cn('text-[11px] font-medium leading-snug flex-1', cfg.text)}>{entry.phase}</p>
-                        <ChevronRight className={cn('w-2.5 h-2.5 text-muted-foreground/25 shrink-0 transition-transform duration-150', exp && 'rotate-90')} />
-                      </div>
-                      <div className="mt-1 h-1 rounded-full bg-muted/30 overflow-hidden">
-                        <div className={cn('h-full rounded-full', cfg.fill)} style={{ width: `${fillPct}%` }} />
-                      </div>
-                      {exp && (
-                        <div className="mt-1.5 space-y-0.5">
-                          {sMs && eMs && <p className="text-[10px] text-muted-foreground/60">{fmtShort(sMs)} → {fmtShort(eMs)} <span className="text-muted-foreground/40">· {fmtDuration(sMs, eMs)}</span></p>}
-                          {sMs && !eMs && <p className="text-[10px] text-muted-foreground/60">{fmtShort(sMs)} → TBD</p>}
-                          <p className={cn('text-[10px] font-medium', cfg.text)}>{cfg.label}</p>
-                        </div>
-                      )}
-                    </div>
+            return (
+              <div key={idx} className="space-y-1.5">
+                {/* Phase row */}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {/* Numbered status dot */}
+                  <div className={cn('w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0', cfg.dot)}>
+                    {idx + 1}
                   </div>
-                )
-              })}
-            </div>
-
-            {/* Right: Gantt with tooltips */}
-            {dated.length > 0 && (
-              <div className="flex flex-col gap-[3px] min-w-0">
-                <div className="relative h-4">
-                  {showToday && (
-                    <span className="absolute text-[9px] text-amber-500 font-medium -translate-x-1/2 leading-none" style={{ left: `${todayPct.toFixed(1)}%` }}>
-                      {fmtShort(todayMs)}
+                  {/* Phase name */}
+                  <p className={cn('text-[11px] font-medium flex-1 min-w-0', cfg.text)}>
+                    {entry.phase}
+                  </p>
+                  {/* Date range + duration */}
+                  {hasDates && (
+                    <span className="text-[10px] text-muted-foreground/50 shrink-0 tabular-nums whitespace-nowrap">
+                      {fmtShort(sMs!)}
+                      <span className="text-muted-foreground/30"> – </span>
+                      {fmtShort(eMs!)}
+                      <span className="text-muted-foreground/30 ml-1">· {fmtDuration(sMs!, eMs!)}</span>
                     </span>
                   )}
+                  {sMs !== null && eMs === null && (
+                    <span className="text-[10px] text-muted-foreground/50 shrink-0">{fmtShort(sMs)} – TBD</span>
+                  )}
+                  {/* Status label */}
+                  <span className={cn('text-[10px] font-medium shrink-0 w-[62px] text-right', cfg.text)}>{cfg.label}</span>
                 </div>
-                <div className="flex justify-between text-[10px] text-muted-foreground/40 pb-1 border-b border-border/20">
-                  <span>{fmtShort(minMs)}</span>
-                  <span>{fmtShort(minMs + spanMs / 2)}</span>
-                  <span>{fmtShort(maxMs)}</span>
-                </div>
-                {timeline.map((entry, idx) => {
-                  const sMs = toMs(entry.start)
-                  const eMs = toMs(entry.end)
-                  const cfg = TIMELINE_CFG[entry.status]
-                  if (!sMs || !eMs) {
-                    return (
-                      <div key={idx} className="relative h-[18px]">
-                        <div className="absolute inset-y-1 inset-x-0 rounded border border-dashed border-border/40 bg-muted/10" />
-                        {showToday && <div className="absolute top-0 bottom-0 w-px bg-amber-400/60 z-10 pointer-events-none" style={{ left: `${todayPct.toFixed(1)}%` }} />}
-                      </div>
-                    )
-                  }
-                  const left  = ((sMs - minMs) / spanMs * 100).toFixed(1)
-                  const width = Math.max(1.5, (eMs - sMs) / spanMs * 100).toFixed(1)
-                  return (
-                    <TooltipPrimitive.Root key={idx} delayDuration={120}>
-                      <div className="relative h-[18px]">
-                        <TooltipPrimitive.Trigger asChild>
-                          <div
-                            className={cn('absolute top-0.5 bottom-0.5 rounded flex items-center px-1.5 overflow-hidden cursor-default', cfg.bar)}
-                            style={{ left: `${left}%`, width: `${width}%`, minWidth: 6 }}
-                          >
-                            <span className="text-[10px] font-medium text-foreground/70 truncate whitespace-nowrap leading-none">{entry.phase}</span>
-                          </div>
-                        </TooltipPrimitive.Trigger>
-                        {showToday && <div className="absolute top-0 bottom-0 w-px bg-amber-400/60 z-10 pointer-events-none" style={{ left: `${todayPct.toFixed(1)}%` }} />}
-                      </div>
-                      <TooltipPrimitive.Portal>
-                        <TooltipPrimitive.Content
-                          sideOffset={6} collisionPadding={12}
-                          className={cn('z-50 rounded-lg border border-border bg-card shadow-xl px-3 py-2 space-y-0.5', 'animate-in fade-in-0 zoom-in-95', 'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95', 'data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2')}
-                        >
-                          <p className="text-xs font-medium text-foreground">{entry.phase}</p>
-                          <p className="text-[11px] text-muted-foreground">{fmtShort(sMs)} → {fmtShort(eMs)} <span className="text-muted-foreground/60">· {fmtDuration(sMs, eMs)}</span></p>
-                          <p className={cn('text-[11px] font-medium', cfg.text)}>{cfg.label}</p>
-                        </TooltipPrimitive.Content>
-                      </TooltipPrimitive.Portal>
-                    </TooltipPrimitive.Root>
-                  )
-                })}
+
+                {/* Gantt bar track */}
+                {showGantt && (
+                  <div className="ml-7 relative h-1.5 rounded-full bg-muted/20">
+                    {hasDates && (
+                      <div
+                        className={cn('absolute top-0 bottom-0 rounded-full', cfg.bar)}
+                        style={{ left: `${barLeft.toFixed(1)}%`, width: `${barWidth.toFixed(1)}%` }}
+                      />
+                    )}
+                    {showToday && (
+                      <div
+                        className="absolute top-[-4px] bottom-[-4px] w-px bg-amber-400/70 z-10"
+                        style={{ left: `${todayPct.toFixed(1)}%` }}
+                      />
+                    )}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            )
+          })}
+
+          {/* Today label under Gantt */}
+          {showToday && showGantt && (
+            <div className="ml-7 relative h-3.5">
+              <span
+                className="absolute text-[9px] text-amber-400/80 font-medium -translate-x-1/2 leading-none"
+                style={{ left: `${todayPct.toFixed(1)}%` }}
+              >
+                today
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -877,20 +852,112 @@ function ProjectDetail({
 
 // ─── Project List (left panel) ────────────────────────────────────────────────
 
+/** Single sortable row inside the project list */
+function SortableProjectItem({
+  project,
+  selectedId,
+  onSelect,
+  dragDisabled,
+}: {
+  project:     Project
+  selectedId:  string | null
+  onSelect:    (id: string) => void
+  dragDisabled: boolean
+}) {
+  const cfg      = statusCfg(project.status)
+  const selected = project.id === selectedId
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: project.id, disabled: dragDisabled })
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity:   isDragging ? 0.4 : 1,
+    zIndex:    isDragging ? 10 : undefined,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'group/pi flex items-stretch border-l-2 transition-colors',
+        selected ? 'border-l-primary bg-primary/5' : 'border-l-transparent hover:bg-muted/30',
+      )}
+    >
+      {/* Drag handle */}
+      {!dragDisabled && (
+        <button
+          {...attributes}
+          {...listeners}
+          tabIndex={-1}
+          className="px-1 flex items-center text-muted-foreground/20 opacity-0 group-hover/pi:opacity-100 cursor-grab active:cursor-grabbing transition-opacity touch-none"
+          aria-label="Drag to reorder"
+        >
+          <GripVertical className="w-3 h-3" />
+        </button>
+      )}
+
+      {/* Main clickable area */}
+      <button
+        onClick={() => onSelect(project.id)}
+        className="flex-1 text-left px-3 py-2.5 min-w-0"
+      >
+        <div className="flex items-start gap-2">
+          <span className={cn('w-1.5 h-1.5 rounded-full mt-1.5 shrink-0', cfg.dot)} />
+          <div className="flex-1 min-w-0">
+            <p className={cn('text-xs font-medium leading-snug truncate', selected ? 'text-foreground' : 'text-foreground/80')}>
+              {project.name}
+            </p>
+            {project.subtitle && (
+              <p className="text-[10px] text-muted-foreground/50 leading-snug mt-0.5 line-clamp-2">{project.subtitle}</p>
+            )}
+            <p className="text-[10px] text-muted-foreground/40 mt-1 font-mono">#{project.tag}</p>
+          </div>
+        </div>
+      </button>
+    </div>
+  )
+}
+
 function ProjectList({
-  projects, selectedId, onSelect, search, onSearch,
+  projects, selectedId, onSelect, search, onSearch, onReorder,
 }: {
   projects:   Project[]
   selectedId: string | null
   onSelect:   (id: string) => void
   search:     string
   onSearch:   (v: string) => void
+  onReorder:  (reordered: Project[]) => void
 }) {
-  const filtered = projects.filter(p =>
-    search.trim() === '' ||
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.tag.toLowerCase().includes(search.toLowerCase()),
+  const isFiltering = search.trim() !== ''
+
+  const filtered = isFiltering
+    ? projects.filter(p =>
+        p.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.tag.toLowerCase().includes(search.toLowerCase()),
+      )
+    : projects
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   )
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIdx = projects.findIndex(p => p.id === active.id)
+    const newIdx = projects.findIndex(p => p.id === over.id)
+    if (oldIdx === -1 || newIdx === -1) return
+    onReorder(arrayMove(projects, oldIdx, newIdx))
+  }
 
   return (
     <div className="flex flex-col border-r border-border bg-card/50 w-56 shrink-0">
@@ -917,30 +984,19 @@ function ProjectList({
         {filtered.length === 0 ? (
           <p className="px-3 py-4 text-xs text-muted-foreground/40 italic">No projects match</p>
         ) : (
-          filtered.map(p => {
-            const cfg      = statusCfg(p.status)
-            const selected = p.id === selectedId
-            return (
-              <button
-                key={p.id}
-                onClick={() => onSelect(p.id)}
-                className={cn('w-full text-left px-3 py-2.5 border-l-2 transition-colors', selected ? 'border-l-primary bg-primary/5' : 'border-l-transparent hover:bg-muted/30')}
-              >
-                <div className="flex items-start gap-2">
-                  <span className={cn('w-1.5 h-1.5 rounded-full mt-1.5 shrink-0', cfg.dot)} />
-                  <div className="flex-1 min-w-0">
-                    <p className={cn('text-xs font-medium leading-snug truncate', selected ? 'text-foreground' : 'text-foreground/80')}>
-                      {p.name}
-                    </p>
-                    {p.subtitle && (
-                      <p className="text-[10px] text-muted-foreground/50 leading-snug mt-0.5 line-clamp-2">{p.subtitle}</p>
-                    )}
-                    <p className="text-[10px] text-muted-foreground/40 mt-1 font-mono">#{p.tag}</p>
-                  </div>
-                </div>
-              </button>
-            )
-          })
+          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+            <SortableContext items={projects.map(p => p.id)} strategy={verticalListSortingStrategy}>
+              {filtered.map(p => (
+                <SortableProjectItem
+                  key={p.id}
+                  project={p}
+                  selectedId={selectedId}
+                  onSelect={onSelect}
+                  dragDisabled={isFiltering}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         )}
       </div>
     </div>
@@ -966,6 +1022,10 @@ export default function ProjectsPage() {
       if (p) fn(p)
     })
   }, [resolvedId, setData])
+
+  const handleReorder = useCallback((reordered: Project[]) => {
+    setData(draft => { draft.projects = reordered })
+  }, [setData])
 
   if (!projectsData) {
     return (
@@ -993,6 +1053,7 @@ export default function ProjectsPage() {
         onSelect={setSelectedId}
         search={search}
         onSearch={setSearch}
+        onReorder={handleReorder}
       />
       {selected ? (
         <ProjectDetail project={selected} onUpdate={handleUpdate} />
