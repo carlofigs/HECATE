@@ -29,3 +29,6 @@ export function displayId(id: string): string {
  * Usage:  new RegExp(TASK_ID_PATTERN, 'gi')
  */
 export const TASK_ID_PATTERN = String.raw`\b(t-[a-z][a-z0-9]*(?:-[a-z0-9]+)?)\b`
+
+/** localStorage key for the Tasks page view (board | list). Single source of truth. */
+export const TASKS_VIEW_STORAGE_KEY = 'hecate:tasks:view'

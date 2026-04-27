@@ -12,7 +12,7 @@
  * and does NOT error — the file will be created on first save.
  */
 
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useDataStore } from '@/store/useDataStore'
 import { loadCredentials } from '@/lib/github'
 import type { SettingsData } from '@/lib/schemas'
@@ -54,24 +54,33 @@ export function useSettings() {
   // ── Helpers ───────────────────────────────────────────────────────────────
   const settings: SettingsData = slice.data ?? DEFAULT_SETTINGS
 
-  function updateSettings(updater: (draft: SettingsData) => void) {
-    if (slice.data) {
-      setData('settings', updater)
-    } else {
-      // First write — settings.json doesn't exist yet.
-      // Seed the store with defaults + the mutation, using non-immer merge setState.
-      const seeded = { ...DEFAULT_SETTINGS }
-      updater(seeded)
-      useDataStore.setState(current => ({
-        ...current,
-        settings: { ...current.settings, data: seeded, dirty: true },
-      }))
-    }
-  }
+  // Stable reference: only changes when slice.data switches null→object (first write).
+  const updateSettings = useCallback(
+    (updater: (draft: SettingsData) => void) => {
+      if (slice.data) {
+        setData('settings', updater)
+      } else {
+        // First write — settings.json doesn't exist yet.
+        // Seed the store with defaults + the mutation, using non-immer merge setState.
+        const seeded = { ...DEFAULT_SETTINGS }
+        updater(seeded)
+        useDataStore.setState(current => ({
+          ...current,
+          settings: { ...current.settings, data: seeded, dirty: true },
+        }))
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- slice.data is the only
+    // conditional branch — setData and useDataStore.setState are stable references
+    [slice.data, setData],
+  )
 
-  async function saveSettings() {
-    await saveFile('settings', 'chore: update settings.json')
-  }
+  const saveSettings = useCallback(
+    async () => {
+      await saveFile('settings', 'chore: update settings.json')
+    },
+    [saveFile],
+  )
 
   return { settings, loading: slice.loading, updateSettings, saveSettings }
 }

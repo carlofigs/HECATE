@@ -15,6 +15,7 @@
  */
 
 import { useState, useRef } from 'react'
+import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ChevronLeft, Kanban, LayoutList, X, Plus } from 'lucide-react'
@@ -23,10 +24,20 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useDataFile } from '@/hooks/useDataFile'
 import { useSettings } from '@/hooks/useSettings'
+import { TASKS_VIEW_STORAGE_KEY } from '@/lib/taskConstants'
 import { cn } from '@/lib/utils'
 import type { GitHubCredentials, ColumnType } from '@/lib/schemas'
 
 const STORAGE_KEY = 'hecate:credentials'
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function readStoredCredentials(): GitHubCredentials | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
 
 // ─── Shared section wrapper ───────────────────────────────────────────────────
 
@@ -36,8 +47,8 @@ function Section({
   children,
 }: {
   title:        string
-  description?: string
-  children:     React.ReactNode
+  description?: ReactNode
+  children:     ReactNode
 }) {
   return (
     <section className="space-y-3">
@@ -46,14 +57,42 @@ function Section({
           {title}
         </h2>
         {description && (
-          <p
-            className="text-xs text-muted-foreground/70"
-            dangerouslySetInnerHTML={{ __html: description }}
-          />
+          <p className="text-xs text-muted-foreground/70">{description}</p>
         )}
       </div>
       {children}
     </section>
+  )
+}
+
+// ─── Shared select + hint control ────────────────────────────────────────────
+
+interface SelectOption { value: number; label: string }
+
+function SelectSetting({
+  value,
+  options,
+  onChange,
+  hint,
+}: {
+  value:    number
+  options:  SelectOption[]
+  onChange: (value: number) => void
+  hint:     string
+}) {
+  return (
+    <div className="space-y-2">
+      <select
+        value={value}
+        onChange={e => onChange(Number(e.target.value))}
+        className="h-8 rounded-md border border-input bg-transparent px-2.5 text-xs text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      >
+        {options.map(o => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+      <p className="text-[11px] text-muted-foreground/50">{hint}</p>
+    </div>
   )
 }
 
@@ -66,18 +105,27 @@ function OneOnOnePeopleSection() {
 
   const people = settings.oneOnOnePeople
 
-  function addPerson() {
+  async function addPerson() {
     const name = draft.trim()
-    if (!name || people.includes(name)) return
+    // Case-insensitive dedup: "James" and "james" are the same person
+    if (!name || people.some(p => p.toLowerCase() === name.toLowerCase())) return
     updateSettings(d => { d.oneOnOnePeople = [...d.oneOnOnePeople, name] })
-    saveSettings()
+    try {
+      await saveSettings()
+    } catch {
+      toast.error('Failed to save settings')
+    }
     setDraft('')
     inputRef.current?.focus()
   }
 
-  function removePerson(name: string) {
+  async function removePerson(name: string) {
     updateSettings(d => { d.oneOnOnePeople = d.oneOnOnePeople.filter(p => p !== name) })
-    saveSettings()
+    try {
+      await saveSettings()
+    } catch {
+      toast.error('Failed to save settings')
+    }
   }
 
   return (
@@ -142,11 +190,15 @@ function DefaultViewSection() {
   const { settings, updateSettings, saveSettings } = useSettings()
   const view = settings.defaultView
 
-  function set(v: 'board' | 'list') {
+  async function set(v: 'board' | 'list') {
     updateSettings(d => { d.defaultView = v })
-    saveSettings()
-    // Also update the per-session localStorage key so the change takes effect immediately
-    localStorage.setItem('hecate:tasks:view', v)
+    // Also sync the per-session key so the Tasks page picks it up immediately
+    localStorage.setItem(TASKS_VIEW_STORAGE_KEY, v)
+    try {
+      await saveSettings()
+    } catch {
+      toast.error('Failed to save settings')
+    }
   }
 
   return (
@@ -186,73 +238,63 @@ function DefaultViewSection() {
 
 // ─── Auto-save debounce section ───────────────────────────────────────────────
 
-const DEBOUNCE_OPTIONS = [
-  { ms: 500,  label: '0.5 s — aggressive' },
-  { ms: 1000, label: '1 s'                },
-  { ms: 2000, label: '2 s  (default)'     },
-  { ms: 5000, label: '5 s — conservative' },
+const DEBOUNCE_OPTIONS: SelectOption[] = [
+  { value: 500,  label: '0.5 s — aggressive' },
+  { value: 1000, label: '1 s'                },
+  { value: 2000, label: '2 s  (default)'     },
+  { value: 5000, label: '5 s — conservative' },
 ]
 
 function AutoSaveSection() {
   const { settings, updateSettings, saveSettings } = useSettings()
 
-  function set(ms: number) {
+  async function handleChange(ms: number) {
     updateSettings(d => { d.autoSaveDebounceMs = ms })
-    saveSettings()
+    try {
+      await saveSettings()
+    } catch {
+      toast.error('Failed to save settings')
+    }
   }
 
   return (
-    <div className="space-y-2">
-      <select
-        value={settings.autoSaveDebounceMs}
-        onChange={e => set(Number(e.target.value))}
-        className="h-8 rounded-md border border-input bg-transparent px-2.5 text-xs text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      >
-        {DEBOUNCE_OPTIONS.map(o => (
-          <option key={o.ms} value={o.ms}>{o.label}</option>
-        ))}
-      </select>
-      <p className="text-[11px] text-muted-foreground/50">
-        How long HECATE waits after your last edit before committing to GitHub.
-        Lower = more commits; higher = fewer API calls.
-      </p>
-    </div>
+    <SelectSetting
+      value={settings.autoSaveDebounceMs}
+      options={DEBOUNCE_OPTIONS}
+      onChange={handleChange}
+      hint="How long HECATE waits after your last edit before committing to GitHub. Lower = more commits; higher = fewer API calls."
+    />
   )
 }
 
 // ─── Poll interval section ────────────────────────────────────────────────────
 
-const POLL_OPTIONS = [
-  { ms: 0,      label: 'Off'     },
-  { ms: 60000,  label: '1 min'   },
-  { ms: 300000, label: '5 min'   },
-  { ms: 900000, label: '15 min'  },
+const POLL_OPTIONS: SelectOption[] = [
+  { value: 0,      label: 'Off'    },
+  { value: 60000,  label: '1 min'  },
+  { value: 300000, label: '5 min'  },
+  { value: 900000, label: '15 min' },
 ]
 
 function PollIntervalSection() {
   const { settings, updateSettings, saveSettings } = useSettings()
 
-  function set(ms: number) {
+  async function handleChange(ms: number) {
     updateSettings(d => { d.pollIntervalMs = ms })
-    saveSettings()
+    try {
+      await saveSettings()
+    } catch {
+      toast.error('Failed to save settings')
+    }
   }
 
   return (
-    <div className="space-y-2">
-      <select
-        value={settings.pollIntervalMs}
-        onChange={e => set(Number(e.target.value))}
-        className="h-8 rounded-md border border-input bg-transparent px-2.5 text-xs text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      >
-        {POLL_OPTIONS.map(o => (
-          <option key={o.ms} value={o.ms}>{o.label}</option>
-        ))}
-      </select>
-      <p className="text-[11px] text-muted-foreground/50">
-        How often HECATE checks GitHub for changes made elsewhere (e.g. by Claude).
-        Off disables background polling entirely.
-      </p>
-    </div>
+    <SelectSetting
+      value={settings.pollIntervalMs}
+      options={POLL_OPTIONS}
+      onChange={handleChange}
+      hint="How often HECATE checks GitHub for changes made elsewhere (e.g. by Claude). Off disables background polling entirely."
+    />
   )
 }
 
@@ -340,16 +382,10 @@ function ColumnTypesSection() {
 function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
   const navigate = useNavigate()
 
-  const existing: GitHubCredentials | null = (() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      return raw ? JSON.parse(raw) : null
-    } catch { return null }
-  })()
-
-  const [token,   setToken]   = useState(existing?.token ?? '')
-  const [owner,   setOwner]   = useState(existing?.owner ?? '')
-  const [repo,    setRepo]    = useState(existing?.repo  ?? '')
+  // Lazy initialisers — read localStorage once on mount, not on every render
+  const [token,   setToken]   = useState(() => readStoredCredentials()?.token ?? '')
+  const [owner,   setOwner]   = useState(() => readStoredCredentials()?.owner ?? '')
+  const [repo,    setRepo]    = useState(() => readStoredCredentials()?.repo  ?? '')
   const [testing, setTesting] = useState(false)
 
   async function handleSave(e: React.FormEvent) {
@@ -520,7 +556,7 @@ export default function SetupPage() {
 
           <Section
             title="GitHub Credentials"
-            description='Fine-grained PAT with <em>Contents</em> read/write on your data repo. Stored in <code class="font-mono text-[11px]">localStorage</code> — never sent anywhere except GitHub.'
+            description={<>Fine-grained PAT with <em>Contents</em> read/write on your data repo. Stored in <code className="font-mono text-[11px]">localStorage</code> — never sent anywhere except GitHub.</>}
           >
             <CredentialsSection isFirstRun={false} />
           </Section>

@@ -23,11 +23,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { nowISO, generateTaskId } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import { TASKS_VIEW_STORAGE_KEY } from '@/lib/taskConstants'
 import type { Task, TasksData } from '@/lib/schemas'
 
 type View = 'board' | 'list'
-
-const VIEW_KEY = 'hecate:tasks:view'
 
 const BoardSkeleton = (
   <div className="flex gap-3 p-4 h-full overflow-hidden">
@@ -48,7 +47,7 @@ export default function TasksPage() {
   const autoOpenHandled = useRef(false)
 
   const [view, setView] = useState<View>(
-    () => (localStorage.getItem(VIEW_KEY) as View | null) ?? 'board',
+    () => (localStorage.getItem(TASKS_VIEW_STORAGE_KEY) as View | null) ?? 'board',
   )
   const [dialogOpen,  setDialogOpen]  = useState(false)
   const [dialogTask,  setDialogTask]  = useState<Task | null>(null)
@@ -57,7 +56,7 @@ export default function TasksPage() {
 
   function switchView(v: View) {
     setView(v)
-    localStorage.setItem(VIEW_KEY, v)
+    localStorage.setItem(TASKS_VIEW_STORAGE_KEY, v)
   }
 
   // ── Dialog openers ─────────────────────────────────────────────────────────
