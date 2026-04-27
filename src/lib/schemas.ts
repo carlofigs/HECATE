@@ -76,6 +76,7 @@ export interface Project {
   id: string                    // "p-{kebab-name}"
   name: string
   subtitle: string | null
+  summary: string | null        // markdown paragraph shown below subtitle
   status: ProjectStatus
   phase: string | null
   currentFocus: string | null
