@@ -52,4 +52,5 @@ declare module 'lucide-react' {
   export const Repeat: LucideIcon
   export const ArrowUpAZ: LucideIcon
   export const ArrowDownAZ: LucideIcon
+  export const RotateCcw: LucideIcon
 }

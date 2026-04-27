@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import {
   Focus,
   Kanban,
@@ -14,9 +14,12 @@ import {
   X,
   Command,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { SyncStatus } from '@/components/layout/SyncStatus'
+import { StaleDataBanner } from '@/components/layout/StaleDataBanner'
 import { useSettings } from '@/hooks/useSettings'
+import { useStaleDetector } from '@/hooks/useStaleDetector'
 import { useDataStore } from '@/store/useDataStore'
 
 const NAV_ITEMS = [
@@ -148,6 +151,7 @@ export default function AppShell() {
   const gMode   = useRef(false)
   const gTimer  = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { settings, updateSettings, saveSettings } = useSettings()
+  const { staleFiles, reloadStale, dismiss: dismissStale } = useStaleDetector()
 
   // Targeted selectors — each subscription is isolated to a single boolean so AppShell
   // only re-renders when that specific dirty flag changes, not on any store write.
@@ -223,11 +227,15 @@ export default function AppShell() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [navigate, saveFile, tasksDirty, focusDirty, projectsDirty, weekLogDirty, archiveDirty, memoryDirty])
 
-  function toggleTheme() {
+  const toggleTheme = useCallback(async () => {
     const next = settings.theme === 'dark' ? 'light' : 'dark'
     updateSettings(d => { d.theme = next })
-    saveSettings()
-  }
+    try {
+      await saveSettings()
+    } catch {
+      toast.error('Failed to save theme preference')
+    }
+  }, [settings.theme, updateSettings, saveSettings])
 
   return (
     <div className="flex h-[100dvh] overflow-hidden bg-background">
@@ -328,6 +336,13 @@ export default function AppShell() {
             </button>
           </div>
         </header>
+
+        {/* Stale data banner — shown when remote changes are detected */}
+        <StaleDataBanner
+          staleFiles={staleFiles}
+          onReload={reloadStale}
+          onDismiss={dismissStale}
+        />
 
         {/* Page content */}
         <main className="flex-1 overflow-hidden">

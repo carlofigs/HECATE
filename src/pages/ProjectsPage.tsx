@@ -34,6 +34,7 @@ import { CSS } from '@dnd-kit/utilities'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useDataFile } from '@/hooks/useDataFile'
+import { NewProjectDialog } from '@/components/projects/NewProjectDialog'
 import { cn } from '@/lib/utils'
 import { displayId } from '@/lib/taskConstants'
 import type {
@@ -927,14 +928,15 @@ function SortableProjectItem({
 }
 
 function ProjectList({
-  projects, selectedId, onSelect, search, onSearch, onReorder,
+  projects, selectedId, onSelect, search, onSearch, onReorder, onNewProject,
 }: {
-  projects:   Project[]
-  selectedId: string | null
-  onSelect:   (id: string) => void
-  search:     string
-  onSearch:   (v: string) => void
-  onReorder:  (reordered: Project[]) => void
+  projects:      Project[]
+  selectedId:    string | null
+  onSelect:      (id: string) => void
+  search:        string
+  onSearch:      (v: string) => void
+  onReorder:     (reordered: Project[]) => void
+  onNewProject?: () => void
 }) {
   const isFiltering = search.trim() !== ''
 
@@ -960,9 +962,9 @@ function ProjectList({
 
   return (
     <div className="flex flex-col border-r border-border bg-card/50 w-56 shrink-0">
-      {/* Search */}
-      <div className="px-2 py-2 border-b border-border/50">
-        <div className="relative">
+      {/* Search + New */}
+      <div className="flex items-center gap-1 px-2 py-2 border-b border-border/50">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/40" />
           <input
             value={search}
@@ -976,6 +978,15 @@ function ProjectList({
             </button>
           )}
         </div>
+        {onNewProject && (
+          <button
+            onClick={onNewProject}
+            title="New project"
+            className="p-1.5 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0"
+          >
+            <Plus className="w-3 h-3" />
+          </button>
+        )}
       </div>
 
       {/* List */}
@@ -1008,8 +1019,9 @@ export default function ProjectsPage() {
   const { data: projectsData, setData } = useDataFile('projects')
 
   const projects    = projectsData?.projects ?? []
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [search,     setSearch]     = useState('')
+  const [selectedId,      setSelectedId]      = useState<string | null>(null)
+  const [search,          setSearch]          = useState('')
+  const [newProjectOpen,  setNewProjectOpen]  = useState(false)
 
   const resolvedId = selectedId ?? projects[0]?.id ?? null
   const selected   = projects.find(p => p.id === resolvedId) ?? null
@@ -1020,13 +1032,18 @@ export default function ProjectsPage() {
       const p = draft.projects.find(pr => pr.id === resolvedId)
       if (!p) return
       fn(p)
-      // Always stamp updatedAt — call sites don't need to do this individually
       p.updatedAt = new Date().toISOString().slice(0, 10)
     })
   }, [resolvedId, setData])
 
   const handleReorder = useCallback((reordered: Project[]) => {
     setData(draft => { draft.projects = reordered })
+  }, [setData])
+
+  const handleCreate = useCallback((project: Project) => {
+    setData(draft => { draft.projects.unshift(project) })
+    setSelectedId(project.id)
+    setNewProjectOpen(false)
   }, [setData])
 
   if (!projectsData) {
@@ -1041,29 +1058,53 @@ export default function ProjectsPage() {
 
   if (projects.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
-        No projects yet
-      </div>
+      <>
+        <div className="flex flex-col h-full items-center justify-center gap-3 text-muted-foreground">
+          <p className="text-sm">No projects yet</p>
+          <button
+            onClick={() => setNewProjectOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            New project
+          </button>
+        </div>
+        <NewProjectDialog
+          open={newProjectOpen}
+          onClose={() => setNewProjectOpen(false)}
+          onCreate={handleCreate}
+          existing={projects}
+        />
+      </>
     )
   }
 
   return (
-    <div className="flex h-full overflow-hidden">
-      <ProjectList
-        projects={projects}
-        selectedId={resolvedId}
-        onSelect={setSelectedId}
-        search={search}
-        onSearch={setSearch}
-        onReorder={handleReorder}
+    <>
+      <div className="flex h-full overflow-hidden">
+        <ProjectList
+          projects={projects}
+          selectedId={resolvedId}
+          onSelect={setSelectedId}
+          search={search}
+          onSearch={setSearch}
+          onReorder={handleReorder}
+          onNewProject={() => setNewProjectOpen(true)}
+        />
+        {selected ? (
+          <ProjectDetail project={selected} onUpdate={handleUpdate} />
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+            Select a project
+          </div>
+        )}
+      </div>
+      <NewProjectDialog
+        open={newProjectOpen}
+        onClose={() => setNewProjectOpen(false)}
+        onCreate={handleCreate}
+        existing={projects}
       />
-      {selected ? (
-        <ProjectDetail project={selected} onUpdate={handleUpdate} />
-      ) : (
-        <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-          Select a project
-        </div>
-      )}
-    </div>
+    </>
   )
 }

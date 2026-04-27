@@ -20,7 +20,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CalendarDays, ChevronDown, Check } from 'lucide-react'
+import { CalendarDays, ChevronDown, Check, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useDataFile } from '@/hooks/useDataFile'
 import { useSettings } from '@/hooks/useSettings'
@@ -30,7 +30,60 @@ import { NarrativeCard } from '@/components/weeklog/NarrativeCard'
 import { MeetingsCard } from '@/components/weeklog/MeetingsCard'
 import { GenerateWeekDialog } from '@/components/weeklog/GenerateWeekDialog'
 import { cn, formatWeekRange, currentMondayISO, nowISO } from '@/lib/utils'
+import { displayId } from '@/lib/taskConstants'
 import type { WeekEntry, TaskSnapshot } from '@/lib/schemas'
+
+// ─── Markdown export ──────────────────────────────────────────────────────────
+
+function generateWeekMarkdown(week: WeekEntry): string {
+  const lines: string[] = []
+
+  lines.push(`# WB ${week.dateRange}`, '')
+
+  // Task snapshots
+  function snapshotLines(items: typeof week.completed) {
+    return items.map(t => {
+      const id = t.id ? ` \`${displayId(t.id)}\`` : ''
+      const note = t.note ? `\n  > ${t.note}` : ''
+      return `- ${t.title}${id}${note}`
+    })
+  }
+
+  if (week.completed.length > 0) {
+    lines.push(`## ✅ Completed (${week.completed.length})`, ...snapshotLines(week.completed), '')
+  }
+  if (week.carriedForward.length > 0) {
+    lines.push(`## → Carried Forward (${week.carriedForward.length})`, ...snapshotLines(week.carriedForward), '')
+  }
+  if (week.delayed.length > 0) {
+    lines.push(`## ⚠️ Delayed (${week.delayed.length})`, ...snapshotLines(week.delayed), '')
+  }
+
+  // Next week
+  if (week.nextWeek.length > 0) {
+    lines.push('## Next Week', ...week.nextWeek.map(i => `- ${i}`), '')
+  }
+
+  // Narrative
+  const { narrative } = week
+  if (narrative.meetingsAndDiscussions.trim()) {
+    lines.push('## Meetings & Discussions', narrative.meetingsAndDiscussions.trim(), '')
+  }
+  if (narrative.decisionsMade.trim()) {
+    lines.push('## Decisions Made', narrative.decisionsMade.trim(), '')
+  }
+  if (narrative.frustrations.trim()) {
+    lines.push('## Frustrations', narrative.frustrations.trim(), '')
+  }
+
+  // 1:1 prep
+  for (const person of narrative.oneOnOnePrep.people) {
+    const content = narrative.oneOnOnePrep.sections[person]?.trim() ?? ''
+    if (content) lines.push(`## 1:1 Prep — ${person}`, content, '')
+  }
+
+  return lines.join('\n').trimEnd()
+}
 
 // ─── Task snapshot section (collapsible) ─────────────────────────────────────
 // Collapsed by default — shows count chips only. Click header to expand full lists.
@@ -474,16 +527,37 @@ export default function WeekLogPage() {
           <p className="text-sm text-muted-foreground/50 italic">No weeks yet</p>
         )}
 
-        <Button
-          size="sm"
-          variant="outline"
-          className="gap-1.5 h-7 text-xs shrink-0"
-          onClick={handleOpenGenerate}
-          disabled={saving}
-        >
-          <CalendarDays className="w-3 h-3" />
-          Generate Week
-        </Button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Copy current week as markdown */}
+          {selectedWeek && (
+            <button
+              onClick={async () => {
+                const md = generateWeekMarkdown(selectedWeek)
+                try {
+                  await navigator.clipboard.writeText(md)
+                  toast.success('Week log copied to clipboard')
+                } catch {
+                  toast.error('Clipboard access denied')
+                }
+              }}
+              title="Copy as markdown"
+              className="p-1.5 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 h-7 text-xs"
+            onClick={handleOpenGenerate}
+            disabled={saving}
+          >
+            <CalendarDays className="w-3 h-3" />
+            Generate Week
+          </Button>
+        </div>
       </div>
 
       {/* ── Body ── */}
