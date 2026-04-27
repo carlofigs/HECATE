@@ -18,6 +18,7 @@ import remarkGfm from 'remark-gfm'
 import { rehypeTaskIds } from '@/lib/rehypeTaskIds'
 import { TaskIdChip } from '@/components/tasks/TaskIdChip'
 import { WeekCalendarView } from '@/components/focus/WeekCalendarView'
+import { ThisWeekView } from '@/components/focus/ThisWeekView'
 import { Pencil, Trash2, GripVertical, ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn, paletteToken, accentHeaderStyle, accentTextStyle } from '@/lib/utils'
@@ -183,6 +184,8 @@ export function FocusSectionCard({ section, colorIndex, weekOf, onUpdate, onDele
               {section.content.trim() ? (
                 section.id === 'week-at-a-glance' ? (
                   <WeekCalendarView content={section.content} weekOf={weekOf} onEdit={startEdit} />
+                ) : section.id === 'this-week' ? (
+                  <ThisWeekView content={section.content} onEdit={startEdit} />
                 ) : (
                 <div
                   className="prose prose-sm dark:prose-invert max-w-none cursor-text"
