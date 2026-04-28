@@ -21,6 +21,7 @@ import { StaleDataBanner } from '@/components/layout/StaleDataBanner'
 import { useSettings } from '@/hooks/useSettings'
 import { useStaleDetector } from '@/hooks/useStaleDetector'
 import { useDataStore } from '@/store/useDataStore'
+import { WORKSPACES_STORAGE_KEY } from '@/lib/taskConstants'
 
 const NAV_ITEMS = [
   { to: '/focus',    label: 'Focus',    Icon: Focus        },
@@ -169,6 +170,33 @@ export default function AppShell() {
     if (!creds) navigate('/setup', { replace: true })
   }, [navigate])
 
+  // ── Workspace switcher ────────────────────────────────────────────────────────
+  const [workspaces, setWorkspaces] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem(WORKSPACES_STORAGE_KEY) ?? '[]') } catch { return [] }
+  })
+  const [currentWorkspace, setCurrentWorkspace] = useState<string>(() => {
+    try {
+      const creds = JSON.parse(localStorage.getItem('hecate:credentials') ?? '{}')
+      return creds.workspace ?? ''
+    } catch { return '' }
+  })
+
+  const handleWorkspaceSwitch = useCallback((next: string) => {
+    if (next === currentWorkspace) return
+    try {
+      const raw  = localStorage.getItem('hecate:credentials')
+      if (!raw) return
+      const creds = JSON.parse(raw)
+      creds.workspace = next
+      localStorage.setItem('hecate:credentials', JSON.stringify(creds))
+      setCurrentWorkspace(next)
+      // Reload all data for the new workspace
+      window.location.reload()
+    } catch {
+      toast.error('Failed to switch workspace')
+    }
+  }, [currentWorkspace])
+
   // Global keyboard shortcuts
   useEffect(() => {
     // Build the dirty-file list at event time using the closure over reactive booleans
@@ -254,11 +282,23 @@ export default function AppShell() {
       {/* ── Sidebar (desktop ≥1024px) ─────────────────────────────────── */}
       <aside className="hidden lg:flex flex-col w-52 border-r border-border bg-card shrink-0">
 
-        {/* Logo / wordmark */}
-        <div className="px-4 py-4 border-b border-border">
+        {/* Logo / wordmark + workspace switcher */}
+        <div className="px-4 py-3 border-b border-border space-y-2">
           <span className="font-mono text-xs tracking-[0.25em] text-primary font-medium uppercase">
             HECATE
           </span>
+          {workspaces.length > 0 && (
+            <select
+              value={currentWorkspace}
+              onChange={e => handleWorkspaceSwitch(e.target.value)}
+              className="w-full h-7 rounded-md border border-border bg-background px-2 text-xs text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
+              title="Switch workspace"
+            >
+              {workspaces.map(w => (
+                <option key={w} value={w}>{w}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Nav links */}

@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useDataFile } from '@/hooks/useDataFile'
 import { useSettings } from '@/hooks/useSettings'
-import { TASKS_VIEW_STORAGE_KEY } from '@/lib/taskConstants'
+import { TASKS_VIEW_STORAGE_KEY, WORKSPACES_STORAGE_KEY } from '@/lib/taskConstants'
 import { cn } from '@/lib/utils'
 import type { GitHubCredentials, ColumnType } from '@/lib/schemas'
 
@@ -397,53 +397,63 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
   const [owner, setOwner] = useState(() => stored?.owner ?? '')
   const [repo,  setRepo]  = useState(() => stored?.repo  ?? '')
 
-  // Phase 2 state — populated after successful verify
-  const [workspaces,    setWorkspaces]    = useState<string[]>([])
+  // Phase 2 state
+  // Workspace list: initialise from localStorage cache so the dropdown is populated
+  // immediately on revisit without needing to re-verify.
+  const [workspaces, setWorkspaces] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem(WORKSPACES_STORAGE_KEY) ?? '[]') } catch { return [] }
+  })
   const [workspace,     setWorkspace]     = useState(() => stored?.workspace ?? '')
   const [verifiedCreds, setVerifiedCreds] = useState<{ token: string; owner: string; repo: string } | null>(
-    // If credentials are already stored, start in phase 2 with the known workspace pre-selected
     stored ? { token: stored.token, owner: stored.owner, repo: stored.repo } : null,
   )
-
   const [loading, setLoading] = useState(false)
 
-  // Reset to phase 1 when the user edits the repo connection fields
-  function handleTokenChange(v: string)  { setToken(v);  setVerifiedCreds(null); setWorkspaces([]) }
-  function handleOwnerChange(v: string)  { setOwner(v);  setVerifiedCreds(null); setWorkspaces([]) }
-  function handleRepoChange(v: string)   { setRepo(v);   setVerifiedCreds(null); setWorkspaces([]) }
+  // On mount: if we're already in phase 2 but the workspace cache is empty, re-fetch silently.
+  const didAutoFetch = useRef(false)
+  if (stored && workspaces.length === 0 && !didAutoFetch.current) {
+    didAutoFetch.current = true
+    void doFetchWorkspaces(stored.token, stored.owner, stored.repo, stored.workspace)
+  }
 
-  // ── Phase 1: verify repo + fetch workspace list ──────────────────────────────
+  // Reset to phase 1 when the user edits the connection fields
+  function handleTokenChange(v: string) { setToken(v); setVerifiedCreds(null); setWorkspaces([]) }
+  function handleOwnerChange(v: string) { setOwner(v); setVerifiedCreds(null); setWorkspaces([]) }
+  function handleRepoChange(v: string)  { setRepo(v);  setVerifiedCreds(null); setWorkspaces([]) }
+
+  // ── Shared: fetch + cache workspace directory list ───────────────────────────
+  async function doFetchWorkspaces(t: string, o: string, r: string, currentWs?: string): Promise<string[]> {
+    const res = await fetch(
+      `https://api.github.com/repos/${o}/${r}/contents/`,
+      { headers: { Authorization: `Bearer ${t}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' } },
+    )
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      throw new Error(body.message ?? res.statusText)
+    }
+    const entries: { name: string; type: string }[] = await res.json()
+    const dirs = entries.filter(e => e.type === 'dir').map(e => e.name)
+    localStorage.setItem(WORKSPACES_STORAGE_KEY, JSON.stringify(dirs))
+    setWorkspaces(dirs)
+    setWorkspace(prev => {
+      const keep = currentWs ?? prev
+      return dirs.includes(keep) ? keep : (dirs[0] ?? '')
+    })
+    return dirs
+  }
+
+  // ── Phase 1: verify repo + load workspace list ───────────────────────────────
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault()
     const t = token.trim(), o = owner.trim(), r = repo.trim()
     if (!t || !o || !r) { toast.error('Token, owner, and repository are required'); return }
-
     setLoading(true)
     try {
-      // List root-level contents — filter to directories only (= workspaces)
-      const res = await fetch(
-        `https://api.github.com/repos/${o}/${r}/contents/`,
-        { headers: { Authorization: `Bearer ${t}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' } },
-      )
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        toast.error(`GitHub error: ${body.message ?? res.statusText}`)
-        return
-      }
-      const entries: { name: string; type: string }[] = await res.json()
-      const dirs = entries.filter(e => e.type === 'dir').map(e => e.name)
-
-      if (dirs.length === 0) {
-        toast.error('No workspace directories found in this repo')
-        return
-      }
-
+      const dirs = await doFetchWorkspaces(t, o, r)
+      if (dirs.length === 0) { toast.error('No workspace directories found in this repo'); return }
       setVerifiedCreds({ token: t, owner: o, repo: r })
-      setWorkspaces(dirs)
-      // Pre-select: keep current workspace if it still exists, otherwise pick first
-      setWorkspace(prev => dirs.includes(prev) ? prev : dirs[0])
-    } catch {
-      toast.error('Network error — check your connection')
+    } catch (err) {
+      toast.error(`GitHub error: ${(err as Error).message ?? 'Network error'}`)
     } finally {
       setLoading(false)
     }
