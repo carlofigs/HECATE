@@ -21,7 +21,7 @@ import { StaleDataBanner } from '@/components/layout/StaleDataBanner'
 import { useSettings } from '@/hooks/useSettings'
 import { useStaleDetector } from '@/hooks/useStaleDetector'
 import { useDataStore } from '@/store/useDataStore'
-import { WORKSPACES_STORAGE_KEY } from '@/lib/taskConstants'
+import { WORKSPACES_STORAGE_KEY, CREDENTIALS_STORAGE_KEY } from '@/lib/taskConstants'
 
 const NAV_ITEMS = [
   { to: '/focus',    label: 'Focus',    Icon: Focus        },
@@ -166,7 +166,7 @@ export default function AppShell() {
 
   // Redirect to setup if no credentials
   useEffect(() => {
-    const creds = localStorage.getItem('hecate:credentials')
+    const creds = localStorage.getItem(CREDENTIALS_STORAGE_KEY)
     if (!creds) navigate('/setup', { replace: true })
   }, [navigate])
 
@@ -176,7 +176,7 @@ export default function AppShell() {
   })
   const [currentWorkspace, setCurrentWorkspace] = useState<string>(() => {
     try {
-      const creds = JSON.parse(localStorage.getItem('hecate:credentials') ?? '{}')
+      const creds = JSON.parse(localStorage.getItem(CREDENTIALS_STORAGE_KEY) ?? '{}')
       return creds.workspace ?? ''
     } catch { return '' }
   })
@@ -184,18 +184,24 @@ export default function AppShell() {
   const handleWorkspaceSwitch = useCallback((next: string) => {
     if (next === currentWorkspace) return
     try {
-      const raw  = localStorage.getItem('hecate:credentials')
+      const raw = localStorage.getItem(CREDENTIALS_STORAGE_KEY)
       if (!raw) return
       const creds = JSON.parse(raw)
+      // Guard: if stored creds are missing required fields, don't corrupt them
+      if (!creds.token || !creds.owner || !creds.repo) {
+        toast.error('Credentials incomplete — please reconnect in Settings')
+        navigate('/setup')
+        return
+      }
       creds.workspace = next
-      localStorage.setItem('hecate:credentials', JSON.stringify(creds))
+      localStorage.setItem(CREDENTIALS_STORAGE_KEY, JSON.stringify(creds))
       setCurrentWorkspace(next)
-      // Reload all data for the new workspace
+      // Reload all data slices for the new workspace
       window.location.reload()
     } catch {
       toast.error('Failed to switch workspace')
     }
-  }, [currentWorkspace])
+  }, [currentWorkspace, navigate])
 
   // Global keyboard shortcuts
   useEffect(() => {

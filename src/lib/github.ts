@@ -8,6 +8,7 @@
  */
 
 import type { GitHubCredentials } from '@/lib/schemas'
+import { CREDENTIALS_STORAGE_KEY } from '@/lib/taskConstants'
 
 const BASE = 'https://api.github.com'
 
@@ -35,7 +36,7 @@ function headers(token: string): HeadersInit {
 }
 
 function dataPath(creds: GitHubCredentials, name: string): string {
-  return `${creds.workspace}/${name}.json`
+  return `${encodeURIComponent(creds.workspace)}/${encodeURIComponent(name)}.json`
 }
 
 function repoBase(creds: GitHubCredentials): string {
@@ -129,7 +130,7 @@ export async function putFile<T>(
 
 export function loadCredentials(): GitHubCredentials | null {
   try {
-    const raw = localStorage.getItem('hecate:credentials')
+    const raw = localStorage.getItem(CREDENTIALS_STORAGE_KEY)
     return raw ? (JSON.parse(raw) as GitHubCredentials) : null
   } catch {
     return null

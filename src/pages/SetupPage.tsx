@@ -14,7 +14,7 @@
  *   6. GitHub Credentials  — PAT, owner, repo
  */
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -24,17 +24,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useDataFile } from '@/hooks/useDataFile'
 import { useSettings } from '@/hooks/useSettings'
-import { TASKS_VIEW_STORAGE_KEY, WORKSPACES_STORAGE_KEY } from '@/lib/taskConstants'
+import { TASKS_VIEW_STORAGE_KEY, WORKSPACES_STORAGE_KEY, CREDENTIALS_STORAGE_KEY } from '@/lib/taskConstants'
 import { cn } from '@/lib/utils'
 import type { GitHubCredentials, ColumnType } from '@/lib/schemas'
-
-const STORAGE_KEY = 'hecate:credentials'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function readStoredCredentials(): GitHubCredentials | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(CREDENTIALS_STORAGE_KEY)
     return raw ? JSON.parse(raw) : null
   } catch { return null }
 }
@@ -410,11 +408,19 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
   const [loading, setLoading] = useState(false)
 
   // On mount: if we're already in phase 2 but the workspace cache is empty, re-fetch silently.
-  const didAutoFetch = useRef(false)
-  if (stored && workspaces.length === 0 && !didAutoFetch.current) {
-    didAutoFetch.current = true
-    void doFetchWorkspaces(stored.token, stored.owner, stored.repo, stored.workspace)
-  }
+  // Runs in useEffect (not component body) to be safe with React 19 concurrent rendering.
+  useEffect(() => {
+    if (!stored || workspaces.length > 0) return
+    let aborted = false
+    setLoading(true)
+    doFetchWorkspaces(stored.token, stored.owner, stored.repo, stored.workspace)
+      .catch(err => {
+        if (!aborted) toast.error(`Could not load workspaces: ${(err as Error).message ?? 'Network error'}`)
+      })
+      .finally(() => { if (!aborted) setLoading(false) })
+    return () => { aborted = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Reset to phase 1 when the user edits the connection fields
   function handleTokenChange(v: string) { setToken(v); setVerifiedCreds(null); setWorkspaces([]) }
@@ -433,7 +439,9 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
     }
     const entries: { name: string; type: string }[] = await res.json()
     const dirs = entries.filter(e => e.type === 'dir').map(e => e.name)
-    localStorage.setItem(WORKSPACES_STORAGE_KEY, JSON.stringify(dirs))
+    // Only cache when we have results — avoids poisoning the cache with "[]"
+    // which would cause a redundant API call on every subsequent mount.
+    if (dirs.length > 0) localStorage.setItem(WORKSPACES_STORAGE_KEY, JSON.stringify(dirs))
     setWorkspaces(dirs)
     setWorkspace(prev => {
       const keep = currentWs ?? prev
@@ -450,7 +458,10 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
     setLoading(true)
     try {
       const dirs = await doFetchWorkspaces(t, o, r)
-      if (dirs.length === 0) { toast.error('No workspace directories found in this repo'); return }
+      if (dirs.length === 0) {
+        toast.error('No workspace directories found — add at least one top-level directory (e.g. "default/") to the repo on GitHub, then verify again.')
+        return
+      }
       setVerifiedCreds({ token: t, owner: o, repo: r })
     } catch (err) {
       toast.error(`GitHub error: ${(err as Error).message ?? 'Network error'}`)
@@ -464,7 +475,7 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
     e.preventDefault()
     if (!verifiedCreds || !workspace) return
     const creds = { ...verifiedCreds, workspace }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(creds))
+    localStorage.setItem(CREDENTIALS_STORAGE_KEY, JSON.stringify(creds))
     toast.success(isFirstRun ? 'Connected — welcome to HECATE' : 'Credentials updated')
     if (isFirstRun) navigate('/focus', { replace: true })
   }
@@ -573,7 +584,7 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
 
 export default function SetupPage() {
   const navigate   = useNavigate()
-  const isFirstRun = !localStorage.getItem(STORAGE_KEY)
+  const isFirstRun = !localStorage.getItem(CREDENTIALS_STORAGE_KEY)
 
   // First-run: minimal centred credentials form
   if (isFirstRun) {

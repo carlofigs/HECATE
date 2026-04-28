@@ -35,3 +35,6 @@ export const TASKS_VIEW_STORAGE_KEY = 'hecate:tasks:view'
 
 /** localStorage key for the cached list of workspace directories. */
 export const WORKSPACES_STORAGE_KEY = 'hecate:workspaces'
+
+/** localStorage key for the GitHub credentials object. Single source of truth. */
+export const CREDENTIALS_STORAGE_KEY = 'hecate:credentials'
