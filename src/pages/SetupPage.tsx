@@ -427,6 +427,16 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Snap workspace selection to a valid value when the cached list no longer contains the
+  // stored workspace (e.g. user renamed/deleted a directory in GitHub between sessions).
+  // Without this, <select value={workspace}> has no matching <option> and the browser
+  // silently displays the first option while React state still holds the old value.
+  useEffect(() => {
+    if (workspaces.length > 0 && !workspaces.includes(workspace)) {
+      setWorkspace(workspaces[0])
+    }
+  }, [workspaces, workspace])
+
   // Reset to phase 1 when the user edits the connection fields.
   // Bumps verifyReqId (stales any in-flight verify) and clears loading so the
   // Verify button is immediately re-enabled — even if a fetch is still pending.
@@ -493,13 +503,20 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
   }
 
   // ── Phase 2: save full credentials ──────────────────────────────────────────
-  async function handleSave(e: React.FormEvent) {
+  function handleSave(e: React.FormEvent) {
     e.preventDefault()
     if (!verifiedCreds || !workspace || !workspaces.includes(workspace)) return
     const creds = { ...verifiedCreds, workspace }
     localStorage.setItem(CREDENTIALS_STORAGE_KEY, JSON.stringify(creds))
     toast.success(isFirstRun ? 'Connected — welcome to HECATE' : 'Credentials updated')
-    if (isFirstRun) navigate('/focus', { replace: true })
+    if (isFirstRun) {
+      navigate('/focus', { replace: true })
+    } else {
+      // Any credential change (workspace, token, repo) invalidates the in-memory data store
+      // whose slices are keyed against the previous credentials. Reload to guarantee a fresh
+      // load — same pattern as AppShell.handleWorkspaceSwitch.
+      window.location.reload()
+    }
   }
 
   const phase2 = verifiedCreds !== null
@@ -519,7 +536,7 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
             onChange={e => handleTokenChange(e.target.value)}
             autoComplete="off"
             spellCheck={false}
-            disabled={phase2}
+            disabled={loading || phase2}
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -532,7 +549,7 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
               onChange={e => handleOwnerChange(e.target.value)}
               autoComplete="off"
               spellCheck={false}
-              disabled={phase2}
+              disabled={loading || phase2}
             />
           </div>
           <div className="space-y-1.5">
@@ -544,7 +561,7 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
               onChange={e => handleRepoChange(e.target.value)}
               autoComplete="off"
               spellCheck={false}
-              disabled={phase2}
+              disabled={loading || phase2}
             />
           </div>
         </div>
