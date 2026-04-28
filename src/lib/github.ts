@@ -34,8 +34,8 @@ function headers(token: string): HeadersInit {
   }
 }
 
-function dataPath(name: string): string {
-  return `data/${name}.json`
+function dataPath(creds: GitHubCredentials, name: string): string {
+  return `${creds.workspace}/${name}.json`
 }
 
 function repoBase(creds: GitHubCredentials): string {
@@ -61,7 +61,7 @@ export async function getFile<T>(
   creds: GitHubCredentials,
   name: string,
 ): Promise<FilePayload<T>> {
-  const url = `${repoBase(creds)}/${dataPath(name)}`
+  const url = `${repoBase(creds)}/${dataPath(creds, name)}`
   const res = await fetch(url, { headers: headers(creds.token) })
 
   if (!res.ok) {
@@ -95,7 +95,7 @@ export async function putFile<T>(
   sha: string | null,
   commitMessage?: string,
 ): Promise<string> {
-  const url  = `${repoBase(creds)}/${dataPath(name)}`
+  const url  = `${repoBase(creds)}/${dataPath(creds, name)}`
   const json = JSON.stringify(data, null, 2)
   // btoa only handles Latin-1; TextEncoder handles full UTF-8
   const b64  = btoa(

@@ -383,15 +383,21 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
   const navigate = useNavigate()
 
   // Lazy initialisers — read localStorage once on mount, not on every render
-  const [token,   setToken]   = useState(() => readStoredCredentials()?.token ?? '')
-  const [owner,   setOwner]   = useState(() => readStoredCredentials()?.owner ?? '')
-  const [repo,    setRepo]    = useState(() => readStoredCredentials()?.repo  ?? '')
-  const [testing, setTesting] = useState(false)
+  const [token,     setToken]     = useState(() => readStoredCredentials()?.token     ?? '')
+  const [owner,     setOwner]     = useState(() => readStoredCredentials()?.owner     ?? '')
+  const [repo,      setRepo]      = useState(() => readStoredCredentials()?.repo      ?? '')
+  const [workspace, setWorkspace] = useState(() => readStoredCredentials()?.workspace ?? '')
+  const [testing,   setTesting]   = useState(false)
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
-    const trimmed = { token: token.trim(), owner: owner.trim(), repo: repo.trim() }
-    if (!trimmed.token || !trimmed.owner || !trimmed.repo) {
+    const trimmed = {
+      token:     token.trim(),
+      owner:     owner.trim(),
+      repo:      repo.trim(),
+      workspace: workspace.trim(),
+    }
+    if (!trimmed.token || !trimmed.owner || !trimmed.repo || !trimmed.workspace) {
       toast.error('All fields are required')
       return
     }
@@ -447,13 +453,29 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
           <Label htmlFor="repo">Repository</Label>
           <Input
             id="repo"
-            placeholder="HECATE"
+            placeholder="HECATE_Data"
             value={repo}
             onChange={e => setRepo(e.target.value)}
             autoComplete="off"
             spellCheck={false}
           />
         </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="workspace">
+          Workspace
+          <span className="ml-1.5 text-[10px] text-muted-foreground/50 font-normal">
+            directory in the repo, e.g. <code className="font-mono">endeavour</code>
+          </span>
+        </Label>
+        <Input
+          id="workspace"
+          placeholder="endeavour"
+          value={workspace}
+          onChange={e => setWorkspace(e.target.value)}
+          autoComplete="off"
+          spellCheck={false}
+        />
       </div>
       <Button type="submit" className={isFirstRun ? 'w-full' : ''} disabled={testing}>
         {testing ? 'Verifying…' : isFirstRun ? 'Save & connect' : 'Update credentials'}

@@ -276,4 +276,6 @@ export interface GitHubCredentials {
   token: string
   owner: string
   repo: string
+  /** Top-level directory within the repo for this workspace, e.g. "endeavour" */
+  workspace: string
 }
