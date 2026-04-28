@@ -378,114 +378,184 @@ function ColumnTypesSection() {
 }
 
 // ─── Credentials section ──────────────────────────────────────────────────────
+//
+// Two-phase flow:
+//   Phase 1 — enter token / owner / repo → "Verify & load workspaces"
+//             Calls GitHub Contents API to list root-level directories.
+//   Phase 2 — pick workspace from dropdown → "Save & connect" / "Update"
+//             Stores full credentials to localStorage.
+//
+// Editing the repo fields resets back to phase 1 so the workspace list stays fresh.
 
 function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
   const navigate = useNavigate()
 
-  // Lazy initialisers — read localStorage once on mount, not on every render
-  const [token,     setToken]     = useState(() => readStoredCredentials()?.token     ?? '')
-  const [owner,     setOwner]     = useState(() => readStoredCredentials()?.owner     ?? '')
-  const [repo,      setRepo]      = useState(() => readStoredCredentials()?.repo      ?? '')
-  const [workspace, setWorkspace] = useState(() => readStoredCredentials()?.workspace ?? '')
-  const [testing,   setTesting]   = useState(false)
+  const stored = readStoredCredentials()
 
-  async function handleSave(e: React.FormEvent) {
+  // Phase 1 fields
+  const [token, setToken] = useState(() => stored?.token ?? '')
+  const [owner, setOwner] = useState(() => stored?.owner ?? '')
+  const [repo,  setRepo]  = useState(() => stored?.repo  ?? '')
+
+  // Phase 2 state — populated after successful verify
+  const [workspaces,    setWorkspaces]    = useState<string[]>([])
+  const [workspace,     setWorkspace]     = useState(() => stored?.workspace ?? '')
+  const [verifiedCreds, setVerifiedCreds] = useState<{ token: string; owner: string; repo: string } | null>(
+    // If credentials are already stored, start in phase 2 with the known workspace pre-selected
+    stored ? { token: stored.token, owner: stored.owner, repo: stored.repo } : null,
+  )
+
+  const [loading, setLoading] = useState(false)
+
+  // Reset to phase 1 when the user edits the repo connection fields
+  function handleTokenChange(v: string)  { setToken(v);  setVerifiedCreds(null); setWorkspaces([]) }
+  function handleOwnerChange(v: string)  { setOwner(v);  setVerifiedCreds(null); setWorkspaces([]) }
+  function handleRepoChange(v: string)   { setRepo(v);   setVerifiedCreds(null); setWorkspaces([]) }
+
+  // ── Phase 1: verify repo + fetch workspace list ──────────────────────────────
+  async function handleVerify(e: React.FormEvent) {
     e.preventDefault()
-    const trimmed = {
-      token:     token.trim(),
-      owner:     owner.trim(),
-      repo:      repo.trim(),
-      workspace: workspace.trim(),
-    }
-    if (!trimmed.token || !trimmed.owner || !trimmed.repo || !trimmed.workspace) {
-      toast.error('All fields are required')
-      return
-    }
-    setTesting(true)
+    const t = token.trim(), o = owner.trim(), r = repo.trim()
+    if (!t || !o || !r) { toast.error('Token, owner, and repository are required'); return }
+
+    setLoading(true)
     try {
+      // List root-level contents — filter to directories only (= workspaces)
       const res = await fetch(
-        `https://api.github.com/repos/${trimmed.owner}/${trimmed.repo}`,
-        { headers: { Authorization: `Bearer ${trimmed.token}`, Accept: 'application/vnd.github+json' } },
+        `https://api.github.com/repos/${o}/${r}/contents/`,
+        { headers: { Authorization: `Bearer ${t}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' } },
       )
       if (!res.ok) {
-        const { message } = await res.json().catch(() => ({ message: res.statusText }))
-        toast.error(`GitHub API error: ${message}`)
+        const body = await res.json().catch(() => ({}))
+        toast.error(`GitHub error: ${body.message ?? res.statusText}`)
         return
       }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed))
-      toast.success(isFirstRun ? 'Connected — welcome to HECATE' : 'Credentials updated')
-      if (isFirstRun) navigate('/focus', { replace: true })
-    } catch (err) {
+      const entries: { name: string; type: string }[] = await res.json()
+      const dirs = entries.filter(e => e.type === 'dir').map(e => e.name)
+
+      if (dirs.length === 0) {
+        toast.error('No workspace directories found in this repo')
+        return
+      }
+
+      setVerifiedCreds({ token: t, owner: o, repo: r })
+      setWorkspaces(dirs)
+      // Pre-select: keep current workspace if it still exists, otherwise pick first
+      setWorkspace(prev => dirs.includes(prev) ? prev : dirs[0])
+    } catch {
       toast.error('Network error — check your connection')
-      console.error(err)
     } finally {
-      setTesting(false)
+      setLoading(false)
     }
   }
 
+  // ── Phase 2: save full credentials ──────────────────────────────────────────
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    if (!verifiedCreds || !workspace) return
+    const creds = { ...verifiedCreds, workspace }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(creds))
+    toast.success(isFirstRun ? 'Connected — welcome to HECATE' : 'Credentials updated')
+    if (isFirstRun) navigate('/focus', { replace: true })
+  }
+
+  const phase2 = verifiedCreds !== null
+
   return (
-    <form onSubmit={handleSave} className="space-y-4">
-      <div className="space-y-1.5">
-        <Label htmlFor="token">Personal Access Token</Label>
-        <Input
-          id="token"
-          type="password"
-          placeholder="github_pat_…"
-          value={token}
-          onChange={e => setToken(e.target.value)}
-          autoComplete="off"
-          spellCheck={false}
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
+    <div className="space-y-4">
+
+      {/* ── Phase 1: connection details ── */}
+      <form onSubmit={phase2 ? (e) => e.preventDefault() : handleVerify} className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="owner">Owner</Label>
+          <Label htmlFor="token">Personal Access Token</Label>
           <Input
-            id="owner"
-            placeholder="carlofigs"
-            value={owner}
-            onChange={e => setOwner(e.target.value)}
+            id="token"
+            type="password"
+            placeholder="github_pat_…"
+            value={token}
+            onChange={e => handleTokenChange(e.target.value)}
             autoComplete="off"
             spellCheck={false}
+            disabled={phase2}
           />
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="repo">Repository</Label>
-          <Input
-            id="repo"
-            placeholder="HECATE_Data"
-            value={repo}
-            onChange={e => setRepo(e.target.value)}
-            autoComplete="off"
-            spellCheck={false}
-          />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="owner">Owner</Label>
+            <Input
+              id="owner"
+              placeholder="carlofigs"
+              value={owner}
+              onChange={e => handleOwnerChange(e.target.value)}
+              autoComplete="off"
+              spellCheck={false}
+              disabled={phase2}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="repo">Repository</Label>
+            <Input
+              id="repo"
+              placeholder="HECATE_Data"
+              value={repo}
+              onChange={e => handleRepoChange(e.target.value)}
+              autoComplete="off"
+              spellCheck={false}
+              disabled={phase2}
+            />
+          </div>
         </div>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="workspace">
-          Workspace
-          <span className="ml-1.5 text-[10px] text-muted-foreground/50 font-normal">
-            directory in the repo, e.g. <code className="font-mono">endeavour</code>
-          </span>
-        </Label>
-        <Input
-          id="workspace"
-          placeholder="endeavour"
-          value={workspace}
-          onChange={e => setWorkspace(e.target.value)}
-          autoComplete="off"
-          spellCheck={false}
-        />
-      </div>
-      <Button type="submit" className={isFirstRun ? 'w-full' : ''} disabled={testing}>
-        {testing ? 'Verifying…' : isFirstRun ? 'Save & connect' : 'Update credentials'}
-      </Button>
-      {isFirstRun && (
-        <p className="text-center text-xs text-muted-foreground">
-          Stored in <code className="font-mono">localStorage</code> — never sent anywhere except GitHub.
-        </p>
+
+        {!phase2 && (
+          <Button type="submit" className={isFirstRun ? 'w-full' : ''} disabled={loading}>
+            {loading ? 'Verifying…' : 'Verify & load workspaces'}
+          </Button>
+        )}
+      </form>
+
+      {/* ── Phase 2: workspace picker (appears after successful verify) ── */}
+      {phase2 && (
+        <form onSubmit={handleSave} className="space-y-4">
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+            <span className="text-xs text-emerald-500">✓ Connected to {verifiedCreds.owner}/{verifiedCreds.repo}</span>
+            <button
+              type="button"
+              onClick={() => { setVerifiedCreds(null); setWorkspaces([]) }}
+              className="ml-auto text-[10px] text-muted-foreground/50 hover:text-foreground underline underline-offset-2 transition-colors"
+            >
+              Change
+            </button>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="workspace">Workspace</Label>
+            <select
+              id="workspace"
+              value={workspace}
+              onChange={e => setWorkspace(e.target.value)}
+              className="w-full h-9 rounded-md border border-input bg-transparent px-3 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              {workspaces.map(w => (
+                <option key={w} value={w}>{w}</option>
+              ))}
+            </select>
+            <p className="text-[11px] text-muted-foreground/50">
+              Top-level directories in <code className="font-mono">{verifiedCreds.repo}</code>
+            </p>
+          </div>
+
+          <Button type="submit" className={isFirstRun ? 'w-full' : ''} disabled={!workspace}>
+            {isFirstRun ? 'Save & connect' : 'Update credentials'}
+          </Button>
+
+          {isFirstRun && (
+            <p className="text-center text-xs text-muted-foreground">
+              Stored in <code className="font-mono">localStorage</code> — never sent anywhere except GitHub.
+            </p>
+          )}
+        </form>
       )}
-    </form>
+    </div>
   )
 }
 
