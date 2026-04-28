@@ -428,10 +428,11 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
   }, [])
 
   // Reset to phase 1 when the user edits the connection fields.
-  // Also bumps verifyReqId so any in-flight verify knows it's now stale.
-  function handleTokenChange(v: string) { verifyReqId.current++; setToken(v); setVerifiedCreds(null); setWorkspaces([]) }
-  function handleOwnerChange(v: string) { verifyReqId.current++; setOwner(v); setVerifiedCreds(null); setWorkspaces([]) }
-  function handleRepoChange(v: string)  { verifyReqId.current++; setRepo(v);  setVerifiedCreds(null); setWorkspaces([]) }
+  // Bumps verifyReqId (stales any in-flight verify) and clears loading so the
+  // Verify button is immediately re-enabled — even if a fetch is still pending.
+  function handleTokenChange(v: string) { verifyReqId.current++; setToken(v); setVerifiedCreds(null); setWorkspaces([]); setLoading(false) }
+  function handleOwnerChange(v: string) { verifyReqId.current++; setOwner(v); setVerifiedCreds(null); setWorkspaces([]); setLoading(false) }
+  function handleRepoChange(v: string)  { verifyReqId.current++; setRepo(v);  setVerifiedCreds(null); setWorkspaces([]); setLoading(false) }
 
   // ── Shared: fetch + cache workspace directory list ───────────────────────────
   // `isAborted` is an optional getter so callers can suppress setter calls after
@@ -589,7 +590,7 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
           <Button
             type="submit"
             className={isFirstRun ? 'w-full' : ''}
-            disabled={!workspace || (workspaces.length > 0 && !workspaces.includes(workspace))}
+            disabled={!workspace || !workspaces.includes(workspace)}
           >
             {isFirstRun ? 'Save & connect' : 'Update credentials'}
           </Button>
