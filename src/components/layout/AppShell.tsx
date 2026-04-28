@@ -171,7 +171,7 @@ export default function AppShell() {
   }, [navigate])
 
   // ── Workspace switcher ────────────────────────────────────────────────────────
-  const [workspaces, setWorkspaces] = useState<string[]>(() => {
+  const [workspaces] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem(WORKSPACES_STORAGE_KEY) ?? '[]') } catch { return [] }
   })
   const [currentWorkspace, setCurrentWorkspace] = useState<string>(() => {

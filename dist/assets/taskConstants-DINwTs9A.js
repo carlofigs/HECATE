@@ -1,1 +1,0 @@
-const e={high:{label:"High",dot:"bg-red-500"},medium:{label:"Medium",dot:"bg-yellow-400"},low:{label:"Low",dot:"bg-blue-400"}};function s(t){const a=t.toLowerCase().startsWith("t-")?t.slice(2):t;return a.charAt(0).toUpperCase()+a.slice(1)}const o=String.raw`\b(t-[a-z][a-z0-9]*(?:-[a-z0-9]+)?)\b`,l="hecate:tasks:view";export{e as P,o as T,l as a,s as d};
