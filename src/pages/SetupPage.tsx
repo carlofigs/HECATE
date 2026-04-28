@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useDataFile } from '@/hooks/useDataFile'
 import { useSettings } from '@/hooks/useSettings'
-import { TASKS_VIEW_STORAGE_KEY, WORKSPACES_STORAGE_KEY, CREDENTIALS_STORAGE_KEY } from '@/lib/taskConstants'
+import { TASKS_VIEW_STORAGE_KEY, WORKSPACES_STORAGE_KEY, CREDENTIALS_STORAGE_KEY, PENDING_TOAST_KEY } from '@/lib/taskConstants'
 import { cn } from '@/lib/utils'
 import type { GitHubCredentials, ColumnType } from '@/lib/schemas'
 
@@ -437,6 +437,18 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
     }
   }, [workspaces, workspace])
 
+  // After a Settings-mode save, handleSave writes a toast message to sessionStorage
+  // before calling window.location.reload() — the toast cannot survive page teardown.
+  // On remount we read that key, fire the toast, and immediately clear it so it only
+  // appears once and cannot leak across subsequent page loads.
+  useEffect(() => {
+    const msg = sessionStorage.getItem(PENDING_TOAST_KEY)
+    if (msg) {
+      sessionStorage.removeItem(PENDING_TOAST_KEY)
+      toast.success(msg)
+    }
+  }, [])
+
   // Reset to phase 1 when the user edits the connection fields.
   // Bumps verifyReqId (stales any in-flight verify) and clears loading so the
   // Verify button is immediately re-enabled — even if a fetch is still pending.
@@ -508,10 +520,14 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
     if (!verifiedCreds || !workspace || !workspaces.includes(workspace)) return
     const creds = { ...verifiedCreds, workspace }
     localStorage.setItem(CREDENTIALS_STORAGE_KEY, JSON.stringify(creds))
-    toast.success(isFirstRun ? 'Connected — welcome to HECATE' : 'Credentials updated')
     if (isFirstRun) {
+      // Toast survives client-side navigation because Sonner's portal stays mounted in AppShell.
+      toast.success('Connected — welcome to HECATE')
       navigate('/focus', { replace: true })
     } else {
+      // window.location.reload() tears down the DOM before Sonner can flush the toast update.
+      // Hand off the message via sessionStorage — the mount effect above picks it up after reload.
+      sessionStorage.setItem(PENDING_TOAST_KEY, 'Credentials updated')
       // Any credential change (workspace, token, repo) invalidates the in-memory data store
       // whose slices are keyed against the previous credentials. Reload to guarantee a fresh
       // load — same pattern as AppShell.handleWorkspaceSwitch.

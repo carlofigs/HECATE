@@ -38,3 +38,12 @@ export const WORKSPACES_STORAGE_KEY = 'hecate:workspaces'
 
 /** localStorage key for the GitHub credentials object. Single source of truth. */
 export const CREDENTIALS_STORAGE_KEY = 'hecate:credentials'
+
+/**
+ * sessionStorage key used to hand off a success toast across a hard reload.
+ * Written immediately before `window.location.reload()` in handleSave (Settings
+ * mode). Read and cleared on the next mount so the toast is shown once after the
+ * page comes back up. sessionStorage survives a same-origin reload but is cleared
+ * when the tab is closed, so there is no risk of a stale toast reappearing later.
+ */
+export const PENDING_TOAST_KEY = 'hecate:pending-toast'
