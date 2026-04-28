@@ -495,7 +495,7 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
   // ── Phase 2: save full credentials ──────────────────────────────────────────
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
-    if (!verifiedCreds || !workspace) return
+    if (!verifiedCreds || !workspace || !workspaces.includes(workspace)) return
     const creds = { ...verifiedCreds, workspace }
     localStorage.setItem(CREDENTIALS_STORAGE_KEY, JSON.stringify(creds))
     toast.success(isFirstRun ? 'Connected — welcome to HECATE' : 'Credentials updated')
