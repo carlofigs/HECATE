@@ -1,3 +1,6 @@
+# Review artefacts — prompts and reports from development review cycles
+.review/
+
 # Dependencies
 node_modules/
 
