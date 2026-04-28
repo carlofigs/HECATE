@@ -187,8 +187,8 @@ export default function AppShell() {
       const raw = localStorage.getItem(CREDENTIALS_STORAGE_KEY)
       if (!raw) return
       const creds = JSON.parse(raw)
-      // Guard: if stored creds are missing required fields, don't corrupt them
-      if (!creds.token || !creds.owner || !creds.repo) {
+      // Guard: JSON.parse can return null or a non-object primitive — check before field access
+      if (!creds || typeof creds !== 'object' || !creds.token || !creds.owner || !creds.repo) {
         toast.error('Credentials incomplete — please reconnect in Settings')
         navigate('/setup')
         return

@@ -407,13 +407,18 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
   )
   const [loading, setLoading] = useState(false)
 
+  // Monotonically-increasing counter used to detect stale verify responses.
+  // If the user edits a field while a verify is in flight, the counter increments
+  // and the in-flight response is discarded before it can commit stale credentials.
+  const verifyReqId = useRef(0)
+
   // On mount: if we're already in phase 2 but the workspace cache is empty, re-fetch silently.
   // Runs in useEffect (not component body) to be safe with React 19 concurrent rendering.
   useEffect(() => {
     if (!stored || workspaces.length > 0) return
     let aborted = false
     setLoading(true)
-    doFetchWorkspaces(stored.token, stored.owner, stored.repo, stored.workspace)
+    doFetchWorkspaces(stored.token, stored.owner, stored.repo, stored.workspace, () => aborted)
       .catch(err => {
         if (!aborted) toast.error(`Could not load workspaces: ${(err as Error).message ?? 'Network error'}`)
       })
@@ -422,13 +427,20 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Reset to phase 1 when the user edits the connection fields
-  function handleTokenChange(v: string) { setToken(v); setVerifiedCreds(null); setWorkspaces([]) }
-  function handleOwnerChange(v: string) { setOwner(v); setVerifiedCreds(null); setWorkspaces([]) }
-  function handleRepoChange(v: string)  { setRepo(v);  setVerifiedCreds(null); setWorkspaces([]) }
+  // Reset to phase 1 when the user edits the connection fields.
+  // Also bumps verifyReqId so any in-flight verify knows it's now stale.
+  function handleTokenChange(v: string) { verifyReqId.current++; setToken(v); setVerifiedCreds(null); setWorkspaces([]) }
+  function handleOwnerChange(v: string) { verifyReqId.current++; setOwner(v); setVerifiedCreds(null); setWorkspaces([]) }
+  function handleRepoChange(v: string)  { verifyReqId.current++; setRepo(v);  setVerifiedCreds(null); setWorkspaces([]) }
 
   // ── Shared: fetch + cache workspace directory list ───────────────────────────
-  async function doFetchWorkspaces(t: string, o: string, r: string, currentWs?: string): Promise<string[]> {
+  // `isAborted` is an optional getter so callers can suppress setter calls after
+  // unmount (auto-fetch path) or when the request has become stale (verify path).
+  async function doFetchWorkspaces(
+    t: string, o: string, r: string,
+    currentWs?: string,
+    isAborted?: () => boolean,
+  ): Promise<string[]> {
     const res = await fetch(
       `https://api.github.com/repos/${o}/${r}/contents/`,
       { headers: { Authorization: `Bearer ${t}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' } },
@@ -439,6 +451,11 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
     }
     const entries: { name: string; type: string }[] = await res.json()
     const dirs = entries.filter(e => e.type === 'dir').map(e => e.name)
+
+    // Bail out if the caller has been unmounted or superseded — don't update state
+    // with results that no longer match what the user is looking at.
+    if (isAborted?.()) return dirs
+
     // Only cache when we have results — avoids poisoning the cache with "[]"
     // which would cause a redundant API call on every subsequent mount.
     if (dirs.length > 0) localStorage.setItem(WORKSPACES_STORAGE_KEY, JSON.stringify(dirs))
@@ -456,17 +473,21 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
     const t = token.trim(), o = owner.trim(), r = repo.trim()
     if (!t || !o || !r) { toast.error('Token, owner, and repository are required'); return }
     setLoading(true)
+    const reqId = ++verifyReqId.current
     try {
-      const dirs = await doFetchWorkspaces(t, o, r)
+      const dirs = await doFetchWorkspaces(t, o, r, undefined, () => reqId !== verifyReqId.current)
+      // If the user edited the fields while we were waiting, discard this result entirely.
+      if (reqId !== verifyReqId.current) return
       if (dirs.length === 0) {
         toast.error('No workspace directories found — add at least one top-level directory (e.g. "default/") to the repo on GitHub, then verify again.')
         return
       }
       setVerifiedCreds({ token: t, owner: o, repo: r })
     } catch (err) {
+      if (reqId !== verifyReqId.current) return
       toast.error(`GitHub error: ${(err as Error).message ?? 'Network error'}`)
     } finally {
-      setLoading(false)
+      if (reqId === verifyReqId.current) setLoading(false)
     }
   }
 
@@ -565,7 +586,11 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
             </p>
           </div>
 
-          <Button type="submit" className={isFirstRun ? 'w-full' : ''} disabled={!workspace}>
+          <Button
+            type="submit"
+            className={isFirstRun ? 'w-full' : ''}
+            disabled={!workspace || (workspaces.length > 0 && !workspaces.includes(workspace))}
+          >
             {isFirstRun ? 'Save & connect' : 'Update credentials'}
           </Button>
 
