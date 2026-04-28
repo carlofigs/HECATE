@@ -40,7 +40,7 @@ export const WORKSPACES_STORAGE_KEY = 'hecate:workspaces'
 export const CREDENTIALS_STORAGE_KEY = 'hecate:credentials'
 
 /**
- * sessionStorage key used to hand off a success toast across a hard reload.
+ * sessionStorage key (not localStorage) used to hand off a success toast across a hard reload.
  * Written immediately before `window.location.reload()` in handleSave (Settings
  * mode). Read and cleared on the next mount so the toast is shown once after the
  * page comes back up. sessionStorage survives a same-origin reload but is cleared
