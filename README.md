@@ -86,7 +86,7 @@ Data lives in a companion private repository (`HECATE_Data` by convention). Each
 
 - **Node.js 20+** (required by Vite 6 and React 19)
 - A GitHub account
-- A second private repository to act as the data store (e.g. `HECATE_Data`) containing at least one workspace directory with the seven JSON files above
+- A second private repository to act as the data store containing at least one workspace directory with the seven JSON files above
 
 ## Setup
 
