@@ -32,18 +32,19 @@ import { FocusWeekHeader } from '@/components/focus/FocusWeekHeader'
 import { FocusSectionCard } from '@/components/focus/FocusSectionCard'
 import { Button } from '@/components/ui/button'
 import { nowISO } from '@/lib/utils'
-import type { FocusData, FocusSection } from '@/lib/schemas'
+import type { FocusData, FocusSection, CalendarEvent } from '@/lib/schemas'
 
 // ─── Sortable wrapper ─────────────────────────────────────────────────────────
 
 interface SortableSectionProps {
-  section:    FocusSection
-  colorIndex: number
-  weekOf:     string
-  onUpdate:   (updater: (s: FocusSection) => void) => void
-  onDelete:   () => void
-  collapsed:  boolean
-  onToggle:   () => void
+  section:         FocusSection
+  colorIndex:      number
+  weekOf:          string
+  calendarEvents?: CalendarEvent[]
+  onUpdate:        (updater: (s: FocusSection) => void) => void
+  onDelete:        () => void
+  collapsed:       boolean
+  onToggle:        () => void
 }
 
 function SortableSectionWrapper(props: SortableSectionProps) {
@@ -209,6 +210,7 @@ export default function FocusPage() {
                     section={section}
                     colorIndex={index}
                     weekOf={data.weekOf}
+                    calendarEvents={data.calendarEvents}
                     onUpdate={updater => updateSection(section.id, updater)}
                     onDelete={() => deleteSection(section.id)}
                     collapsed={isCollapsed(section.id)}

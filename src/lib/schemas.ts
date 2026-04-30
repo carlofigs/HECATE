@@ -45,11 +45,28 @@ export interface Task {
 
 // ─── focus.json ────────────────────────────────────────────────────────────────
 
+export type CalendarEventType = 'meeting' | 'focus' | 'deadline' | 'ooo' | 'other'
+
+export interface CalendarEvent {
+  id:          string              // Google Calendar event ID (dedup key)
+  date:        string              // "YYYY-MM-DD"
+  startTime:   string              // "HH:MM" | "" for all-day
+  endTime:     string              // "HH:MM" | "" for all-day
+  title:       string
+  type:        CalendarEventType
+  isAllDay:    boolean
+  isRecurring: boolean
+  location?:   string              // omit if not set
+  taskIds?:    string[]            // linked HECATE task IDs → rendered as chips
+  calLink?:    string              // deep link back to Google Calendar
+}
+
 export interface FocusData {
-  weekOf: string                // "YYYY-MM-DD" — Monday of the week
-  sprintLabel: string           // e.g. "Sprint 19 / Jira Sprint 21"
-  updatedAt: string             // ISO timestamp
-  sections: FocusSection[]
+  weekOf:          string            // "YYYY-MM-DD" — Monday of the week
+  sprintLabel:     string            // e.g. "Sprint 19 / Jira Sprint 21"
+  updatedAt:       string            // ISO timestamp
+  sections:        FocusSection[]
+  calendarEvents?: CalendarEvent[]   // structured events written by GitHub Actions
 }
 
 export interface FocusSection {

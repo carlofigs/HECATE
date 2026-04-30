@@ -24,21 +24,22 @@ import { KeepInMindView } from '@/components/focus/KeepInMindView'
 import { Pencil, Trash2, GripVertical, ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn, paletteToken, accentHeaderStyle, accentTextStyle } from '@/lib/utils'
-import type { FocusSection } from '@/lib/schemas'
+import type { FocusSection, CalendarEvent } from '@/lib/schemas'
 
 interface Props {
-  section:     FocusSection
-  colorIndex:  number
-  weekOf:      string
-  onUpdate:    (updater: (s: FocusSection) => void) => void
-  onDelete:    () => void
-  collapsed:   boolean
-  onToggle:    () => void
-  dragHandle?: React.HTMLAttributes<HTMLDivElement>
-  isDragging?: boolean
+  section:         FocusSection
+  colorIndex:      number
+  weekOf:          string
+  calendarEvents?: CalendarEvent[]
+  onUpdate:        (updater: (s: FocusSection) => void) => void
+  onDelete:        () => void
+  collapsed:       boolean
+  onToggle:        () => void
+  dragHandle?:     React.HTMLAttributes<HTMLDivElement>
+  isDragging?:     boolean
 }
 
-export function FocusSectionCard({ section, colorIndex, weekOf, onUpdate, onDelete, collapsed, onToggle, dragHandle, isDragging }: Props) {
+export function FocusSectionCard({ section, colorIndex, weekOf, calendarEvents, onUpdate, onDelete, collapsed, onToggle, dragHandle, isDragging }: Props) {
   const token = paletteToken(colorIndex)
 
   // ── Inline edit ───────────────────────────────────────────────────────────
@@ -185,7 +186,7 @@ export function FocusSectionCard({ section, colorIndex, weekOf, onUpdate, onDele
             <div className="px-3 py-3 rounded-b-lg border border-t-0 border-border bg-card/50">
               {section.content.trim() ? (
                 section.id === 'week-at-a-glance' ? (
-                  <WeekCalendarView content={section.content} weekOf={weekOf} onEdit={startEdit} />
+                  <WeekCalendarView content={section.content} weekOf={weekOf} calendarEvents={calendarEvents} onEdit={startEdit} />
                 ) : section.id === 'this-week' ? (
                   <ThisWeekView content={section.content} onEdit={startEdit} />
                 ) : section.id === 'waiting-on' ? (
