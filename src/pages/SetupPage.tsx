@@ -473,7 +473,11 @@ function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
       throw new Error(body.message ?? res.statusText)
     }
     const entries: { name: string; type: string }[] = await res.json()
-    const dirs = entries.filter(e => e.type === 'dir').map(e => e.name)
+    // Exclude hidden dirs (e.g. .github) and known infrastructure dirs (scripts)
+    const EXCLUDED = new Set(['scripts', 'node_modules', 'dist', 'public', 'src'])
+    const dirs = entries
+      .filter(e => e.type === 'dir' && !e.name.startsWith('.') && !EXCLUDED.has(e.name))
+      .map(e => e.name)
 
     // Bail out if the caller has been unmounted or superseded — don't update state
     // with results that no longer match what the user is looking at.
