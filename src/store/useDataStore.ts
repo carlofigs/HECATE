@@ -11,6 +11,8 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { getFile, putFile, loadCredentials } from '@/lib/github'
+import type { GitHubError } from '@/lib/github'
+import { validateFile } from '@/lib/validate'
 import type {
   DataFileName,
   FileSlice,
@@ -78,8 +80,9 @@ export const useDataStore = create<DataStore>()(
 
       try {
         const { data, sha } = await getFile(creds, name)
+        const valid = validateFile(name, data)
         set(state => {
-          ;(state[name] as FileSlice<unknown>).data    = data
+          ;(state[name] as FileSlice<unknown>).data    = valid
           ;(state[name] as FileSlice<unknown>).sha     = sha
           ;(state[name] as FileSlice<unknown>).dirty   = false
           ;(state[name] as FileSlice<unknown>).loading = false
@@ -124,6 +127,42 @@ export const useDataStore = create<DataStore>()(
           if (dataAfterSave === dataAtStart) s.dirty = false
         })
       } catch (err: unknown) {
+        // 409 = our cached SHA is stale: the remote moved underneath us (calendar
+        // sync bot, another tab). Recover once: refetch the fresh SHA and re-PUT
+        // local data on top of it. Single attempt — no retry loops.
+        if ((err as GitHubError)?.status === 409) {
+          try {
+            const fresh = await getFile<unknown>(creds, name)
+
+            // The sync bot owns focus.calendarEvents — adopt the remote copy
+            // before overwriting, so a recovery save never drops bot-written events.
+            if (name === 'focus') {
+              const remoteEvents = (fresh.data as FocusData | null)?.calendarEvents
+              if (remoteEvents) {
+                set(state => {
+                  if (state.focus.data) state.focus.data.calendarEvents = remoteEvents
+                })
+              }
+            }
+
+            const retryData = (get()[name] as FileSlice<unknown>).data
+            if (retryData) {
+              const newSha = await putFile(creds, name, retryData, fresh.sha, message)
+              const dataAfterRetry = (get()[name] as FileSlice<unknown>).data
+              set(state => {
+                const s = state[name] as FileSlice<unknown>
+                s.sha     = newSha
+                s.loading = false
+                if (dataAfterRetry === retryData) s.dirty = false
+              })
+              return
+            }
+          } catch {
+            // Recovery failed — fall through to the normal error path below,
+            // reporting the original 409.
+          }
+        }
+
         const errMessage = (err as { message?: string })?.message ?? 'Unknown error'
         set(state => {
           ;(state[name] as FileSlice<unknown>).loading = false
