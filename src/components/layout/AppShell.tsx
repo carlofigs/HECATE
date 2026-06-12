@@ -163,6 +163,24 @@ export default function AppShell() {
   const weekLogDirty  = useDataStore(s => s.weekly_log.dirty)
   const archiveDirty  = useDataStore(s => s.archive.dirty)
   const memoryDirty   = useDataStore(s => s.memory.dirty)
+  const settingsDirty = useDataStore(s => s.settings.dirty)
+
+  const anyDirty =
+    tasksDirty || focusDirty || projectsDirty ||
+    weekLogDirty || archiveDirty || memoryDirty || settingsDirty
+
+  // Warn before the tab closes/reloads while unsaved changes exist — the debounced
+  // auto-save may not have fired yet, and an in-flight save dies with the page.
+  useEffect(() => {
+    if (!anyDirty) return
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault()
+      // Chrome requires returnValue to be set for the prompt to appear
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [anyDirty])
 
   // Redirect to setup if no credentials
   useEffect(() => {
@@ -181,7 +199,7 @@ export default function AppShell() {
     } catch { return '' }
   })
 
-  const handleWorkspaceSwitch = useCallback((next: string) => {
+  const handleWorkspaceSwitch = useCallback(async (next: string) => {
     if (next === currentWorkspace) return
     try {
       const raw = localStorage.getItem(CREDENTIALS_STORAGE_KEY)
@@ -193,6 +211,21 @@ export default function AppShell() {
         navigate('/setup')
         return
       }
+
+      // Flush unsaved changes to the OLD workspace before the credentials are
+      // rewritten — the reload below would otherwise discard them.
+      const store = useDataStore.getState()
+      const dirtyFiles = (
+        ['tasks', 'focus', 'projects', 'weekly_log', 'archive', 'memory', 'settings'] as const
+      ).filter(n => store[n].dirty)
+      if (dirtyFiles.length > 0) {
+        const results = await Promise.allSettled(dirtyFiles.map(n => store.saveFile(n)))
+        if (results.some(r => r.status === 'rejected')) {
+          toast.error('Could not save unsaved changes — workspace switch cancelled')
+          return
+        }
+      }
+
       creds.workspace = next
       localStorage.setItem(CREDENTIALS_STORAGE_KEY, JSON.stringify(creds))
       setCurrentWorkspace(next)
@@ -213,6 +246,7 @@ export default function AppShell() {
       ['weekly_log', weekLogDirty],
       ['archive',    archiveDirty],
       ['memory',     memoryDirty],
+      ['settings',   settingsDirty],
     ]
 
     async function onKeyDown(e: KeyboardEvent) {
@@ -270,7 +304,7 @@ export default function AppShell() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [navigate, saveFile, tasksDirty, focusDirty, projectsDirty, weekLogDirty, archiveDirty, memoryDirty])
+  }, [navigate, saveFile, tasksDirty, focusDirty, projectsDirty, weekLogDirty, archiveDirty, memoryDirty, settingsDirty])
 
   const toggleTheme = useCallback(async () => {
     const next = settings.theme === 'dark' ? 'light' : 'dark'

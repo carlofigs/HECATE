@@ -74,10 +74,15 @@ export async function getFile<T>(
 
   // Contents API returns base64-encoded UTF-8 content.
   // atob() produces a binary string — must pipe through TextDecoder for non-ASCII chars.
-  const binary = atob(json.content.replace(/\n/g, ''))
-  const bytes  = Uint8Array.from(binary, c => c.charCodeAt(0))
-  const raw    = new TextDecoder('utf-8').decode(bytes)
-  const data: T = JSON.parse(raw)
+  let data: T
+  try {
+    const binary = atob(json.content.replace(/\n/g, ''))
+    const bytes  = Uint8Array.from(binary, c => c.charCodeAt(0))
+    const raw    = new TextDecoder('utf-8').decode(bytes)
+    data = JSON.parse(raw)
+  } catch {
+    throw { status: 0, message: `${name}.json could not be decoded — the file may be corrupted` } satisfies GitHubError
+  }
 
   return { data, sha: json.sha, path: json.path }
 }
