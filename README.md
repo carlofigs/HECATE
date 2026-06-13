@@ -45,7 +45,7 @@ Plus: configurable autosave debounce, background sync polling with stale-data de
 | Routing | React Router v7 |
 | Toasts | Sonner |
 | Drag and drop | dnd-kit |
-| GitHub API | octokit |
+| GitHub API | raw `fetch` (GitHub Contents API) |
 | Markdown | react-markdown + remark-gfm |
 
 ## Architecture
@@ -113,16 +113,13 @@ npm run preview    # Serve the built dist/ locally
 
 ## Deployment
 
-Deployed to GitHub Pages via the `dist/` directory committed to `main`. The Vite base path is `/HECATE/`.
+Deployed to GitHub Pages by a GitHub Actions workflow ([.github/workflows/deploy.yml](.github/workflows/deploy.yml)) that type-checks, builds, and publishes `dist/` on every push to `main`. The Vite base path is `/HECATE/`. Build output is **not** committed — `dist/` is gitignored and produced fresh on CI.
 
 ```bash
-npm run build
-git add -f dist/
-git commit -m "chore: deploy"
-git push origin main
+git push origin main   # → Actions builds and deploys automatically
 ```
 
-Always rebuild before committing — never edit `dist/` by hand. Consider migrating to a GitHub Actions Pages workflow to avoid committing build output.
+One-time setup: repo → **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 
 ## Keyboard shortcuts
 
