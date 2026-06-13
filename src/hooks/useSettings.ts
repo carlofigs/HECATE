@@ -32,14 +32,14 @@ export function useSettings() {
   const saveFile = useDataStore(s => s.saveFile)
 
   // ── Load on mount ─────────────────────────────────────────────────────────
+  // Intentional: load once on mount. slice/loadFile refs are stable Zustand
+  // selectors and don't change between renders.
   useEffect(() => {
     if (slice.data !== null || slice.loading) return
     const creds = loadCredentials()
     if (!creds) return
     loadFile('settings')
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: load once on mount;
-  // slice/loadFile refs are stable Zustand selectors and don't change between renders
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Apply theme to DOM whenever settings change ───────────────────────────
   useEffect(() => {
@@ -70,8 +70,8 @@ export function useSettings() {
         }))
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- slice.data is the only
-    // conditional branch — setData and useDataStore.setState are stable references
+    // slice.data is the only conditional branch — setData and useDataStore.setState
+    // are stable references, so the dep list is complete.
     [slice.data, setData],
   )
 

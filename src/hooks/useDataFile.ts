@@ -57,14 +57,14 @@ export function useDataFile<K extends DataFileName>(
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // ── Initial load ──────────────────────────────────────────────────────────
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadFile is a stable
-  // Zustand action (referentially stable across renders); slice omitted intentionally
-  // so we only re-run when the file name changes, not on every slice update.
+  // loadFile is a stable Zustand action (referentially stable across renders); slice
+  // is omitted intentionally so we only re-run when the file name changes, not on
+  // every slice update.
   useEffect(() => {
     if (slice.data === null && !slice.loading) {
       loadFile(name)
     }
-  }, [name])
+  }, [name]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Auto-save on dirty ───────────────────────────────────────────────────
   useEffect(() => {
