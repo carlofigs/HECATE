@@ -202,7 +202,7 @@ export function FocusSectionCard({ section, colorIndex, weekOf, calendarEvents, 
                     remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeTaskIds]}
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    components={{ 'task-id-chip': ({ node, ...props }: any) => <TaskIdChip taskid={String(props.taskid ?? '')} /> } as any}
+                    components={{ 'task-id-chip': ({ node: _node, ...props }: any) => <TaskIdChip taskid={String(props.taskid ?? '')} /> } as any}
                   >
                     {section.content}
                   </ReactMarkdown>

@@ -43,7 +43,7 @@ function slugify(s: string): string {
 }
 
 function generateProjectId(name: string, existing: Project[]): string {
-  const base = `p-${slugify(name)}` || 'p-project'
+  const base = `p-${slugify(name) || 'project'}`
   const ids   = new Set(existing.map(p => p.id))
   let id = base, n = 2
   while (ids.has(id)) id = `${base}-${n++}`
