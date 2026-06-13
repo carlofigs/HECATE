@@ -7,6 +7,12 @@ node_modules/
 # Local data — never commit; sensitive work data lives in the configured private GitHub repo
 data/
 
+# Private working docs — reference private workspace/client names; kept local-only
+# since this repo is public. The canonical copies live on the maintainer's machine.
+HECATE_CONTEXT.md
+HECATE_COWORK_SETUP.md
+HECATE_PROJECT_INSTRUCTIONS.md
+
 # Build output
 dist/
 
