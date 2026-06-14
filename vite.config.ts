@@ -14,7 +14,7 @@ const pwaPlugin = process.env.VITEST
   : [VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
-      includeAssets: ['favicon.svg', 'apple-touch-icon-180x180.png'],
+      includeAssets: ['hecate-favicon.svg', 'apple-touch-icon-180x180.png'],
       manifest: {
         name: 'HECATE',
         short_name: 'HECATE',
@@ -22,7 +22,7 @@ const pwaPlugin = process.env.VITEST
         start_url: '.',
         scope: '.',
         display: 'standalone',
-        theme_color: '#0a0b0e',
+        theme_color: '#15141f',
         background_color: '#0a0b0e',
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
