@@ -1,9 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="HECATE">
-  <!-- Full-bleed indigo-black square so the maskable safe zone is filled -->
-  <rect width="512" height="512" fill="#15141f"/>
-  <!-- Trinity-keyblade mark, centered, scaled to ~70% of the canvas for the safe zone.
-       512/2 = 256 center; the source mark lives in a 120 box, so scale 512*0.70/120 ≈ 2.98 -->
-  <g transform="translate(256,256) scale(2.98)" color="#cdd4e6">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="HECATE">
+  <rect width="120" height="120" rx="28" fill="#15141f"/>
+  <g transform="translate(60,60) scale(0.84)" color="#cdd4e6">
     <g fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
       <g transform="rotate(0)"><line x1="0" y1="-40" x2="0" y2="42"/><line x1="-7" y1="-32" x2="7" y2="-32" stroke-width="5"/><path d="M-9 44 H9"/><line x1="0" y1="42" x2="0" y2="56"/><line x1="-9" y1="44" x2="-9" y2="54"/><line x1="9" y1="44" x2="9" y2="54"/></g>
       <g transform="rotate(120)"><line x1="0" y1="-40" x2="0" y2="42"/><line x1="-7" y1="-32" x2="7" y2="-32" stroke-width="5"/><circle cx="0" cy="-48" r="7"/><line x1="0" y1="42" x2="0" y2="54"/><path d="M0 46 H8"/><path d="M0 50 H6"/></g>

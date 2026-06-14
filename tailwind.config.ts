@@ -33,6 +33,8 @@ const config: Config = {
         border:        'hsl(var(--border))',
         input:         'hsl(var(--input))',
         ring:          'hsl(var(--ring))',
+        // Brand accent — torch amber (lock hub + torch). Sparing use only.
+        torch:         '#e3a24a',
         // Column accent colours
         'col-todo':     'hsl(var(--col-todo))',
         'col-progress': 'hsl(var(--col-progress))',

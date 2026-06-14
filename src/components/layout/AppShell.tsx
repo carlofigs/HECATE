@@ -19,6 +19,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { SyncStatus } from '@/components/layout/SyncStatus'
 import { StaleDataBanner } from '@/components/layout/StaleDataBanner'
+import { HecateMark } from '@/components/brand/HecateMark'
 import { useSettings } from '@/hooks/useSettings'
 import { useInstallPrompt } from '@/hooks/useInstallPrompt'
 import { useStaleDetector } from '@/hooks/useStaleDetector'
@@ -327,9 +328,12 @@ export default function AppShell() {
 
         {/* Logo / wordmark + workspace switcher */}
         <div className="px-4 py-3 border-b border-border space-y-2">
-          <span className="font-mono text-xs tracking-[0.25em] text-primary font-medium uppercase">
-            HECATE
-          </span>
+          <div className="flex items-center gap-2">
+            <HecateMark className="w-5 h-5 text-foreground shrink-0" />
+            <span className="font-mono text-xs tracking-[0.25em] text-primary font-medium uppercase">
+              HECATE
+            </span>
+          </div>
           {workspaces.length > 0 && (
             <select
               value={currentWorkspace}
@@ -415,6 +419,7 @@ export default function AppShell() {
         {/* Mobile header */}
         <header className="lg:hidden flex items-center justify-between px-4 py-2.5 border-b border-border bg-card shrink-0">
           <div className="flex items-center gap-2">
+            <HecateMark className="w-5 h-5 text-foreground shrink-0" />
             <span className="font-mono text-xs tracking-[0.25em] text-primary font-medium uppercase">
               HECATE
             </span>
