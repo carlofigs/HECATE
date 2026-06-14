@@ -54,4 +54,5 @@ declare module 'lucide-react' {
   export const ArrowDownAZ: LucideIcon
   export const RotateCcw: LucideIcon
   export const MapPin: LucideIcon
+  export const Download: LucideIcon
 }
