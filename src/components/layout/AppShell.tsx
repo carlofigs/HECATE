@@ -13,12 +13,14 @@ import {
   MoreHorizontal,
   X,
   Command,
+  Download,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { SyncStatus } from '@/components/layout/SyncStatus'
 import { StaleDataBanner } from '@/components/layout/StaleDataBanner'
 import { useSettings } from '@/hooks/useSettings'
+import { useInstallPrompt } from '@/hooks/useInstallPrompt'
 import { useStaleDetector } from '@/hooks/useStaleDetector'
 import { useDataStore } from '@/store/useDataStore'
 import { WORKSPACES_STORAGE_KEY, CREDENTIALS_STORAGE_KEY } from '@/lib/taskConstants'
@@ -152,6 +154,7 @@ export default function AppShell() {
   const gMode   = useRef(false)
   const gTimer  = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { settings, updateSettings, saveSettings } = useSettings()
+  const { available: canInstall, promptToInstall } = useInstallPrompt()
   const { staleFiles, reloadStale, dismiss: dismissStale } = useStaleDetector()
 
   // Targeted selectors — each subscription is isolated to a single boolean so AppShell
@@ -370,6 +373,15 @@ export default function AppShell() {
           </div>
 
           <div className="space-y-0.5">
+            {canInstall && (
+              <button
+                onClick={promptToInstall}
+                className="flex items-center gap-2.5 w-full px-3 py-2 rounded-md text-sm text-primary hover:bg-primary/10 transition-colors"
+              >
+                <Download className="w-4 h-4 shrink-0" />
+                Install app
+              </button>
+            )}
             <button
               onClick={toggleTheme}
               className="flex items-center gap-2.5 w-full px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
@@ -410,6 +422,15 @@ export default function AppShell() {
             <SyncStatus compact />
           </div>
           <div className="flex items-center gap-1">
+            {canInstall && (
+              <button
+                onClick={promptToInstall}
+                className="p-2 rounded-md text-primary hover:bg-primary/10 transition-colors"
+                aria-label="Install app"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            )}
             <button
               onClick={toggleTheme}
               className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
