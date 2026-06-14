@@ -91,7 +91,7 @@ function SortableProjectItem({
 }
 
 export function ProjectList({
-  projects, selectedId, onSelect, search, onSearch, onReorder, onNewProject,
+  projects, selectedId, onSelect, search, onSearch, onReorder, onNewProject, className,
 }: {
   projects:      Project[]
   selectedId:    string | null
@@ -100,6 +100,7 @@ export function ProjectList({
   onSearch:      (v: string) => void
   onReorder:     (reordered: Project[]) => void
   onNewProject?: () => void
+  className?:    string
 }) {
   const isFiltering = search.trim() !== ''
 
@@ -124,7 +125,7 @@ export function ProjectList({
   }
 
   return (
-    <div className="flex flex-col border-r border-border bg-card/50 w-56 shrink-0">
+    <div className={cn('flex flex-col border-r border-border bg-card/50 w-full lg:w-56 shrink-0', className)}>
       {/* Search + New */}
       <div className="flex items-center gap-1 px-2 py-2 border-b border-border/50">
         <div className="relative flex-1 min-w-0">

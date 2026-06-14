@@ -9,7 +9,8 @@
  */
 
 import { useState, useCallback } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, ChevronLeft } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { useDataFile } from '@/hooks/useDataFile'
 import { NewProjectDialog } from '@/components/projects/NewProjectDialog'
 import { ProjectList } from '@/components/projects/ProjectList'
@@ -24,6 +25,14 @@ export default function ProjectsPage() {
   const [selectedId,      setSelectedId]      = useState<string | null>(null)
   const [search,          setSearch]          = useState('')
   const [newProjectOpen,  setNewProjectOpen]  = useState(false)
+  // On mobile (< lg) we show one pane at a time; selecting a project opens its
+  // detail full-width. Ignored at lg+, where both panes are always visible.
+  const [mobileDetail,    setMobileDetail]    = useState(false)
+
+  const openProject = useCallback((id: string) => {
+    setSelectedId(id)
+    setMobileDetail(true)
+  }, [])
 
   const resolvedId = selectedId ?? projects[0]?.id ?? null
   const selected   = projects.find(p => p.id === resolvedId) ?? null
@@ -102,19 +111,30 @@ export default function ProjectsPage() {
         <ProjectList
           projects={projects}
           selectedId={resolvedId}
-          onSelect={setSelectedId}
+          onSelect={openProject}
           search={search}
           onSearch={setSearch}
           onReorder={handleReorder}
           onNewProject={() => setNewProjectOpen(true)}
+          className={cn(mobileDetail && 'hidden lg:flex')}
         />
-        {selected ? (
-          <ProjectDetail project={selected} onUpdate={handleUpdate} />
-        ) : (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-            Select a project
-          </div>
-        )}
+        <div className={cn('flex-1 min-w-0 flex flex-col', !mobileDetail && 'hidden lg:flex')}>
+          {/* Mobile-only back bar */}
+          <button
+            onClick={() => setMobileDetail(false)}
+            className="lg:hidden flex items-center gap-1 px-3 py-2 border-b border-border text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Projects
+          </button>
+          {selected ? (
+            <ProjectDetail project={selected} onUpdate={handleUpdate} />
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+              Select a project
+            </div>
+          )}
+        </div>
       </div>
       <NewProjectDialog
         open={newProjectOpen}

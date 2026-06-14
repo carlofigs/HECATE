@@ -4,7 +4,7 @@
  */
 
 import { useState, useMemo } from 'react'
-import { FileText } from 'lucide-react'
+import { FileText, ChevronLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Prose } from './memoryShared'
 
@@ -46,12 +46,14 @@ export function ReferencesTab({ files }: { files: Record<string, string> }) {
     [], // intentionally only on mount
   )
   const [selected, setSelected] = useState<string>(firstFile)
+  // Mobile (< lg) master-detail: tapping a file opens its content full-width.
+  const [mobileDetail, setMobileDetail] = useState(false)
 
   return (
     <div className="flex h-full overflow-hidden">
 
       {/* ── Left: file tree ── */}
-      <div className="w-44 shrink-0 border-r border-border overflow-y-auto py-2 bg-card/30">
+      <div className={cn('w-full lg:w-44 shrink-0 border-r border-border overflow-y-auto py-2 bg-card/30', mobileDetail && 'hidden lg:block')}>
         {groups.map(({ dir, files: dirFiles }) => (
           <div key={dir || '__root'} className="mb-1">
             {dir && (
@@ -62,7 +64,7 @@ export function ReferencesTab({ files }: { files: Record<string, string> }) {
             {dirFiles.map(path => (
               <button
                 key={path}
-                onClick={() => setSelected(path)}
+                onClick={() => { setSelected(path); setMobileDetail(true) }}
                 className={cn(
                   'w-full flex items-start gap-1.5 px-3 py-1.5 text-left transition-colors text-[11px] leading-snug',
                   selected === path
@@ -79,21 +81,30 @@ export function ReferencesTab({ files }: { files: Record<string, string> }) {
       </div>
 
       {/* ── Right: rendered content ── */}
-      <div className="flex-1 overflow-y-auto min-h-0 px-5 py-4">
-        {selected && files[selected] ? (
-          <>
-            <p className="text-[10px] font-mono text-muted-foreground/25 mb-3 select-all">
-              {selected}
+      <div className={cn('flex-1 min-w-0 flex flex-col', !mobileDetail && 'hidden lg:flex')}>
+        <button
+          onClick={() => setMobileDetail(false)}
+          className="lg:hidden flex items-center gap-1 px-3 py-2 border-b border-border text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Files
+        </button>
+        <div className="flex-1 overflow-y-auto min-h-0 px-5 py-4">
+          {selected && files[selected] ? (
+            <>
+              <p className="text-[10px] font-mono text-muted-foreground/25 mb-3 select-all">
+                {selected}
+              </p>
+              <div className="max-w-2xl">
+                <Prose content={files[selected]} />
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-muted-foreground/40 italic py-8 text-center">
+              Select a file from the tree
             </p>
-            <div className="max-w-2xl">
-              <Prose content={files[selected]} />
-            </div>
-          </>
-        ) : (
-          <p className="text-xs text-muted-foreground/40 italic py-8 text-center">
-            Select a file from the tree
-          </p>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )
