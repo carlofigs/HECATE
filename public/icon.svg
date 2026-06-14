@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Full-bleed dark background so the maskable safe zone is filled -->
+  <rect width="512" height="512" fill="#0f1117"/>
+  <!-- Teal "H" centered within the maskable safe zone (~62% of the canvas).
+       Two verticals + crossbar, scaled from the 32px favicon geometry. -->
+  <g fill="#2dd4bf">
+    <rect x="160"  y="160" width="44" height="192" rx="12"/>
+    <rect x="308"  y="160" width="44" height="192" rx="12"/>
+    <rect x="160"  y="234" width="192" height="44" rx="12"/>
+  </g>
+</svg>
