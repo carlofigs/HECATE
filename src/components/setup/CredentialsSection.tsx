@@ -106,10 +106,23 @@ export function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
       throw new Error(body.message ?? res.statusText)
     }
     const entries: { name: string; type: string }[] = await res.json()
-    // Exclude hidden dirs (e.g. .github) and known infrastructure dirs (scripts)
+    // Workspace directories are every top-level dir except:
+    //   - hidden dirs        (.github, .git)
+    //   - infrastructure     (scripts, node_modules, …)
+    //   - archived/fixtures  (leading underscore, e.g. _old_client)
+    //
+    // The underscore prefix is a convention rather than a name list so that
+    // private workspace names never have to be hardcoded into this public repo.
+    // To archive a workspace, rename its directory with a leading underscore —
+    // the data is preserved, it just stops appearing in the picker.
     const EXCLUDED = new Set(['scripts', 'node_modules', 'dist', 'public', 'src'])
     const dirs = entries
-      .filter(e => e.type === 'dir' && !e.name.startsWith('.') && !EXCLUDED.has(e.name))
+      .filter(e =>
+        e.type === 'dir' &&
+        !e.name.startsWith('.') &&
+        !e.name.startsWith('_') &&
+        !EXCLUDED.has(e.name),
+      )
       .map(e => e.name)
 
     // Bail out if the caller has been unmounted or superseded — don't update state

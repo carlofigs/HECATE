@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 470 120" role="img" aria-label="HECATE">
+  <style>
+    .f{fill:#1b1930}
+    .st{stroke:#1b1930}
+    .wm{fill:#1b1930}
+    @media (prefers-color-scheme: dark){
+      .f{fill:#cdd4e6}
+      .st{stroke:#cdd4e6}
+      .wm{fill:#cdd4e6}
+    }
+  </style>
+  <path class="f" d="M47 17 A14 14 0 0 1 73 17 A18 18 0 0 0 47 17 Z"/>
+  <g class="st" fill="none" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="60" y1="32" x2="60" y2="92"/>
+    <line x1="42" y1="40" x2="78" y2="40" stroke-width="7"/>
+    <path d="M48 94 H72"/>
+    <line x1="60" y1="92" x2="60" y2="110"/>
+    <line x1="48" y1="94" x2="48" y2="108"/>
+    <line x1="72" y1="94" x2="72" y2="108"/>
+  </g>
+  <circle cx="60" cy="25" r="4" fill="#e3a24a"/>
+  <text class="wm" x="148" y="78" style="font-family:'Trebuchet MS','Segoe UI',sans-serif;font-size:54px;font-weight:500;letter-spacing:14px">HECATE</text>
+</svg>
