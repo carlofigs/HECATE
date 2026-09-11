@@ -4,7 +4,7 @@
  * All operations are unauthenticated-friendly for reads on public repos,
  * but require a fine-grained PAT (Contents: R/W) for writes.
  *
- * Data files live at:  data/{name}.json  in the repo root.
+ * Data files live at:  {workspace}/{name}.json  in the repo root.
  */
 
 import type { GitHubCredentials } from '@/lib/schemas'

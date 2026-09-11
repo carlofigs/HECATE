@@ -27,6 +27,10 @@ dist/
 *.swp
 *.swo
 
+# Claude Code — machine-local permission grants (contains absolute local paths).
+# Shared .claude config (commands, agents) is NOT ignored and can be committed.
+.claude/settings.local.json
+
 # OS
 .DS_Store
 Thumbs.db

@@ -366,9 +366,13 @@ export default function WeekLogPage() {
   const { settings }        = useSettings()
 
   // ── Week navigation ───────────────────────────────────────────────────────
+  // Destructured so the memo depends only on the weeks array itself, not on
+  // logData's object identity — a new logData wrapper holding the same weeks
+  // reference should not trigger a re-sort.
+  const weeks = logData?.weeks
   const sortedWeeks: WeekEntry[] = useMemo(
-    () => logData ? [...logData.weeks].sort((a, b) => b.weekOf.localeCompare(a.weekOf)) : [],
-    [logData?.weeks],
+    () => weeks ? [...weeks].sort((a, b) => b.weekOf.localeCompare(a.weekOf)) : [],
+    [weeks],
   )
 
   const [selectedWeekOf, setSelectedWeekOf] = useState<string | null>(null)
