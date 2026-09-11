@@ -13,6 +13,7 @@ import { immer } from 'zustand/middleware/immer'
 import { getFile, putFile, loadCredentials } from '@/lib/github'
 import type { GitHubError } from '@/lib/github'
 import { validateFile } from '@/lib/validate'
+import { migrateFile } from '@/lib/migrate'
 import type {
   DataFileName,
   FileSlice,
@@ -80,7 +81,10 @@ export const useDataStore = create<DataStore>()(
 
       try {
         const { data, sha } = await getFile(creds, name)
-        const valid = validateFile(name, data)
+        // Migrate before validating: validateFile and everything downstream
+        // should only ever see the current shape. Throws on a file written
+        // by a newer build rather than misreading and overwriting it.
+        const valid = validateFile(name, migrateFile(name, data))
         set(state => {
           ;(state[name] as FileSlice<unknown>).data    = valid
           ;(state[name] as FileSlice<unknown>).sha     = sha

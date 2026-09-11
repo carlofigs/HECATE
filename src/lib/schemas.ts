@@ -13,6 +13,9 @@
 // ─── tasks.json ────────────────────────────────────────────────────────────────
 
 export interface TasksData {
+  /** Schema version; absent means v1. See lib/migrate.ts. */
+  schemaVersion?: number
+
   columns: Column[]
 }
 
@@ -62,6 +65,9 @@ export interface CalendarEvent {
 }
 
 export interface FocusData {
+  /** Schema version; absent means v1. See lib/migrate.ts. */
+  schemaVersion?: number
+
   weekOf:          string            // "YYYY-MM-DD" — Monday of the week
   sprintLabel:     string            // e.g. "Sprint 19 / Jira Sprint 21"
   updatedAt:       string            // ISO timestamp
@@ -78,6 +84,9 @@ export interface FocusSection {
 // ─── projects.json ─────────────────────────────────────────────────────────────
 
 export interface ProjectsData {
+  /** Schema version; absent means v1. See lib/migrate.ts. */
+  schemaVersion?: number
+
   projects: Project[]
 }
 
@@ -143,6 +152,9 @@ export interface ProjectSection {
 // ─── weekly_log.json ───────────────────────────────────────────────────────────
 
 export interface WeeklyLogData {
+  /** Schema version; absent means v1. See lib/migrate.ts. */
+  schemaVersion?: number
+
   weeks: WeekEntry[]
 }
 
@@ -180,6 +192,9 @@ export interface OneOnOnePrep {
 // ─── archive.json ──────────────────────────────────────────────────────────────
 
 export interface ArchiveData {
+  /** Schema version; absent means v1. See lib/migrate.ts. */
+  schemaVersion?: number
+
   weeks: ArchiveWeek[]
 }
 
@@ -201,6 +216,9 @@ export interface ArchivedTask {
 // ─── memory.json ───────────────────────────────────────────────────────────────
 
 export interface MemoryData {
+  /** Schema version; absent means v1. See lib/migrate.ts. */
+  schemaVersion?: number
+
   updatedAt: string
   me: string                    // markdown
   people: Person[]
@@ -238,6 +256,9 @@ export interface Responsibility {
 // ─── settings.json ─────────────────────────────────────────────────────────────
 
 export interface SettingsData {
+  /** Schema version; absent means v1. See lib/migrate.ts. */
+  schemaVersion?: number
+
   oneOnOnePeople: string[]
   defaultView: 'board' | 'list'
   autoSaveDebounceMs: number
