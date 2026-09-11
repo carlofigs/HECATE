@@ -15,6 +15,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { filterWorkspaces, type RepoEntry } from '@/lib/workspaces'
 import { WORKSPACES_STORAGE_KEY, CREDENTIALS_STORAGE_KEY, PENDING_TOAST_KEY } from '@/lib/taskConstants'
 import { readStoredCredentials } from './setupShared'
 
@@ -105,25 +106,10 @@ export function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
       const body = await res.json().catch(() => ({}))
       throw new Error(body.message ?? res.statusText)
     }
-    const entries: { name: string; type: string }[] = await res.json()
-    // Workspace directories are every top-level dir except:
-    //   - hidden dirs        (.github, .git)
-    //   - infrastructure     (scripts, node_modules, …)
-    //   - archived/fixtures  (leading underscore, e.g. _old_client)
-    //
-    // The underscore prefix is a convention rather than a name list so that
-    // private workspace names never have to be hardcoded into this public repo.
-    // To archive a workspace, rename its directory with a leading underscore —
-    // the data is preserved, it just stops appearing in the picker.
-    const EXCLUDED = new Set(['scripts', 'node_modules', 'dist', 'public', 'src'])
-    const dirs = entries
-      .filter(e =>
-        e.type === 'dir' &&
-        !e.name.startsWith('.') &&
-        !e.name.startsWith('_') &&
-        !EXCLUDED.has(e.name),
-      )
-      .map(e => e.name)
+    const entries: RepoEntry[] = await res.json()
+    // Shared with the MCP server — see lib/workspaces.ts for the rule and why
+    // the underscore convention exists.
+    const dirs = filterWorkspaces(entries)
 
     // Bail out if the caller has been unmounted or superseded — don't update state
     // with results that no longer match what the user is looking at.
