@@ -1,5 +1,8 @@
 name: Deploy to GitHub Pages
 
+# Push-to-main only. Pull requests are gated by ci.yml, kept separate so a PR
+# run never inherits this workflow's Pages write permissions or its `pages`
+# concurrency group — sharing that group would let a PR push cancel a live deploy.
 on:
   push:
     branches: [main]
