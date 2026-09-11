@@ -36,8 +36,24 @@ export default tseslint.config(
     },
   },
   {
+    // The MCP server is plain Node TypeScript — no DOM, no React.
+    files: ['mcp/**/*.ts'],
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    languageOptions: {
+      ecmaVersion: 2022,
+      globals: globals.node,
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': ['error', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+      }],
+    },
+  },
+  {
     // Tests run in node and lean on vitest globals via explicit imports.
-    files: ['src/**/*.test.ts'],
+    files: ['src/**/*.test.ts', 'mcp/**/*.test.ts'],
     languageOptions: {
       globals: globals.node,
     },

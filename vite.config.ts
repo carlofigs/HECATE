@@ -50,9 +50,10 @@ export default defineConfig({
     },
   },
   test: {
-    // Unit tests for the risky core (store, github encoding, schema guards).
-    // Pure logic — no DOM needed, so the lighter node environment.
+    // Unit tests for the risky core (store, github encoding, schema guards)
+    // and the MCP server. Pure logic — no DOM needed, so the lighter node
+    // environment.
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'mcp/**/*.test.ts'],
   },
 })
