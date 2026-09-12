@@ -38,17 +38,10 @@ export function todayISO(): string {
   return new Date().toISOString().split('T')[0]
 }
 
-/** Now as ISO timestamp */
-export function nowISO(): string {
-  return new Date().toISOString()
-}
-
-/** Generate a task ID from a prefix and timestamp */
-export function generateTaskId(prefix: 'a' | 'b' | 'custom' = 'custom'): string {
-  const ts = Date.now().toString(36)
-  const rand = Math.random().toString(36).slice(2, 5)
-  return `t-${prefix}-${ts}${rand}`
-}
+// nowISO and generateTaskId live in lib/ids.ts so the MCP server can import
+// them without dragging in React and the class-name helpers below. Re-exported
+// here so existing `from '@/lib/utils'` imports keep working.
+export { nowISO, generateTaskId } from '@/lib/ids'
 
 /** Map column ID to its accent CSS variable token name */
 export function columnAccentClass(columnId: string): string {

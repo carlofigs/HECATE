@@ -61,9 +61,13 @@ async function call(client: Client, name: string, args: Record<string, unknown> 
 beforeEach(() => { asked = [] })
 
 describe('tool registration', () => {
-  it('exposes exactly the read tools — phase 1 must not offer a write path', async () => {
+  // Phase 1 asserted this was the *complete* tool list, to prove no write path
+  // existed. Writes are deliberate now, so this narrows to the read surface;
+  // write.test.ts owns the exhaustive list.
+  it('registers every read tool', async () => {
     const { tools } = await (await connect()).listTools()
-    expect(tools.map(t => t.name).sort()).toEqual(['list_tasks', 'list_workspaces', 'read_data_file'])
+    const names = tools.map(t => t.name)
+    for (const t of ['list_tasks', 'list_workspaces', 'read_data_file']) expect(names).toContain(t)
   })
 
   it('describes every tool, so a client can tell them apart', async () => {

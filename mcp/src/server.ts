@@ -10,6 +10,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { StorageAdapter } from './storage/types'
 import type { McpConfig } from './config'
 import { registerReadTools } from './tools/read'
+import { registerWriteTools } from './tools/write'
 
 export const SERVER_NAME = 'hecate'
 export const SERVER_VERSION = '0.1.0'
@@ -17,5 +18,6 @@ export const SERVER_VERSION = '0.1.0'
 export function createServer(storage: StorageAdapter, config: McpConfig): McpServer {
   const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION })
   registerReadTools(server, storage, config)
+  registerWriteTools(server, storage, config)
   return server
 }
