@@ -77,9 +77,15 @@ describe('registration', () => {
   it('exposes the read and write tools together', async () => {
     const { tools } = await (await connect()).listTools()
     expect(tools.map(t => t.name).sort()).toEqual([
-      'add_task', 'append_log_entry', 'list_tasks', 'list_workspaces',
-      'move_task', 'read_data_file', 'update_focus_section', 'update_task',
+      'add_focus_section', 'add_task', 'append_log_entry', 'delete_task', 'list_tasks',
+      'list_workspaces', 'move_task', 'read_data_file', 'update_focus_section', 'update_task',
     ])
+  })
+
+  it('marks delete_task destructive, so a client can gate it', async () => {
+    const { tools } = await (await connect()).listTools()
+    const del = tools.find(t => t.name === 'delete_task')!
+    expect(del.annotations?.destructiveHint).toBe(true)
   })
 })
 
@@ -232,5 +238,78 @@ describe('append_log_entry', () => {
     const { ok, body } = await call('append_log_entry', { field: 'frustrations', content: 'x', weekOf: '2020-01-01' })
     expect(ok).toBe(false)
     expect(body).toContain('2026-08-31, 2026-09-07')
+  })
+})
+
+describe('delete_task', () => {
+  it('removes the task and returns it in full, since there is no undo', async () => {
+    const { body } = await call('delete_task', { id: 't-a1' })
+    expect(body.deleted).toMatchObject({ id: 't-a1', title: 'First', tags: ['old'], priority: 'low' })
+    expect(body.from).toBe('Backlog')
+    expect(docs.tasks.columns[0].tasks.map(t => t.id)).toEqual(['t-a2'])
+  })
+
+  it('returns enough to recreate the task with add_task', async () => {
+    const { body } = await call('delete_task', { id: 't-a1' })
+    for (const k of ['id', 'title', 'note', 'tags', 'priority', 'blockedSince', 'createdAt', 'updatedAt']) {
+      expect(body.deleted).toHaveProperty(k)
+    }
+  })
+
+  it('leaves the other columns untouched', async () => {
+    await call('delete_task', { id: 't-a1' })
+    expect(docs.tasks.columns).toHaveLength(2)
+    expect(docs.tasks.columns[1].tasks).toEqual([])
+  })
+
+  it('errors on an unknown id rather than silently succeeding', async () => {
+    const { ok, body } = await call('delete_task', { id: 't-nope' })
+    expect(ok).toBe(false)
+    expect(body).toContain('list_tasks')
+  })
+})
+
+describe('add_focus_section', () => {
+  it('appends a section with an id slugified from the title', async () => {
+    const { body } = await call('add_focus_section', { title: 'Waiting On Others' })
+    expect(body.created).toEqual({ id: 'waiting-on-others', title: 'Waiting On Others', content: '' })
+    expect(docs.focus.sections.map(s => s.id)).toEqual(['today', 'waiting-on', 'waiting-on-others'])
+  })
+
+  it('accepts initial content', async () => {
+    await call('add_focus_section', { title: 'Notes', content: '- one' })
+    expect(docs.focus.sections.at(-1)!.content).toBe('- one')
+  })
+
+  it('suffixes the id rather than colliding with an existing section', async () => {
+    const { body } = await call('add_focus_section', { title: 'Today' })
+    expect(body.created.id).toBe('today-2')
+    expect(docs.focus.sections.map(s => s.id)).toEqual(['today', 'waiting-on', 'today-2'])
+  })
+
+  it('falls back to "section" when the title slugifies to nothing', async () => {
+    const { body } = await call('add_focus_section', { title: '???' })
+    expect(body.created.id).toBe('section')
+  })
+
+  it('honours an explicit position and clamps one past the end', async () => {
+    await call('add_focus_section', { title: 'First Up', position: 0 })
+    expect(docs.focus.sections[0].id).toBe('first-up')
+    await call('add_focus_section', { title: 'Last', position: 99 })
+    expect(docs.focus.sections.at(-1)!.id).toBe('last')
+  })
+
+  it('bumps the file-level updatedAt', async () => {
+    await call('add_focus_section', { title: 'X' })
+    expect(docs.focus.updatedAt).not.toBe('2026-09-01T00:00:00Z')
+  })
+
+  // The gap that made live write-testing awkward: a section could be edited but never created.
+  it('makes update_focus_section usable on a workspace that had no sections', async () => {
+    docs.focus.sections = []
+    await call('add_focus_section', { title: 'Today', content: 'seeded' })
+    const { ok } = await call('update_focus_section', { section: 'today', content: 'edited' })
+    expect(ok).toBe(true)
+    expect(docs.focus.sections[0].content).toBe('edited')
   })
 })
