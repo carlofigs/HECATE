@@ -76,6 +76,8 @@ Equivalent JSON config:
 | `add_task` | Create a task in a column (by name or id). |
 | `update_task` | Change fields on a task; untouched fields are left alone. |
 | `move_task` | Move a task between columns — this is how a task gets completed. |
+| `delete_task` | Permanently remove a task. Marked `destructiveHint`. Returns the full task, since there is no undo. |
+| `add_focus_section` | Create a focus section; the id is slugified from the title, matching the app's own button. |
 | `update_focus_section` | Replace or append to a focus section's markdown. |
 | `append_log_entry` | Append to a week log narrative field, defaulting to the most recent week. |
 
@@ -109,6 +111,19 @@ and there is a test for exactly that. One retry, then `ConflictError` — no loo
 Because the mutation can run twice, it must be safe to re-run: IDs and
 timestamps are generated *before* the call and captured in the closure, never
 inside the mutation.
+
+`add_focus_section` is the deliberate exception. The rule exists so that
+*randomness* cannot change between attempts; its id is instead a deterministic
+function of the title and the sections that currently exist, so it is computed
+*inside* the mutation — on a retry it must be recomputed against whatever landed
+underneath us, or it could collide with a section added concurrently.
+
+## Deleting
+
+`delete_task` is the only verb that destroys anything, and it carries
+`annotations.destructiveHint` so a client can gate it. There is no undo and no
+trash: the response returns the full task so it can be recreated with `add_task`.
+To retire a task while keeping it, move it to a not-doing column instead.
 
 Three things are imported from the app rather than reimplemented, so the two
 cannot drift: `schemas.ts` (the type contract), `migrate.ts` (the schema guard)

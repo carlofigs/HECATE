@@ -32,6 +32,7 @@ import { FocusWeekHeader } from '@/components/focus/FocusWeekHeader'
 import { FocusSectionCard } from '@/components/focus/FocusSectionCard'
 import { Button } from '@/components/ui/button'
 import { nowISO } from '@/lib/utils'
+import { uniqueSectionId } from '@/lib/focusSections'
 import type { FocusData, FocusSection, CalendarEvent } from '@/lib/schemas'
 
 // ─── Sortable wrapper ─────────────────────────────────────────────────────────
@@ -67,20 +68,6 @@ function SortableSectionWrapper(props: SortableSectionProps) {
       />
     </div>
   )
-}
-
-// ─── Page helpers ─────────────────────────────────────────────────────────────
-
-function slugify(title: string): string {
-  return title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-}
-
-function uniqueId(title: string, existing: FocusSection[]): string {
-  const base = slugify(title) || 'section'
-  const ids   = new Set(existing.map(s => s.id))
-  let id = base, n = 2
-  while (ids.has(id)) id = `${base}-${n++}`
-  return id
 }
 
 export default function FocusPage() {
@@ -120,7 +107,7 @@ export default function FocusPage() {
   const addSection = useCallback(() => {
     setData(draft => {
       const newSection: FocusSection = {
-        id:      uniqueId('new-section', draft.sections),
+        id:      uniqueSectionId('new-section', draft.sections),
         title:   'New section',
         content: '',
       }

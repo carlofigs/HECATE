@@ -14,9 +14,10 @@
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type {
-  Column, FocusData, Priority, Task, TasksData, WeekEntry, WeeklyLogData,
+  Column, FocusData, FocusSection, Priority, Task, TasksData, WeekEntry, WeeklyLogData,
 } from '../../../src/lib/schemas'
 import { generateTaskId, nowISO } from '../../../src/lib/ids'
+import { uniqueSectionId } from '../../../src/lib/focusSections'
 import type { StorageAdapter } from '../storage/types'
 import type { McpConfig } from '../config'
 
@@ -191,6 +192,81 @@ export function registerWriteTools(server: McpServer, storage: StorageAdapter, c
       }, `chore(tasks): move ${id} to ${toColumn}`)
 
       return asText({ id, from, to, workspace: ws(workspace) })
+    },
+  )
+
+  server.registerTool(
+    'delete_task',
+    {
+      title: 'Delete a task',
+      description:
+        'Permanently remove a task from whichever column holds it. There is no undo, so the full task is ' +
+        'returned in the response — recreate it with add_task from those fields if it goes wrong. ' +
+        'To retire a task while keeping it, prefer move_task to a not-doing column.',
+      annotations: { destructiveHint: true, idempotentHint: false },
+      inputSchema: {
+        id: z.string().min(1).describe('Task id.'),
+        workspace: workspaceArg,
+      },
+    },
+    async ({ id, workspace }) => {
+      let removed: Task | null = null
+      let from = ''
+
+      await storage.mutateFile(ws(workspace), 'tasks', data => {
+        const { task, column } = findTask(data, id)
+        from = column.name
+        column.tasks.splice(column.tasks.indexOf(task), 1)
+        removed = task
+      }, `chore(tasks): delete ${id}`)
+
+      return asText({
+        deleted: removed,
+        from,
+        workspace: ws(workspace),
+        note: 'Not recoverable through this server — recreate with add_task using the fields above.',
+      })
+    },
+  )
+
+  server.registerTool(
+    'add_focus_section',
+    {
+      title: 'Add a focus section',
+      description:
+        'Create a new section on the weekly focus view. The id is derived from the title, matching how the ' +
+        'app\'s own "Add section" button mints ids.',
+      inputSchema: {
+        title: z.string().min(1).describe('Section heading, e.g. "Waiting On".'),
+        content: z.string().optional().describe('Initial markdown body. Defaults to empty.'),
+        position: z.number().int().min(0).optional()
+          .describe('Insertion index among the existing sections. Defaults to the end.'),
+        workspace: workspaceArg,
+      },
+    },
+    async ({ title, content, position, workspace }) => {
+      const now = nowISO()
+      let created: FocusSection | null = null
+
+      await storage.mutateFile(ws(workspace), 'focus', (data: FocusData) => {
+        // Unlike a task id, this one is NOT hoisted out of the mutation. The
+        // rule about generating ids beforehand exists because randomness must
+        // not change between retries; this id is a deterministic function of
+        // the title and the sections that currently exist, so on a retry it
+        // *should* be recomputed against whatever landed underneath us —
+        // otherwise a section added concurrently could collide.
+        const section: FocusSection = {
+          id: uniqueSectionId(title, data.sections),
+          title,
+          content: content ?? '',
+        }
+        const at = position === undefined ? data.sections.length : Math.min(position, data.sections.length)
+        data.sections.splice(at, 0, section)
+        data.updatedAt = now
+        created = section
+      }, `feat(focus): add section "${title}"`)
+
+      return asText({ created, workspace: ws(workspace) })
     },
   )
 
