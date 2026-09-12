@@ -40,3 +40,21 @@ Thumbs.db
 
 # Vite
 .vite/
+
+# Tool scratch state — link/credential files that CLIs drop in the working
+# directory. A CLI run from the wrong cwd lands these in the repo root, where
+# `git add -A` would publish them; this repo is public, so that is a real leak
+# rather than just noise. (Already happened once: a stray Supabase link file for
+# an unrelated project, Sep 2026.)
+#
+# Deliberately narrow. `supabase/.temp/` is scratch, but `supabase/migrations/`
+# and `supabase/config.toml` are project files that MUST be committed — so do
+# not widen this to `supabase/`. The storage substrate is still an open question
+# and Supabase is a live candidate; ignoring the whole directory would silently
+# drop real migrations the day that decision lands.
+supabase/.temp/
+supabase/.branches/
+supabase/.env
+.wrangler/
+.vercel/
+.netlify/
