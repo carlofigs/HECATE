@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:hecate:people:v1",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "updatedAt": {
+      "$ref": "#/$defs/Instant"
+    },
+    "people": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/Ulid"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Line"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/Line"
+            }
+          },
+          "role": {
+            "$ref": "#/$defs/Line"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Markdown"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ooo": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "start": {
+                  "$ref": "#/$defs/IsoDate"
+                },
+                "end": {
+                  "$ref": "#/$defs/IsoDate"
+                },
+                "note": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/Line"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "start",
+                "end",
+                "note"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "aliases",
+          "role",
+          "notes",
+          "ooo"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "updatedAt",
+    "people"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "Instant": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+    },
+    "Ulid": {
+      "type": "string",
+      "format": "ulid",
+      "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+    },
+    "Line": {
+      "type": "string",
+      "maxLength": 500,
+      "pattern": "^\\S(?:[^\\r\\n]*\\S)?$"
+    },
+    "Markdown": {
+      "type": "string",
+      "contentMediaType": "text/markdown"
+    },
+    "IsoDate": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+    }
+  }
+}

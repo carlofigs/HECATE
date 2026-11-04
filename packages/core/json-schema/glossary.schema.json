@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:hecate:glossary:v1",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "terms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/Ulid"
+          },
+          "term": {
+            "$ref": "#/$defs/Line"
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/Line"
+            }
+          },
+          "meaning": {
+            "$ref": "#/$defs/Markdown"
+          },
+          "projectId": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Ulid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "term",
+          "aliases",
+          "meaning",
+          "projectId"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "terms"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "Ulid": {
+      "type": "string",
+      "format": "ulid",
+      "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+    },
+    "Line": {
+      "type": "string",
+      "maxLength": 500,
+      "pattern": "^\\S(?:[^\\r\\n]*\\S)?$"
+    },
+    "Markdown": {
+      "type": "string",
+      "contentMediaType": "text/markdown"
+    }
+  }
+}

@@ -13,9 +13,15 @@
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
     "knip": "knip",
-    "mcp": "pnpm --filter @hecate/mcp-v1 start"
+    "mcp": "pnpm --filter @hecate/mcp-v1 start",
+    "export-schema": "pnpm --filter @hecate/core export-schema"
   },
   "devDependencies": {
-    "knip": "^6.44.1"
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0",
+    "knip": "^6.44.1",
+    "typescript": "catalog:",
+    "typescript-eslint": "^8.72.1"
   }
 }

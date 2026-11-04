@@ -1,19 +1,5 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "workspaces": {
-    ".": {
-      "entry": [],
-      "project": []
-    },
-    "packages/*": {
-      "entry": ["src/index.ts"],
-      "project": ["src/**"]
-    },
-    "apps/*": {
-      "entry": ["index.html", "src/main.tsx"],
-      "project": ["src/**"]
-    }
-  },
   "ignoreWorkspaces": [
     "apps/web-v1",
     "mcp"

@@ -5,14 +5,18 @@ packages:
   # (`npx tsx <repo>/mcp/src/index.ts`) keep working until P2 replaces it.
   - "mcp"
 
-# Shared versions for v2 packages go in a `catalog:` here, referenced as
-# `catalog:` in each manifest, so an upgrade is one line instead of one edit per
-# package. It starts with the first v2 package (packages/core) rather than now:
-# knip fails on catalog entries nothing uses. Target toolchain: React ~19.2,
-# TypeScript ~6.0, Vite ^8, Vitest ^5, Tailwind ^4, zod ^4, zustand ^5.
+# Shared versions for v2 packages, referenced as `catalog:` in their manifests,
+# so an upgrade is one line here instead of one edit per package. Add an entry
+# when a manifest first uses it: knip fails on catalog entries nothing uses.
+# Target toolchain as packages arrive: React ~19.2, Vite ^8, Tailwind ^4,
+# zustand ^5 (mirroring the owner's other monorepo).
 #
 # The frozen v1 packages (apps/web-v1, mcp) deliberately pin their own versions:
 # they are deleted at cutover and are not migrated to the v2 toolchain.
+catalog:
+  "typescript": "~6.0.3"
+  "vitest": "^5.1.0"
+  "zod": "^4.6.7"
 
 # pnpm blocks dependency build scripts unless they are allowed here. esbuild
 # (used by Vite and tsx) needs its postinstall to place the native binary.

@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:hecate:workspace:v1",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "name": {
+      "$ref": "#/$defs/Line"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "policy": {
+      "type": "string",
+      "enum": [
+        "open",
+        "sanitised"
+      ]
+    },
+    "workdays": {
+      "minItems": 1,
+      "maxItems": 7,
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 7
+      }
+    },
+    "sprint": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "anchor": {
+              "$ref": "#/$defs/IsoDate"
+            },
+            "anchorNumber": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "lengthWeeks": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 4
+            },
+            "external": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "$ref": "#/$defs/Line"
+                    },
+                    "offset": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "offset"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "anchor",
+            "anchorNumber",
+            "lengthWeeks",
+            "external"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "statuses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/Slug"
+          },
+          "name": {
+            "$ref": "#/$defs/Line"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "backlog",
+              "todo",
+              "active",
+              "done",
+              "dropped"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/Slug"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Line"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "areas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/Slug"
+          },
+          "label": {
+            "$ref": "#/$defs/Line"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "name",
+    "timezone",
+    "policy",
+    "workdays",
+    "sprint",
+    "statuses",
+    "tags",
+    "areas"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "Line": {
+      "type": "string",
+      "maxLength": 500,
+      "pattern": "^\\S(?:[^\\r\\n]*\\S)?$"
+    },
+    "IsoDate": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+    },
+    "Slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    }
+  }
+}

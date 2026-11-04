@@ -1,0 +1,247 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:hecate:tasks:v1",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "nextKey": {
+      "type": "object",
+      "properties": {
+        "A": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "B": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "A",
+        "B"
+      ],
+      "additionalProperties": false
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Task"
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "nextKey",
+    "tasks"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "Task": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Ulid"
+        },
+        "key": {
+          "$ref": "#/$defs/TaskKey"
+        },
+        "legacyIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Line"
+          }
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "action",
+            "waiting"
+          ]
+        },
+        "title": {
+          "$ref": "#/$defs/Line"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Markdown"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "$ref": "#/$defs/Slug"
+        },
+        "order": {
+          "type": "string",
+          "pattern": "^[0-9A-Za-z]+$"
+        },
+        "urgency": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Urgency"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Slug"
+          }
+        },
+        "projectId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Ulid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "waitingOn": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "personId": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/Ulid"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "text": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/Line"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "personId",
+                "text"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dependsOn": {
+          "$ref": "#/$defs/Keys"
+        },
+        "due": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IsoDate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "createdAt": {
+          "$ref": "#/$defs/Instant"
+        },
+        "updatedAt": {
+          "$ref": "#/$defs/Instant"
+        },
+        "completedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Instant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "key",
+        "legacyIds",
+        "kind",
+        "title",
+        "note",
+        "status",
+        "order",
+        "urgency",
+        "tags",
+        "projectId",
+        "waitingOn",
+        "dependsOn",
+        "due",
+        "createdAt",
+        "updatedAt",
+        "completedAt"
+      ],
+      "additionalProperties": false
+    },
+    "Ulid": {
+      "type": "string",
+      "format": "ulid",
+      "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+    },
+    "TaskKey": {
+      "type": "string",
+      "pattern": "^[AB][1-9]\\d*$"
+    },
+    "Line": {
+      "type": "string",
+      "maxLength": 500,
+      "pattern": "^\\S(?:[^\\r\\n]*\\S)?$"
+    },
+    "Markdown": {
+      "type": "string",
+      "contentMediaType": "text/markdown"
+    },
+    "Slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "Urgency": {
+      "type": "string",
+      "enum": [
+        "high",
+        "med",
+        "low"
+      ]
+    },
+    "Keys": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/TaskKey"
+      }
+    },
+    "IsoDate": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+    },
+    "Instant": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+    }
+  }
+}
