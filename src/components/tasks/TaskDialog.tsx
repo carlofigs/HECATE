@@ -200,7 +200,7 @@ export function TaskDialog({
               id="task-tags"
               value={tagsRaw}
               onChange={e => setTagsRaw(e.target.value)}
-              placeholder="admin hermes a47  (space or comma separated)"
+              placeholder="admin bau  (space or comma separated)"
             />
           </div>
 

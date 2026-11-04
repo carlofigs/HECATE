@@ -26,7 +26,7 @@ export function OneOnOnePeopleSection() {
 
   async function addPerson() {
     const name = draft.trim()
-    // Case-insensitive dedup: "James" and "james" are the same person
+    // Case-insensitive dedup: "Alex" and "alex" are the same person
     if (!name || people.some(p => p.toLowerCase() === name.toLowerCase())) return
     updateSettings(d => { d.oneOnOnePeople = [...d.oneOnOnePeople, name] })
     try {

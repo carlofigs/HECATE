@@ -14,6 +14,8 @@
 
 </div>
 
+> **v2 is in progress.** See the [v2 roadmap](docs/v2/ROADMAP.md) and the [architecture decision records](docs/adr/). This README describes v1.
+
 ---
 
 ## Why HECATE
@@ -53,7 +55,7 @@ Plus: configurable autosave debounce, background sync polling with stale-data de
 - **No backend.** All reads and writes go directly to the GitHub Contents API from the browser.
 - **Single user.** No auth layer, no session management, no multi-user concurrency.
 - **Workspace isolation.** Switching workspaces triggers a full page reload to flush every Zustand slice.
-- **Optimistic saves.** Debounced autosave writes to GitHub; SHA tracking prevents 409 conflicts when multiple tabs save concurrently.
+- **Optimistic saves.** Edits apply in-store immediately; autosave writes to GitHub a few seconds after the last edit, one save per file at a time. If the file changed elsewhere (Claude via MCP, the calendar sync, another tab), GitHub rejects the stale write with a 409 and the app loads the newer copy instead of overwriting it, and says so.
 - **TypeScript strict.** Data shapes live in [src/lib/schemas.ts](src/lib/schemas.ts) as the single contract between the storage layer and the UI.
 
 ### Project layout
@@ -107,7 +109,9 @@ Credentials are saved to `localStorage` and used exclusively for `api.github.com
 npm install
 npm run dev        # Vite dev server at http://localhost:5173/HECATE/
 npm run build      # tsc + vite build → dist/
-npm run lint       # tsc --noEmit (type-check only — not a real linter)
+npm run type-check # tsc -b across app, Vite config and MCP server
+npm run lint       # ESLint
+npm test           # Vitest (app + MCP server)
 npm run preview    # Serve the built dist/ locally
 ```
 
@@ -152,6 +156,6 @@ Because the data repo is just a git repository, `git clone` is a complete backup
 ## Limitations & non-goals
 
 - **Single user, single browser profile.** No login, no sharing, no collaboration.
-- **Multi-tab safety is best-effort.** SHA tracking prevents conflicts on save, but stale-data detection requires a manual reload prompt.
+- **Multi-writer safety is conservative.** A save that conflicts with a newer remote copy keeps the remote copy and discards the conflicting local edit, with a warning. Stale-data detection still requires a manual reload prompt.
 - **Workspace switching reloads the page.** This is intentional, to flush all in-memory state cleanly.
 - **No mobile-first optimisation.** Layout is responsive, but the primary target is desktop.

@@ -33,7 +33,7 @@ interface KimItem {
 
 const WARNING_RE  = /⚠|warning/i
 const DEADLINE_RE = /contract end|last day|must be|before .*(Mon|Tue|Wed|Thu|Fri)/i
-const DATE_RE     = /OOO|on leave|leaves \d|Ced .*(OOO|leave)|Janvi|until ~?Mon|until ~?Tue|until ~?Wed|until ~?Thu|\b\d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/i
+const DATE_RE     = /OOO|on leave|leaves \d|until ~?Mon|until ~?Tue|until ~?Wed|until ~?Thu|\b\d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/i
 
 function classifyAccent(text: string): Accent {
   if (WARNING_RE.test(text))  return 'warning'

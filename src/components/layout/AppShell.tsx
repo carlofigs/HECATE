@@ -24,6 +24,7 @@ import { useSettings } from '@/hooks/useSettings'
 import { useInstallPrompt } from '@/hooks/useInstallPrompt'
 import { useStaleDetector } from '@/hooks/useStaleDetector'
 import { useDataStore } from '@/store/useDataStore'
+import { notifyConflict } from '@/lib/saveNotices'
 import { WORKSPACES_STORAGE_KEY, CREDENTIALS_STORAGE_KEY } from '@/lib/taskConstants'
 
 const NAV_ITEMS = [
@@ -228,6 +229,16 @@ export default function AppShell() {
           toast.error('Could not save unsaved changes — workspace switch cancelled')
           return
         }
+        // A conflict means the remote copy replaced an unsaved edit. Stop here so
+        // the user sees that before the reload below wipes the evidence.
+        const conflicted = dirtyFiles.filter((_, i) => {
+          const r = results[i]
+          return r.status === 'fulfilled' && r.value === 'conflict'
+        })
+        if (conflicted.length > 0) {
+          conflicted.forEach(notifyConflict)
+          return
+        }
       }
 
       creds.workspace = next
@@ -266,9 +277,14 @@ export default function AppShell() {
         try {
           const results = await Promise.allSettled(toSave.map(name => saveFile(name)))
           const failed  = results.filter(r => r.status === 'rejected')
+          toSave.forEach((name, i) => {
+            const r = results[i]
+            if (r.status === 'fulfilled' && r.value === 'conflict') notifyConflict(name)
+          })
+          const conflicts = results.filter(r => r.status === 'fulfilled' && r.value === 'conflict')
           if (failed.length > 0) {
             toast.error(`${failed.length} file(s) failed to save`)
-          } else {
+          } else if (conflicts.length === 0) {
             toast.success('All files saved')
           }
         } catch {

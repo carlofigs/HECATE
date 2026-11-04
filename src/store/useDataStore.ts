@@ -4,7 +4,8 @@
  * Architecture:
  * - One slice per JSON file, shaped as FileSlice<T>
  * - All GitHub I/O goes through getFile / putFile in lib/github.ts
- * - Auto-save: components mark dirty; a debounced effect flushes via save()
+ * - Auto-save: setData marks dirty and bumps `revision`; useDataFile debounces on it
+ * - Saves are serialised per file; a 409 adopts the remote copy (never overwrites it)
  * - Optimistic writes: data updates immediately in-store, SHA updated after API round-trip
  */
 
@@ -27,9 +28,17 @@ import type {
   SettingsData,
 } from '@/lib/schemas'
 
-// Individual data types kept to type the store shape (tasks, focus, etc. slices)
-
 // ─── Store shape ────────────────────────────────────────────────────────────
+
+/**
+ * What a save did.
+ * - `saved`    — PUT succeeded.
+ * - `conflict` — the remote moved underneath us (Claude via MCP, the calendar
+ *                bot, another tab). The remote copy was adopted and the local
+ *                edit was NOT written; callers should tell the user.
+ * - `skipped`  — nothing to save (no data, or not dirty once a queued save ran).
+ */
+export type SaveOutcome = 'saved' | 'conflict' | 'skipped'
 
 export interface DataStore {
   tasks:      FileSlice<TasksData>
@@ -42,167 +51,149 @@ export interface DataStore {
 
   // Actions
   loadFile:   (name: DataFileName) => Promise<void>
-  saveFile:   (name: DataFileName, message?: string) => Promise<void>
+  saveFile:   (name: DataFileName, message?: string) => Promise<SaveOutcome>
   setData:    <K extends DataFileName>(name: K, updater: (draft: SliceData<K>) => void) => void
-  markDirty:  (name: DataFileName) => void
 }
-
-// ─── Utility types ──────────────────────────────────────────────────────────
-
-// SliceData<K> and DataFileName are both imported from schemas — single source of truth
 
 // ─── Initial slice factory ──────────────────────────────────────────────────
 
 function emptySlice<T>(): FileSlice<T> {
-  return { data: null, sha: null, dirty: false, loading: false, error: null }
+  return { data: null, sha: null, dirty: false, loading: false, saving: false, revision: 0, error: null }
 }
+
+// ─── Save serialisation ─────────────────────────────────────────────────────
+// One save per file at a time. Several components can hold useDataFile for the
+// same file (e.g. every TaskIdChip), and each runs its own autosave timer;
+// without this they would PUT concurrently with the same SHA and 409 each
+// other. A queued save waits for the one in flight, then saves only if the
+// file is still dirty.
+const inflight = new Map<DataFileName, Promise<SaveOutcome>>()
 
 // ─── Store ──────────────────────────────────────────────────────────────────
 
 export const useDataStore = create<DataStore>()(
-  immer((set, get) => ({
-    tasks:      emptySlice(),
-    focus:      emptySlice(),
-    projects:   emptySlice(),
-    weekly_log: emptySlice(),
-    archive:    emptySlice(),
-    memory:     emptySlice(),
-    settings:   emptySlice(),
+  immer((set, get) => {
+    function patch(name: DataFileName, fn: (s: FileSlice<unknown>) => void) {
+      set(state => { fn(state[name] as FileSlice<unknown>) })
+    }
 
-    // ── Load ────────────────────────────────────────────────────────────────
-    loadFile: async (name) => {
+    async function saveOnce(name: DataFileName, message?: string): Promise<SaveOutcome> {
       const creds = loadCredentials()
-      if (!creds) return
-
-      set(state => {
-        ;(state[name] as FileSlice<unknown>).loading = true
-        ;(state[name] as FileSlice<unknown>).error   = null
-      })
-
-      try {
-        const { data, sha } = await getFile(creds, name)
-        // Migrate before validating: validateFile and everything downstream
-        // should only ever see the current shape. Throws on a file written
-        // by a newer build rather than misreading and overwriting it.
-        const valid = validateFile(name, migrateFile(name, data))
-        set(state => {
-          ;(state[name] as FileSlice<unknown>).data    = valid
-          ;(state[name] as FileSlice<unknown>).sha     = sha
-          ;(state[name] as FileSlice<unknown>).dirty   = false
-          ;(state[name] as FileSlice<unknown>).loading = false
-        })
-      } catch (err: unknown) {
-        const message = (err as { message?: string })?.message ?? 'Unknown error'
-        set(state => {
-          ;(state[name] as FileSlice<unknown>).loading = false
-          ;(state[name] as FileSlice<unknown>).error   = message
-        })
-      }
-    },
-
-    // ── Save ─────────────────────────────────────────────────────────────────
-    saveFile: async (name, message) => {
-      const creds = loadCredentials()
-      if (!creds) return
+      if (!creds) return 'skipped'
 
       const slice = get()[name] as FileSlice<unknown>
-      if (!slice.data) return
+      if (!slice.data || !slice.dirty) return 'skipped'
 
-      // Snapshot the data reference before the async gap.
-      // immer produces a new object on every mutation, so a reference inequality
-      // after the await means concurrent edits landed during the in-flight PUT.
-      const dataAtStart = slice.data
+      // Edits made while the PUT is in flight bump `revision`; if it moved, the
+      // file stays dirty so autosave writes the newer copy next.
+      const revisionAtStart = slice.revision
 
-      set(state => {
-        ;(state[name] as FileSlice<unknown>).loading = true
-        ;(state[name] as FileSlice<unknown>).error   = null
-      })
+      patch(name, s => { s.saving = true; s.error = null })
 
       try {
         const newSha = await putFile(creds, name, slice.data, slice.sha, message)
-        // Re-read current data after the await to detect concurrent mutations
-        const dataAfterSave = (get()[name] as FileSlice<unknown>).data
-        set(state => {
-          const s = state[name] as FileSlice<unknown>
-          s.sha     = newSha
-          s.loading = false
-          // Only clear dirty if no new edits arrived during the request.
-          // If data changed, leave dirty=true so the auto-save debounce re-fires.
-          if (dataAfterSave === dataAtStart) s.dirty = false
+        patch(name, s => {
+          s.sha    = newSha
+          s.saving = false
+          if (s.revision === revisionAtStart) s.dirty = false
         })
+        return 'saved'
       } catch (err: unknown) {
-        // 409 = our cached SHA is stale: the remote moved underneath us (calendar
-        // sync bot, another tab). Recover once: refetch the fresh SHA and re-PUT
-        // local data on top of it. Single attempt — no retry loops.
-        if ((err as GitHubError)?.status === 409) {
-          try {
-            const fresh = await getFile<unknown>(creds, name)
-
-            // The sync bot owns focus.calendarEvents — adopt the remote copy
-            // before overwriting, so a recovery save never drops bot-written events.
-            if (name === 'focus') {
-              const remoteEvents = (fresh.data as FocusData | null)?.calendarEvents
-              if (remoteEvents) {
-                set(state => {
-                  if (state.focus.data) state.focus.data.calendarEvents = remoteEvents
-                })
-              }
-            }
-
-            const retryData = (get()[name] as FileSlice<unknown>).data
-            if (retryData) {
-              const newSha = await putFile(creds, name, retryData, fresh.sha, message)
-              const dataAfterRetry = (get()[name] as FileSlice<unknown>).data
-              set(state => {
-                const s = state[name] as FileSlice<unknown>
-                s.sha     = newSha
-                s.loading = false
-                if (dataAfterRetry === retryData) s.dirty = false
-              })
-              return
-            }
-          } catch {
-            // Recovery failed — fall through to the normal error path below,
-            // reporting the original 409.
-          }
+        if ((err as GitHubError)?.status !== 409) {
+          const errMessage = (err as { message?: string })?.message ?? 'Unknown error'
+          patch(name, s => { s.saving = false; s.error = errMessage })
+          throw err
         }
 
-        const errMessage = (err as { message?: string })?.message ?? 'Unknown error'
-        set(state => {
-          ;(state[name] as FileSlice<unknown>).loading = false
-          ;(state[name] as FileSlice<unknown>).error   = errMessage
-        })
-        throw err   // re-throw so callers can show toasts
+        // 409: our SHA is stale because someone else wrote the file. Re-PUTting
+        // the local copy would silently delete their change (a task Claude added
+        // over MCP, events from the calendar bot). Instead adopt the remote copy
+        // — through the same migrate/validate guard as loadFile, so a file from
+        // a newer build is refused rather than misread — and report a conflict.
+        // Losing the user's last edit, loudly, beats losing someone else's,
+        // silently.
+        try {
+          const fresh = await getFile<unknown>(creds, name)
+          const remote = validateFile(name, migrateFile(name, fresh.data))
+          patch(name, s => {
+            s.data     = remote
+            s.sha      = fresh.sha
+            s.dirty    = false
+            s.saving   = false
+            s.error    = null
+            s.revision += 1
+          })
+          return 'conflict'
+        } catch (recoveryErr: unknown) {
+          // Could not adopt the remote copy (network, or a newer schema). Keep
+          // local data and dirty=true; report the reason.
+          const errMessage =
+            (recoveryErr as { message?: string })?.message ??
+            (err as { message?: string })?.message ??
+            'Conflict'
+          patch(name, s => { s.saving = false; s.error = `Conflict: ${errMessage}` })
+          throw err
+        }
       }
-    },
+    }
 
-    // ── Immer updater ────────────────────────────────────────────────────────
-    setData: (name, updater) => {
-      set(state => {
-        const slice = state[name] as FileSlice<unknown>
-        if (slice.data) {
-          updater(slice.data as never)
-          slice.dirty = true
+    return {
+      tasks:      emptySlice(),
+      focus:      emptySlice(),
+      projects:   emptySlice(),
+      weekly_log: emptySlice(),
+      archive:    emptySlice(),
+      memory:     emptySlice(),
+      settings:   emptySlice(),
+
+      // ── Load ──────────────────────────────────────────────────────────────
+      loadFile: async (name) => {
+        const creds = loadCredentials()
+        if (!creds) return
+
+        patch(name, s => { s.loading = true; s.error = null })
+
+        try {
+          const { data, sha } = await getFile(creds, name)
+          // Migrate before validating: validateFile and everything downstream
+          // should only ever see the current shape. Throws on a file written
+          // by a newer build rather than misreading and overwriting it.
+          const valid = validateFile(name, migrateFile(name, data))
+          patch(name, s => {
+            s.data    = valid
+            s.sha     = sha
+            s.dirty   = false
+            s.loading = false
+          })
+        } catch (err: unknown) {
+          const message = (err as { message?: string })?.message ?? 'Unknown error'
+          patch(name, s => { s.loading = false; s.error = message })
         }
-      })
-    },
+      },
 
-    // ── Mark dirty (for deferred auto-save) ─────────────────────────────────
-    markDirty: (name) => {
-      set(state => {
-        ;(state[name] as FileSlice<unknown>).dirty = true
-      })
-    },
-  })),
+      // ── Save (serialised per file) ────────────────────────────────────────
+      saveFile: (name, message) => {
+        const prev = inflight.get(name)
+        const next = (prev ? prev.catch(() => undefined) : Promise.resolve())
+          .then(() => saveOnce(name, message))
+        inflight.set(name, next)
+        next
+          .finally(() => { if (inflight.get(name) === next) inflight.delete(name) })
+          .catch(() => { /* surfaced to the caller via `next` */ })
+        return next
+      },
+
+      // ── Immer updater ─────────────────────────────────────────────────────
+      setData: (name, updater) => {
+        set(state => {
+          const slice = state[name] as FileSlice<unknown>
+          if (slice.data) {
+            updater(slice.data as never)
+            slice.dirty = true
+            slice.revision += 1
+          }
+        })
+      },
+    }
+  }),
 )
-
-// ─── Selectors (memoised) ───────────────────────────────────────────────────
-// Import these in components instead of inline selectors to avoid re-render churn.
-
-export const selectTasks     = (s: DataStore) => s.tasks
-export const selectFocus     = (s: DataStore) => s.focus
-export const selectProjects  = (s: DataStore) => s.projects
-export const selectWeekLog   = (s: DataStore) => s.weekly_log
-export const selectArchive   = (s: DataStore) => s.archive
-export const selectMemory    = (s: DataStore) => s.memory
-export const selectSettings  = (s: DataStore) => s.settings
