@@ -4,9 +4,9 @@ name: CI
 # steps inside deploy.yml, so this stays PR-only rather than running twice.
 #
 # Deliberately separate from deploy.yml: that workflow holds `pages: write` +
-# `id-token: write` and a shared `concurrency: pages` group with
-# cancel-in-progress, so folding PR runs into it would hand every PR the Pages
-# OIDC token and let a PR push cancel an in-flight production deploy.
+# `id-token: write` and a shared `concurrency: pages` group, so folding PR runs
+# into it would hand every PR the Pages OIDC token and let a PR push cancel an
+# in-flight production deploy.
 on:
   pull_request:
     branches: [main]
@@ -19,30 +19,34 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Run the JS-based actions on Node 24 ahead of GitHub's forced switch.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
-  verify:
+  check:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: package-lock.json
+      - uses: ./.github/actions/setup
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Type-check
-        run: npm run type-check
+      - name: Typecheck
+        run: pnpm typecheck
 
       - name: Lint
-        run: npm run lint
+        run: pnpm lint
+
+      # Unused files, exports, dependencies and catalog entries. The frozen v1
+      # packages are excluded in knip.json; everything new must stay clean.
+      - name: Dead code (knip)
+        run: pnpm knip
 
       - name: Test
-        run: npm test
+        run: pnpm test
 
-      # Deploy runs this too — catching a build break here keeps it off main.
+      # Typecheck and lint do not compile CSS or bundle; this catches anything
+      # that only fails at build time before it reaches main.
       - name: Build
-        run: npm run build
+        run: pnpm build

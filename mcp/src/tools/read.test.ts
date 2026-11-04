@@ -4,7 +4,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { createServer } from '../server'
 import { NotFoundError, type StorageAdapter } from '../storage/types'
 import type { McpConfig } from '../config'
-import type { Task, TasksData } from '../../../src/lib/schemas'
+import type { Task, TasksData } from '../../../apps/web-v1/src/lib/schemas'
 
 const config: McpConfig = {
   token: 'ghp_test', owner: 'carlofigs', repo: 'HECATE_Data', workspace: 'kickball',

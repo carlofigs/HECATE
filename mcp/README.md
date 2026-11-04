@@ -25,11 +25,14 @@ The token can write to the data repo. Scope it to that repo only.
 
 ## Running it
 
+From the repo root, after `pnpm install`:
+
 ```
-npm run mcp
+pnpm mcp
 ```
 
-Or register it with a client. For Claude Code:
+Or register it with a client. The path below is unchanged by the move to a
+pnpm workspace, so existing registrations keep working. For Claude Code:
 
 ```
 claude mcp add hecate \
@@ -132,7 +135,7 @@ migrate-then-validate path as the app's `loadFile`, which means the server
 honours the forward-compatibility guard too — it refuses a file written by a
 newer build rather than misreading it.
 
-`src/lib/github.ts` is *not* shared: it reads credentials from `localStorage`
+`apps/web-v1/src/lib/github.ts` is *not* shared: it reads credentials from `localStorage`
 and decodes base64 via `atob`, both browser-shaped. `storage/github.ts` is the
 Node counterpart.
 

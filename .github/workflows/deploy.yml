@@ -3,6 +3,9 @@ name: Deploy to GitHub Pages
 # Push-to-main only. Pull requests are gated by ci.yml, kept separate so a PR
 # run never inherits this workflow's Pages write permissions or its `pages`
 # concurrency group — sharing that group would let a PR push cancel a live deploy.
+#
+# Deploys the frozen v1 app (apps/web-v1). v2 deploys to Cloudflare from P2;
+# this workflow is removed at cutover.
 on:
   push:
     branches: [main]
@@ -13,42 +16,43 @@ permissions:
   pages:    write
   id-token: write
 
-# Only one deployment at a time; cancel in-progress runs
+# Only one deployment at a time; a newer push supersedes a queued one.
 concurrency:
   group: pages
   cancel-in-progress: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: package-lock.json
+      - uses: ./.github/actions/setup
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Type-check
-        run: npm run type-check
+      # Same gates as ci.yml: main is never deployed on a red check.
+      - name: Typecheck
+        run: pnpm typecheck
 
       - name: Lint
-        run: npm run lint
+        run: pnpm lint
+
+      - name: Dead code (knip)
+        run: pnpm knip
 
       - name: Test
-        run: npm test
+        run: pnpm test
 
       - name: Build
-        run: npm run build
+        run: pnpm build
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: apps/web-v1/dist
 
   deploy:
     needs: build

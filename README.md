@@ -56,17 +56,24 @@ Plus: configurable autosave debounce, background sync polling with stale-data de
 - **Single user.** No auth layer, no session management, no multi-user concurrency.
 - **Workspace isolation.** Switching workspaces triggers a full page reload to flush every Zustand slice.
 - **Optimistic saves.** Edits apply in-store immediately; autosave writes to GitHub a few seconds after the last edit, one save per file at a time. If the file changed elsewhere (Claude via MCP, the calendar sync, another tab), GitHub rejects the stale write with a 409 and the app loads the newer copy instead of overwriting it, and says so.
-- **TypeScript strict.** Data shapes live in [src/lib/schemas.ts](src/lib/schemas.ts) as the single contract between the storage layer and the UI.
+- **TypeScript strict.** Data shapes live in [apps/web-v1/src/lib/schemas.ts](apps/web-v1/src/lib/schemas.ts) as the single contract between the storage layer and the UI.
 
 ### Project layout
 
+A pnpm workspace. See [AGENTS.md](AGENTS.md) for how to work in it.
+
 ```
-src/
-  pages/        # Route components (Focus, Tasks, Projects, …)
-  components/   # Reusable UI + layout (AppShell, SyncStatus, …)
-  store/        # Zustand data store + slice logic
-  hooks/        # useSettings, useStaleDetector, …
-  lib/          # schemas, GitHub client, constants, utils
+apps/web-v1/      # v1 app (this README) — frozen until the v2 cutover
+  src/
+    pages/        # Route components (Focus, Tasks, Projects, …)
+    components/   # Reusable UI + layout (AppShell, SyncStatus, …)
+    store/        # Zustand data store + slice logic
+    hooks/        # useSettings, useStaleDetector, …
+    lib/          # schemas, GitHub client, constants, utils
+mcp/              # v1 MCP server over stdio — see mcp/README.md
+packages/         # v2 shared packages (from v2 phase P1)
+docs/             # v2 roadmap and architecture decision records
+branding/         # source brand assets
 ```
 
 ### Data model
@@ -86,7 +93,7 @@ Data lives in a companion private repository (`HECATE_Data` by convention). Each
 
 ## Prerequisites
 
-- **Node.js 20+** (required by Vite 6 and React 19)
+- **Node.js 24** (see `.nvmrc`) and **pnpm 11** — run `corepack enable` once and the pinned pnpm version is used automatically
 - A GitHub account
 - A second private repository to act as the data store containing at least one workspace directory with the seven JSON files above
 
@@ -95,7 +102,7 @@ Data lives in a companion private repository (`HECATE_Data` by convention). Each
 1. **Create a fine-grained Personal Access Token** at <https://github.com/settings/personal-access-tokens/new>:
    - Repository access: **Only select repositories** → your data repo
    - Permissions: `Contents: Read and write`, `Metadata: Read`
-2. **Bootstrap the data repo.** Create at least one workspace directory (e.g. `default/`) and seed it with empty JSON files matching the shapes in [src/lib/schemas.ts](src/lib/schemas.ts).
+2. **Bootstrap the data repo.** Create at least one workspace directory (e.g. `default/`) and seed it with empty JSON files matching the shapes in [apps/web-v1/src/lib/schemas.ts](apps/web-v1/src/lib/schemas.ts).
 3. **Launch HECATE** and complete the credentials form on first load with:
    - The PAT from step 1
    - Owner and repository name of the data repo
@@ -106,18 +113,19 @@ Credentials are saved to `localStorage` and used exclusively for `api.github.com
 ## Development
 
 ```bash
-npm install
-npm run dev        # Vite dev server at http://localhost:5173/HECATE/
-npm run build      # tsc + vite build → dist/
-npm run type-check # tsc -b across app, Vite config and MCP server
-npm run lint       # ESLint
-npm test           # Vitest (app + MCP server)
-npm run preview    # Serve the built dist/ locally
+pnpm install
+pnpm dev                      # v1 dev server at http://localhost:5173/HECATE/
+pnpm typecheck                # tsc across every package
+pnpm lint                     # ESLint across every package
+pnpm knip                     # unused files, exports and dependencies
+pnpm test                     # Vitest across every package (app + MCP server)
+pnpm build                    # tsc + vite build → apps/web-v1/dist/
+pnpm --filter web-v1 preview  # serve the built app locally
 ```
 
 ## Deployment
 
-Deployed to GitHub Pages by a GitHub Actions workflow ([.github/workflows/deploy.yml](.github/workflows/deploy.yml)) that type-checks, builds, and publishes `dist/` on every push to `main`. The Vite base path is `/HECATE/`. Build output is **not** committed — `dist/` is gitignored and produced fresh on CI.
+Deployed to GitHub Pages by a GitHub Actions workflow ([.github/workflows/deploy.yml](.github/workflows/deploy.yml)) that runs the same checks as CI, builds, and publishes `apps/web-v1/dist/` on every push to `main`. The Vite base path is `/HECATE/`. Build output is **not** committed — `dist/` is gitignored and produced fresh on CI.
 
 ```bash
 git push origin main   # → Actions builds and deploys automatically

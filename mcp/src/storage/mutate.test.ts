@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { GitHubStorage, type FetchLike } from './github'
 import { ConflictError } from './types'
 import type { McpConfig } from '../config'
-import type { TasksData } from '../../../src/lib/schemas'
+import type { TasksData } from '../../../apps/web-v1/src/lib/schemas'
 
 const config: McpConfig = {
   token: 'ghp_test', owner: 'carlofigs', repo: 'HECATE_Data', workspace: 'kickball',

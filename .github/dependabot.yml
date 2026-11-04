@@ -1,0 +1,32 @@
+# Keeps dependencies and Actions current.
+#
+# One grouped PR a week for minor and patch bumps, so the routine churn is a
+# single review. Major bumps are ignored for now: every npm dependency today
+# belongs to the frozen v1 packages (apps/web-v1, mcp), which are deleted at the
+# v2 cutover and are not worth a migration. v2 packages take their majors
+# through the catalog in pnpm-workspace.yaml, deliberately and by hand. Revisit
+# this ignore at cutover.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Australia/Sydney
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Australia/Sydney
