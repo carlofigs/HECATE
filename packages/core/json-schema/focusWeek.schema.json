@@ -1,0 +1,442 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:hecate:focusWeek:v1",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "weekOf": {
+      "$ref": "#/$defs/IsoDate"
+    },
+    "updatedAt": {
+      "$ref": "#/$defs/Instant"
+    },
+    "scheduleCapturedAt": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Instant"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "schedule": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/Ulid"
+          },
+          "date": {
+            "$ref": "#/$defs/IsoDate"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "end": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Line"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "personal": {
+            "type": "boolean"
+          },
+          "relevance": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Urgency"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Line"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "keys": {
+            "$ref": "#/$defs/Keys"
+          },
+          "important": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "start",
+          "end",
+          "title",
+          "personal",
+          "relevance",
+          "note",
+          "keys",
+          "important"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "days": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "$ref": "#/$defs/IsoDate"
+          },
+          "plan": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/$defs/Ulid"
+                },
+                "lead": {
+                  "$ref": "#/$defs/Line"
+                },
+                "detail": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/Markdown"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "keys": {
+                  "$ref": "#/$defs/Keys"
+                },
+                "urgency": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/Urgency"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "lead",
+                "detail",
+                "keys",
+                "urgency"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "outcomes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/$defs/Ulid"
+                },
+                "planItemId": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/Ulid"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "result": {
+                  "type": "string",
+                  "enum": [
+                    "done",
+                    "carried",
+                    "dropped"
+                  ]
+                },
+                "lead": {
+                  "$ref": "#/$defs/Line"
+                },
+                "note": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/Markdown"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "keys": {
+                  "$ref": "#/$defs/Keys"
+                }
+              },
+              "required": [
+                "id",
+                "planItemId",
+                "result",
+                "lead",
+                "note",
+                "keys"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "closedAt": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Instant"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Markdown"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "date",
+          "plan",
+          "outcomes",
+          "closedAt",
+          "note"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "callouts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/Ulid"
+          },
+          "lead": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Line"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "text": {
+            "$ref": "#/$defs/Markdown"
+          },
+          "keys": {
+            "$ref": "#/$defs/Keys"
+          }
+        },
+        "required": [
+          "id",
+          "lead",
+          "text",
+          "keys"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "priorities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/Ulid"
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "focus",
+              "next",
+              "ongoing"
+            ]
+          },
+          "lead": {
+            "$ref": "#/$defs/Line"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Markdown"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "keys": {
+            "$ref": "#/$defs/Keys"
+          }
+        },
+        "required": [
+          "id",
+          "tier",
+          "lead",
+          "detail",
+          "keys"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "lastWeek": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/Ulid"
+          },
+          "text": {
+            "$ref": "#/$defs/Markdown"
+          },
+          "keys": {
+            "$ref": "#/$defs/Keys"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "keys"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Section"
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "weekOf",
+    "updatedAt",
+    "scheduleCapturedAt",
+    "schedule",
+    "days",
+    "callouts",
+    "priorities",
+    "lastWeek",
+    "sections"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "IsoDate": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+    },
+    "Instant": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+    },
+    "Ulid": {
+      "type": "string",
+      "format": "ulid",
+      "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+    },
+    "Time": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+    },
+    "Line": {
+      "type": "string",
+      "maxLength": 500,
+      "pattern": "^\\S(?:[^\\r\\n]*\\S)?$"
+    },
+    "Urgency": {
+      "type": "string",
+      "enum": [
+        "high",
+        "med",
+        "low"
+      ]
+    },
+    "Keys": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/TaskKey"
+      }
+    },
+    "TaskKey": {
+      "type": "string",
+      "pattern": "^[AB][1-9]\\d*$"
+    },
+    "Markdown": {
+      "type": "string",
+      "contentMediaType": "text/markdown"
+    },
+    "Section": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Slug"
+        },
+        "title": {
+          "$ref": "#/$defs/Line"
+        },
+        "content": {
+          "$ref": "#/$defs/Markdown"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "content"
+      ],
+      "additionalProperties": false
+    },
+    "Slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    }
+  }
+}

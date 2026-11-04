@@ -1,0 +1,401 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:hecate:project:v1",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "id": {
+      "$ref": "#/$defs/Ulid"
+    },
+    "slug": {
+      "$ref": "#/$defs/Slug"
+    },
+    "name": {
+      "$ref": "#/$defs/Line"
+    },
+    "subtitle": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Line"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "summary": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Markdown"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "active",
+        "paused",
+        "blocked",
+        "done",
+        "dropped"
+      ]
+    },
+    "phase": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Line"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "currentFocus": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Markdown"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "owner": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Line"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "$ref": "#/$defs/Line"
+          },
+          "value": {
+            "$ref": "#/$defs/Line"
+          }
+        },
+        "required": [
+          "label",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "deadlines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/Ulid"
+          },
+          "date": {
+            "$ref": "#/$defs/IsoDate"
+          },
+          "title": {
+            "$ref": "#/$defs/Line"
+          },
+          "hard": {
+            "type": "boolean"
+          },
+          "keys": {
+            "$ref": "#/$defs/Keys"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Line"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "title",
+          "hard",
+          "keys",
+          "note"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "cutoffs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/Ulid"
+          },
+          "date": {
+            "$ref": "#/$defs/IsoDate"
+          },
+          "personId": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Ulid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "who": {
+            "$ref": "#/$defs/Line"
+          },
+          "what": {
+            "$ref": "#/$defs/Line"
+          },
+          "keys": {
+            "$ref": "#/$defs/Keys"
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "personId",
+          "who",
+          "what",
+          "keys"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "openQuestions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/Ulid"
+          },
+          "n": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "question": {
+            "$ref": "#/$defs/Markdown"
+          },
+          "blocker": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "resolved",
+              "deferred"
+            ]
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Markdown"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "keys": {
+            "$ref": "#/$defs/Keys"
+          }
+        },
+        "required": [
+          "id",
+          "n",
+          "question",
+          "blocker",
+          "status",
+          "resolution",
+          "keys"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "nextActions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/Ulid"
+          },
+          "text": {
+            "$ref": "#/$defs/Line"
+          },
+          "keys": {
+            "$ref": "#/$defs/Keys"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "keys"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "timeline": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/Ulid"
+          },
+          "phase": {
+            "$ref": "#/$defs/Line"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/IsoDate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "end": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/IsoDate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "done",
+              "active",
+              "pending",
+              "deferred"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "phase",
+          "start",
+          "end",
+          "status"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Section"
+      }
+    },
+    "updatedAt": {
+      "$ref": "#/$defs/Instant"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "id",
+    "slug",
+    "name",
+    "subtitle",
+    "summary",
+    "status",
+    "phase",
+    "currentFocus",
+    "owner",
+    "refs",
+    "deadlines",
+    "cutoffs",
+    "openQuestions",
+    "nextActions",
+    "timeline",
+    "sections",
+    "updatedAt"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "Ulid": {
+      "type": "string",
+      "format": "ulid",
+      "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+    },
+    "Slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "Line": {
+      "type": "string",
+      "maxLength": 500,
+      "pattern": "^\\S(?:[^\\r\\n]*\\S)?$"
+    },
+    "Markdown": {
+      "type": "string",
+      "contentMediaType": "text/markdown"
+    },
+    "IsoDate": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+    },
+    "Keys": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/TaskKey"
+      }
+    },
+    "TaskKey": {
+      "type": "string",
+      "pattern": "^[AB][1-9]\\d*$"
+    },
+    "Section": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Slug"
+        },
+        "title": {
+          "$ref": "#/$defs/Line"
+        },
+        "content": {
+          "$ref": "#/$defs/Markdown"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "content"
+      ],
+      "additionalProperties": false
+    },
+    "Instant": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+    }
+  }
+}
