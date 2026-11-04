@@ -7,14 +7,17 @@
  * Features:
  * - Loads on mount if data is null (first access)
  * - Exposes setData(updater) for immer-style mutations → marks dirty automatically
- * - Debounced auto-save (default 2s) triggers whenever dirty flag is set
+ * - Trailing-debounced auto-save (default 2s after the last edit), with backoff
+ *   retries after a failed save
  * - Manual save() available for explicit user actions (bypasses debounce)
- * - Toast notifications on save error
+ * - Toasts on save error, and on a conflict (remote copy adopted after a 409)
  */
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
 import { useDataStore } from '@/store/useDataStore'
+import { fileLabel, notifyConflict, notifySaveFailed } from '@/lib/saveNotices'
+import { scheduleAutosave } from '@/lib/autosave'
 import type { DataFileName, SliceData } from '@/lib/schemas'
 
 // Read the global auto-save debounce from the settings slice (if loaded).
@@ -33,6 +36,7 @@ export interface UseDataFileResult<T> {
   data:     T | null
   sha:      string | null
   loading:  boolean
+  saving:   boolean
   error:    string | null
   dirty:    boolean
   setData:  (updater: (draft: T) => void) => void
@@ -54,42 +58,31 @@ export function useDataFile<K extends DataFileName>(
   const saveFile = useDataStore(s => s.saveFile)
   const setDataFn = useDataStore(s => s.setData)
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
   // ── Initial load ──────────────────────────────────────────────────────────
   // loadFile is a stable Zustand action (referentially stable across renders); slice
   // is omitted intentionally so we only re-run when the file name changes, not on
   // every slice update.
   useEffect(() => {
     if (slice.data === null && !slice.loading) {
-      loadFile(name)
+      void loadFile(name)
     }
   }, [name]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Auto-save on dirty ───────────────────────────────────────────────────
+  // ── Auto-save ────────────────────────────────────────────────────────────
+  // Keyed on `revision`, which every edit increments, so each edit restarts the
+  // timer: a trailing debounce that saves N ms after the LAST edit. Failed
+  // saves are retried with backoff inside scheduleAutosave; a new edit cancels
+  // any pending retry and starts the debounce afresh.
   useEffect(() => {
     if (!slice.dirty || disableAutoSave) return
-
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(async () => {
-      debounceRef.current = null
-      try {
-        await saveFile(name)
-      } catch {
-        toast.error(`Failed to save ${name} — changes may be lost`, {
-          action: { label: 'Retry', onClick: () => saveFile(name) },
-        })
-      }
-    }, autoSaveMs)
-
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current)
-        debounceRef.current = null
-      }
-    }
+    return scheduleAutosave({
+      save:       () => saveFile(name),
+      delayMs:    autoSaveMs,
+      onConflict: () => notifyConflict(name),
+      onFailure:  retryNow => notifySaveFailed(name, retryNow),
+    })
   // eslint-disable-next-line react-hooks/exhaustive-deps -- saveFile is a stable Zustand action
-  }, [slice.dirty, name, autoSaveMs, disableAutoSave])
+  }, [slice.revision, slice.dirty, name, autoSaveMs, disableAutoSave])
 
   // ── setData wrapper ───────────────────────────────────────────────────────
   const setData = useCallback(
@@ -103,12 +96,12 @@ export function useDataFile<K extends DataFileName>(
   // ── Manual save ───────────────────────────────────────────────────────────
   const save = useCallback(
     async (message?: string) => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
       try {
-        await saveFile(name, message)
-        toast.success(`${name} saved`)
+        const outcome = await saveFile(name, message)
+        if (outcome === 'conflict') notifyConflict(name)
+        else if (outcome === 'saved') toast.success(`${fileLabel(name)} saved`)
       } catch {
-        toast.error(`Failed to save ${name}`)
+        toast.error(`Failed to save ${fileLabel(name)}`)
       }
     },
     [name, saveFile],
@@ -123,6 +116,7 @@ export function useDataFile<K extends DataFileName>(
     data:    slice.data as SliceData<K> | null,
     sha:     slice.sha,
     loading: slice.loading,
+    saving:  slice.saving,
     error:   slice.error,
     dirty:   slice.dirty,
     setData,

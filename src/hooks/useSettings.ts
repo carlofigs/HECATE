@@ -15,6 +15,7 @@
 import { useEffect, useCallback } from 'react'
 import { useDataStore } from '@/store/useDataStore'
 import { loadCredentials } from '@/lib/github'
+import { notifyConflict } from '@/lib/saveNotices'
 import type { SettingsData } from '@/lib/schemas'
 
 export const DEFAULT_SETTINGS: SettingsData = {
@@ -66,7 +67,12 @@ export function useSettings() {
         updater(seeded)
         useDataStore.setState(current => ({
           ...current,
-          settings: { ...current.settings, data: seeded, dirty: true },
+          settings: {
+            ...current.settings,
+            data:     seeded,
+            dirty:    true,
+            revision: current.settings.revision + 1,
+          },
         }))
       }
     },
@@ -77,7 +83,8 @@ export function useSettings() {
 
   const saveSettings = useCallback(
     async () => {
-      await saveFile('settings', 'chore: update settings.json')
+      const outcome = await saveFile('settings', 'chore: update settings.json')
+      if (outcome === 'conflict') notifyConflict('settings')
     },
     [saveFile],
   )

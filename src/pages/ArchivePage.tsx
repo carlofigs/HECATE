@@ -21,6 +21,7 @@ import { Archive, ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useDataFile } from '@/hooks/useDataFile'
 import { useDataStore } from '@/store/useDataStore'
+import { notifyConflict } from '@/lib/saveNotices'
 import { TaskSnapshotRow } from '@/components/tasks/TaskSnapshotRow'
 import { CloseSprintDialog } from '@/components/archive/CloseSprintDialog'
 import { SprintVelocityChart } from '@/components/archive/SprintVelocityChart'
@@ -211,25 +212,48 @@ export default function ArchivePage() {
         notDoing:   preview.notDoing,
       }
 
-      // 1. Prepend to archive (most-recent first in the array)
+      // 1. Archive first, and save it on its own. Columns are cleared only once
+      //    the archive entry has landed, so a failure can never leave tasks
+      //    cleared but not archived.
       setArchive(draft => {
         draft.weeks.unshift(archiveWeek)
       })
+      const archiveOutcome = await saveFile('archive', 'archive: close sprint')
+      if (archiveOutcome === 'conflict') {
+        notifyConflict('archive')
+        toast.error('Sprint not closed', {
+          description: 'The archive changed elsewhere, so nothing was archived or cleared. Review it, then close the sprint again.',
+          duration:    15_000,
+        })
+        setDialogOpen(false)
+        setPreview(null)
+        return
+      }
 
-      // 2. Clear done/not-doing columns in tasks
+      // 2. Clear exactly the tasks that were previewed. A task moved to Done
+      //    after the dialog opened was not archived, so it must not be removed.
+      const archivedIds = new Set([...preview.done, ...preview.notDoing].map(t => t.id))
       setTasks(draft => {
         draft.columns.forEach(col => {
           if (col.columnType === 'done' || col.columnType === 'not-doing') {
-            col.tasks = []
+            col.tasks = col.tasks.filter(t => !archivedIds.has(t.id))
           }
         })
       })
 
-      // 3. Explicit save — bypass auto-save debounce for a critical action
-      await Promise.all([
-        saveFile('archive', 'archive: close sprint'),
-        saveFile('tasks',   'tasks: clear done/not-doing columns'),
-      ])
+      // 3. Explicit save — bypass the auto-save debounce for a critical action
+      const tasksOutcome = await saveFile('tasks', 'tasks: clear done/not-doing columns')
+      if (tasksOutcome === 'conflict') {
+        notifyConflict('tasks')
+        toast.error('Sprint archived, but columns were not cleared', {
+          description: 'Tasks changed elsewhere. Clear the Done and Not Doing columns by hand — closing again would archive them twice.',
+          duration:    15_000,
+        })
+        setExpanded(prev => new Set([...prev, archiveWeek.weekOf]))
+        setDialogOpen(false)
+        setPreview(null)
+        return
+      }
 
       // 4. Auto-expand the new week entry
       setExpanded(prev => new Set([...prev, archiveWeek.weekOf]))

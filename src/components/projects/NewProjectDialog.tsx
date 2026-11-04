@@ -97,7 +97,7 @@ export function NewProjectDialog({ open, onClose, onCreate, existing }: Props) {
       jira:          null,
       branch:        null,
       tag:           tag.trim().replace(/^#/, ''),
-      owner:         owner.trim() || 'Carlo',
+      owner:         owner.trim() || 'Me',
       updatedAt:     today,
       timeline:      [],
       openQuestions: [],
@@ -187,7 +187,7 @@ export function NewProjectDialog({ open, onClose, onCreate, existing }: Props) {
                 id="np-owner"
                 value={owner}
                 onChange={e => setOwner(e.target.value)}
-                placeholder="Carlo"
+                placeholder="Me"
                 className="h-8 text-sm"
               />
             </div>

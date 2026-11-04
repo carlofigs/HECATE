@@ -305,7 +305,16 @@ export interface FileSlice<T> {
   data: T | null
   sha: string | null
   dirty: boolean
+  /** True only while the file is being fetched — drives the page skeleton. */
   loading: boolean
+  /** True while a PUT is in flight. Never unmounts content, unlike `loading`. */
+  saving: boolean
+  /**
+   * Incremented on every local edit. Autosave keys on this rather than on
+   * `dirty`, so each edit restarts the debounce and a save that fails (leaving
+   * `dirty` true) cannot stall later saves.
+   */
+  revision: number
   error: string | null
 }
 

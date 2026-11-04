@@ -6,7 +6,7 @@
  *
  * States (priority order):
  *   error   → any slice has an error
- *   saving  → any slice is loading (i.e. a save is in-flight)
+ *   saving  → any slice has a save in flight
  *   dirty   → any slice is dirty but not yet saving
  *   saved   → all clean, at least one file has been loaded
  *   idle    → nothing loaded yet (initial state)
@@ -27,7 +27,7 @@ export function SyncStatus({ compact = false }: { compact?: boolean }) {
   const { hasError, isSaving, isDirty, hasLoaded } = useDataStore(
     useShallow(s => ({
       hasError:  FILE_NAMES.some(n => s[n].error !== null),
-      isSaving:  FILE_NAMES.some(n => s[n].loading),
+      isSaving:  FILE_NAMES.some(n => s[n].saving),
       isDirty:   FILE_NAMES.some(n => s[n].dirty),
       hasLoaded: FILE_NAMES.some(n => s[n].data !== null),
     }))
