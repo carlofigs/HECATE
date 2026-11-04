@@ -10,5 +10,6 @@ record stays, with its status changed and a link to the record that replaces it.
 | [0003](0003-github-app-auth.md) | GitHub App for storage, GitHub login for identity only | Accepted |
 | [0004](0004-ops-model.md) | All changes are idempotent, relative ops | Accepted |
 | [0005](0005-work-data-policy.md) | Per-workspace `open` / `sanitised` data policy | Accepted |
+| [0006](0006-retire-calendar-sync.md) | Retire the calendar sync; skills read the calendar directly | Accepted |
 
 Template: **Status · Context · Decision · Consequences · Alternatives considered.**

@@ -26,15 +26,15 @@ work against:
 
 | Area | Problem in v1 | Where |
 |---|---|---|
-| Data safety | A stale-SHA 409 re-PUT the whole local copy, silently deleting writes from MCP or the calendar bot, and skipped the future-schema guard | `src/store/useDataStore.ts` (fixed in P0) |
-| Autosave | Stopped for good after a failed or overlapping save; not a real debounce | `src/hooks/useDataFile.ts` (fixed in P0) |
-| Dates | UTC maths: in Australian time zones week keys and calendar columns land a day early | `src/lib/utils.ts`, `WeekCalendarView.tsx` |
-| Domain logic | Lives inside pages and is re-implemented in the MCP server | `src/pages/*`, `mcp/src/tools/write.ts` |
-| Structure | Structured data hidden in markdown, parsed by regex keyed on magic section ids | `src/components/focus/*` |
-| Identity | Three task-ID schemes; tag-based project links; people matched by name | `src/lib/ids.ts`, `taskConstants.ts` |
-| Storage | Whole-file PUTs: one commit per autosave, 1 MB Contents API ceiling, no multi-file atomicity | `src/lib/github.ts` |
+| Data safety | A stale-SHA 409 re-PUT the whole local copy, silently deleting writes from MCP or the calendar bot, and skipped the future-schema guard | `apps/web-v1/src/store/useDataStore.ts` (fixed in P0) |
+| Autosave | Stopped for good after a failed or overlapping save; not a real debounce | `apps/web-v1/src/hooks/useDataFile.ts` (fixed in P0) |
+| Dates | UTC maths: in Australian time zones week keys and calendar columns land a day early | `apps/web-v1/src/lib/utils.ts`, `WeekCalendarView.tsx` |
+| Domain logic | Lives inside pages and is re-implemented in the MCP server | `apps/web-v1/src/pages/*`, `mcp/src/tools/write.ts` |
+| Structure | Structured data hidden in markdown, parsed by regex keyed on magic section ids | `apps/web-v1/src/components/focus/*` |
+| Identity | Three task-ID schemes; tag-based project links; people matched by name | `apps/web-v1/src/lib/ids.ts`, `taskConstants.ts` |
+| Storage | Whole-file PUTs: one commit per autosave, 1 MB Contents API ceiling, no multi-file atomicity | `apps/web-v1/src/lib/github.ts` |
 | Close Sprint | Not atomic; followed by Generate Week it produced an empty Completed list | `ArchivePage.tsx`, `WeekLogPage.tsx` |
-| Toolchain | Node 20 (EOL), Vite 6, Tailwind 3, ESLint 9; ~49 audit advisories | `package.json` |
+| Toolchain | Node 20 (EOL), Vite 6, Tailwind 3, ESLint 9; ~49 audit advisories | `package.json` (Node 24, pnpm and audit fixes in P1) |
 
 ---
 
@@ -44,7 +44,6 @@ work against:
 claude.ai / Cowork / Claude Code ──MCP (OAuth bearer)──┐
 Browser PWA ───────────────/api (httpOnly cookie)──────┤
 GitHub push webhook (data repo) ───────────────────────┤
-Cron Trigger (calendar sync) ──────────────────────────┤
                                                        ▼
           Cloudflare Worker  (static assets + /api + /mcp + /oauth + /hooks)
                  │  every request → @hecate/core ops (zod-validated, pure)
@@ -62,6 +61,7 @@ Cron Trigger (calendar sync) ─────────────────
 |---|---|---|
 | Storage | Stay on git, restructured into smaller files with atomic multi-file commits | [0001](../adr/0001-storage-git.md) |
 | Writes | One Durable Object per workspace is the only writer; commits are coalesced | [0002](../adr/0002-durable-object-single-writer.md) |
+| Calendar | No calendar mirror: skills read the calendar through Claude's connector when they draft | [0006](../adr/0006-retire-calendar-sync.md) |
 | Auth | GitHub App installation token for storage; GitHub login for identity only, single-user allowlist; OAuth provider for MCP | [0003](../adr/0003-github-app-auth.md) |
 | Change model | Idempotent, relative ops shared by app, MCP and bots; dry run for propose-and-confirm | [0004](../adr/0004-ops-model.md) |
 | Work data | Per-workspace `open` / `sanitised` policy | [0005](../adr/0005-work-data-policy.md) |
@@ -71,7 +71,7 @@ Cron Trigger (calendar sync) ─────────────────
 ```
 apps/web/              v2 React PWA
 apps/web-v1/           v1, moved unchanged; deployed until cutover, then deleted
-apps/worker/           Worker: assets, /api, /mcp, /oauth, /hooks, WorkspaceDO, cron
+apps/worker/           Worker: assets, /api, /mcp, /oauth, /hooks, WorkspaceDO
 packages/core/         zod schemas, per-file migrations, ops + apply, selectors,
                        tz-safe date-only helpers, key allocation, renderers, JSON Schema export
 packages/github-store/ Git Data API adapter (replaces both v1 GitHub clients)
@@ -94,10 +94,10 @@ Per workspace directory in the data repo:
 
 | File | Contents |
 |---|---|
-| `workspace.json` | Name, timezone, policy (`open` / `sanitised`), sprint cadence (anchor, length, start weekday), task-key series (`A` = mine, `B` = waiting on someone), statuses, tag vocabulary, activity areas, calendar source |
+| `workspace.json` | Name, timezone, policy (`open` / `sanitised`), sprint cadence (anchor, length, start weekday), task-key series (`A` = mine, `B` = waiting on someone), statuses, tag vocabulary, activity areas |
 | `profile.json` | Me, preferences, productivity system, recurring responsibilities |
 | `tasks.json` | `{nextKey, tasks[]}` — a flat list |
-| `focus/{monday}.json` | Today (meetings, plan items), per-day outcomes (done / carried / dropped), priorities by tier, callouts, week-at-a-glance rows, last week, freeform sections |
+| `focus/{monday}.json` | Today (meetings, plan items), per-day outcomes (done / carried / dropped), priorities by tier, callouts, week-at-a-glance rows (written by skills from the calendar connector), last week, freeform sections |
 | `focus/keep-in-mind.json` | Rolling list, not copied week to week |
 | `projects/{slug}.json` | Status, phase, deadlines (hard flag), open questions (blocker flag), ordered next actions, timeline, stakeholder cutoffs, sections |
 | `sprints/{n}.json` | Dates, goal, full done / dropped tasks moved here at close, carried keys, retro, velocity |
@@ -105,7 +105,6 @@ Per workspace directory in the data repo:
 | `references/*.md` | Real markdown files |
 | `meetings/*.md` | Meeting summaries (open workspaces only) |
 | `activity/{YYYY-Www}.jsonl` | Session log entries plus meaningful events |
-| `calendar/events.json` | Synced by the Worker cron; personal events redacted at ingestion |
 
 **Task:** `id` (ULID), immutable `key` (`A71`), `legacyIds`, `kind`
 (`action` / `waiting`, fixed at creation), `title`, `note`, `status`, fractional
@@ -158,7 +157,7 @@ One unstacked PR per story, squash-merged to `main`.
 - [x] `saving` split from `loading`, so a save no longer swaps the page for a skeleton.
 - [x] Close Sprint saves the archive before clearing columns, and clears only previewed tasks.
 - [x] Hard-coded personal names removed.
-- [ ] Data repo: calendar Action gets `concurrency` + rebase-retry; personal events redacted at ingestion (separate PR).
+- [x] Data repo: calendar Action gets `concurrency` + rebase-retry; personal events redacted at ingestion (separate PR). The sync was then retired altogether — see [ADR 0006](../adr/0006-retire-calendar-sync.md).
 
 **Acceptance:** a 409 never PUTs local data and a remote addition survives;
 autosave resumes after a failed save and after an edit during an in-flight
@@ -171,6 +170,18 @@ Dependabot; `@hecate/core` schemas, migrations, date helpers (tests under
 `TZ=Australia/Sydney` and `UTC`), key allocation; op catalogue, `apply` and
 selectors with idempotency and ordering tests; `migrate-v1` with a dry-run
 report; `AGENTS.md` and README rewrite.
+
+Delivered as four sequential PRs:
+
+- [x] `chore/pnpm-monorepo` — v1 moved to `apps/web-v1` (frozen, own versions);
+      v1 MCP server packaged in place at `mcp/`; pnpm 11, Node 24, CI, deploy,
+      Dependabot, knip; `AGENTS.md`; audit down from 49 advisories (3 critical,
+      15 high) to 0 high or critical.
+- [ ] `feat/core-schemas` — `packages/core`: zod schemas, per-file migrations,
+      tz-safe date-only helpers, key allocation, JSON Schema export; starts the
+      shared catalog.
+- [ ] `feat/core-ops` — op catalogue, `apply`, selectors, focus→markdown renderer.
+- [ ] `feat/migrate-v1` — `scripts/migrate-v1` with a dry-run report.
 
 **Acceptance:** typecheck, lint, knip, test and build green in CI;
 `migrate-v1 --dry-run` reports zero validation errors for every workspace and
@@ -235,13 +246,14 @@ cursor matches `ack_activity`; Today is editable, including end-of-day outcomes.
   Columns become `status`; task ids become keys with the old id kept in
   `legacyIds`; archive and week-log entries become legacy sprint files; memory
   splits into profile, people, glossary and references; old focus pages keep
-  their sections as freeform markdown; calendar events move to their own file.
+  their sections as freeform markdown; stored calendar events are dropped
+  (ADR 0006).
 - **Beta:** the migration runs onto a `v2` branch of the data repo, which the
   preview Worker reads. v1 keeps working on `main`.
 - **Cutover:** tag `v1-final` in both repos; re-run the migration and the import
-  from the latest data onto `main`; disable the calendar Action (the Worker cron
-  takes over); point the Pages site at the new URL; delete `apps/web-v1`; archive
-  the legacy markdown files.
+  from the latest data onto `main`; delete the disabled calendar workflow and its
+  scripts from the data repo (ADR 0006); point the Pages site at the new URL;
+  delete `apps/web-v1` and `mcp/`; archive the legacy markdown files.
 
 ## Costs and risks
 

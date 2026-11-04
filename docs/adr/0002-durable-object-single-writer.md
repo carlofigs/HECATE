@@ -31,8 +31,9 @@ allowed to write to the data repo.
   the new head (`base_tree` + changed paths only), replays pending ops if any of
   those paths changed upstream, and retries up to three times with jitter.
 - A GitHub push webhook tells the DO about external pushes so it refreshes.
-- The calendar sync moves from a GitHub Action to a Worker Cron Trigger that
-  goes through the same DO.
+- ~~The calendar sync moves from a GitHub Action to a Worker Cron Trigger that
+  goes through the same DO.~~ Withdrawn: the calendar sync is retired instead
+  ([ADR 0006](0006-retire-calendar-sync.md)).
 
 ## Consequences
 
