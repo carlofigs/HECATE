@@ -8,7 +8,7 @@
 
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { DataFileName, TasksData, Task } from '../../../src/lib/schemas'
+import type { DataFileName, TasksData, Task } from '../../../apps/web-v1/src/lib/schemas'
 import type { StorageAdapter } from '../storage/types'
 import type { McpConfig } from '../config'
 

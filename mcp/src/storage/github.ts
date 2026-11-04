@@ -1,21 +1,21 @@
 /**
  * github.ts — StorageAdapter backed by the GitHub Contents API
  *
- * The Node counterpart to src/lib/github.ts. It is a separate implementation
+ * The Node counterpart to apps/web-v1/src/lib/github.ts. It is a separate implementation
  * rather than a shared module because that one is browser-shaped: it reads
  * credentials from localStorage and decodes base64 through atob/TextDecoder.
  * Node has Buffer and gets its config from the environment.
  *
  * What is NOT duplicated is the part that matters — migrateFile and
- * validateFile are imported from src/lib, so the server applies exactly the
+ * validateFile are imported from apps/web-v1/src/lib, so the server applies exactly the
  * same schema guard and structural checks as the app. If those ever diverged,
  * the server could write back a file the app refuses to load.
  */
 
-import { migrateFile } from '../../../src/lib/migrate'
-import { validateFile } from '../../../src/lib/validate'
-import { filterWorkspaces, type RepoEntry } from '../../../src/lib/workspaces'
-import type { DataFileName, SliceData } from '../../../src/lib/schemas'
+import { migrateFile } from '../../../apps/web-v1/src/lib/migrate'
+import { validateFile } from '../../../apps/web-v1/src/lib/validate'
+import { filterWorkspaces, type RepoEntry } from '../../../apps/web-v1/src/lib/workspaces'
+import type { DataFileName, SliceData } from '../../../apps/web-v1/src/lib/schemas'
 import type { McpConfig } from '../config'
 import { type StorageAdapter, type ReadResult, NotFoundError, ConflictError } from './types'
 

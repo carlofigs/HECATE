@@ -15,9 +15,9 @@ import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type {
   Column, FocusData, FocusSection, Priority, Task, TasksData, WeekEntry, WeeklyLogData,
-} from '../../../src/lib/schemas'
-import { generateTaskId, nowISO } from '../../../src/lib/ids'
-import { uniqueSectionId } from '../../../src/lib/focusSections'
+} from '../../../apps/web-v1/src/lib/schemas'
+import { generateTaskId, nowISO } from '../../../apps/web-v1/src/lib/ids'
+import { uniqueSectionId } from '../../../apps/web-v1/src/lib/focusSections'
 import type { StorageAdapter } from '../storage/types'
 import type { McpConfig } from '../config'
 

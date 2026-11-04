@@ -14,7 +14,7 @@
  * whole reason scoped verbs were chosen over whole-file writes.
  */
 
-import type { DataFileName, SliceData } from '../../../src/lib/schemas'
+import type { DataFileName, SliceData } from '../../../apps/web-v1/src/lib/schemas'
 
 export interface ReadResult<K extends DataFileName> {
   data: SliceData<K>
