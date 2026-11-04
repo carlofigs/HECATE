@@ -90,14 +90,17 @@ react-hooks v7, knip, Playwright + axe, wrangler 4, Dependabot.
 
 ## Data model v2
 
-Per workspace directory in the data repo:
+Per workspace directory in the data repo. **The field-level contract is
+`packages/core`**: zod schemas in `packages/core/src/schemas/`, and the JSON
+Schemas generated from them in `packages/core/json-schema/` (drift-tested in
+CI). This table is the overview; ADR 0007 records the rules.
 
 | File | Contents |
 |---|---|
-| `workspace.json` | Name, timezone, policy (`open` / `sanitised`), sprint cadence (anchor, length, start weekday), task-key series (`A` = mine, `B` = waiting on someone), statuses, tag vocabulary, activity areas |
+| `workspace.json` | Name, timezone, policy (`open` / `sanitised`), working days, sprint cadence (anchor date and number, length in weeks; the start weekday is the anchor's), statuses with a category (`backlog`/`todo`/`active`/`done`/`dropped`), tag vocabulary, activity areas |
 | `profile.json` | Me, preferences, productivity system, recurring responsibilities |
 | `tasks.json` | `{nextKey, tasks[]}` — a flat list |
-| `focus/{monday}.json` | Today (meetings, plan items), per-day outcomes (done / carried / dropped), priorities by tier, callouts, week-at-a-glance rows (written by skills from the calendar connector), last week, freeform sections |
+| `focus/{monday}.json` | `schedule` (one list for Week at a Glance and today's meetings, written by skills from the calendar connector; personal entries keep only their time slot), `days` (plan items, then outcomes done / carried / dropped; a closed day renders as a Done section), callouts, priorities by tier (`focus` 🎯 / `next` 🟡 / `ongoing` 🟢), last week, freeform sections. Today and Waiting On are derived, not stored |
 | `focus/keep-in-mind.json` | Rolling list, not copied week to week |
 | `projects/{slug}.json` | Status, phase, deadlines (hard flag), open questions (blocker flag), ordered next actions, timeline, stakeholder cutoffs, sections |
 | `sprints/{n}.json` | Dates, goal, full done / dropped tasks moved here at close, carried keys, retro, velocity |
@@ -106,15 +109,20 @@ Per workspace directory in the data repo:
 | `meetings/*.md` | Meeting summaries (open workspaces only) |
 | `activity/{YYYY-Www}.jsonl` | Session log entries plus meaningful events |
 
-**Task:** `id` (ULID), immutable `key` (`A71`), `legacyIds`, `kind`
-(`action` / `waiting`, fixed at creation), `title`, `note`, `status`, fractional
+**Task:** `id` (ULID), immutable `key`, `legacyIds`, `kind` (`action` /
+`waiting`, fixed by the key's series), `title`, `note`, `status`, fractional
 `order`, `urgency` (high / med / low), `tags`, `projectId`, `waitingOn`,
-`dependsOn`, `due`, `createdAt`, `updatedAt`, `completedAt`. "Waiting on" is
-derived from open B tasks and "blocked" from open `dependsOn`, which collapses
-v1's In Review column, Blocked column and `blockedSince`.
+`dependsOn`, `due`, `createdAt`, `updatedAt`, `completedAt`. Keys are `A` (mine)
+and `B` (waiting on someone) in every workspace, numbered from counters in
+`tasks.json` and never reused (ADR 0007). "Waiting on" is derived from open B
+tasks and "blocked" from open `dependsOn`, which collapses v1's In Review
+column, Blocked column and `blockedSince`.
 
 Every file has its own `schemaVersion` and migrations, and is validated by its
-zod schema on load and on write. A file from a newer build is refused.
+zod schema on load and on write. Schemas are strict: unknown keys are rejected
+and every shape change bumps the version. A file from a newer build is refused,
+and a file with no version is treated as a v1 file (it reaches v2 only through
+`migrate-v1`). Dates are date-only strings in the workspace's time zone.
 
 ---
 
@@ -177,9 +185,11 @@ Delivered as four sequential PRs:
       v1 MCP server packaged in place at `mcp/`; pnpm 11, Node 24, CI, deploy,
       Dependabot, knip; `AGENTS.md`; audit down from 49 advisories (3 critical,
       15 high) to 0 high or critical.
-- [ ] `feat/core-schemas` — `packages/core`: zod schemas, per-file migrations,
-      tz-safe date-only helpers, key allocation, JSON Schema export; starts the
-      shared catalog.
+- [x] `feat/core-schemas` — `packages/core`: zod schemas for all eleven file
+      kinds, per-kind versioning and migrations, tz-safe date-only helpers
+      (tested under UTC and Australia/Sydney), A/B key allocation, ULIDs, the
+      sanitised-policy check, committed JSON Schemas with a drift test; the
+      shared catalog, TypeScript 6 and type-aware ESLint 10 for v2 packages.
 - [ ] `feat/core-ops` — op catalogue, `apply`, selectors, focus→markdown renderer.
 - [ ] `feat/migrate-v1` — `scripts/migrate-v1` with a dry-run report.
 

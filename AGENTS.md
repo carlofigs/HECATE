@@ -20,7 +20,8 @@ frozen and still live; v2 is being built alongside it. Read
 |---|---|---|
 | `apps/web-v1/` | v1 React app, deployed to GitHub Pages under `/HECATE/` | Frozen — fixes only |
 | `mcp/` | v1 stdio MCP server (`@hecate/mcp-v1`) | Frozen — fixes only |
-| `packages/*` | v2 shared packages (`@hecate/core`, …) | From P1 |
+| `packages/core/` | v2 data contract (`@hecate/core`): file schemas, versioning, dates, keys | Active |
+| `packages/*` (other) | further v2 shared packages | From P1 |
 | `apps/*` (other) | v2 web app and Worker | From P2 |
 | `docs/` | Roadmap and ADRs | Living |
 | `branding/` | Source brand assets (SVG/PNG) | Stable |
@@ -30,10 +31,14 @@ frozen and still live; v2 is being built alongside it. Read
 - **v1 is frozen.** `apps/web-v1` and `mcp` pin their own versions (Vite 6,
   Tailwind 3, ESLint 9, TypeScript 5.9) and are deleted at cutover. They take
   security fixes and bug fixes only — no refactors, no toolchain majors.
-- **v2 uses the shared catalog** in `pnpm-workspace.yaml` (React ~19.2,
-  TypeScript ~6.0, Vite 8, Vitest 5, Tailwind 4, zod 4). The catalog starts
-  with the first v2 package; add an entry rather than pinning a version in a
-  v2 manifest.
+- **v2 uses the shared catalog** in `pnpm-workspace.yaml` (TypeScript ~6.0,
+  Vitest 5 and zod 4 today; React ~19.2, Vite 8 and Tailwind 4 as packages
+  need them). Add an entry when a manifest first uses it, rather than pinning a
+  version in a v2 manifest; knip fails on entries nothing uses.
+- **v2 packages** extend `tsconfig.base.json` (TypeScript 6, strict,
+  `noUncheckedIndexedAccess`, no `baseUrl`) and lint with the root
+  `eslint.config.js` (ESLint 10, type-aware). They are consumed as TypeScript
+  source through `exports` (`"." → ./src/index.ts`); there is no build step.
 - `mcp/` stays at that path on purpose: local MCP registrations point at
   `<repo>/mcp/src/index.ts`. It imports v1's schema, migrate and validate
   modules from `apps/web-v1/src/lib/` by relative path, so the two never drift.
@@ -47,6 +52,7 @@ pnpm build                                                # every package that b
 pnpm dev                                                  # v1 app at http://localhost:5173/HECATE/
 pnpm --filter web-v1 preview                              # serve the built v1 app
 pnpm mcp                                                  # v1 MCP server over stdio (needs HECATE_* env)
+pnpm export-schema                                        # regenerate packages/core/json-schema after a schema change
 ```
 
 CI (`.github/workflows/ci.yml`) gates pull requests; `deploy.yml` runs the same
@@ -80,6 +86,21 @@ sessions pushing by hand. Treat every write as concurrent with someone else's.
   build is refused, not misread (`apps/web-v1/src/lib/migrate.ts`).
 - In v2, all writes go through one Durable Object per workspace (ADR 0002) as
   idempotent ops (ADR 0004).
+
+## The v2 data contract (`packages/core`)
+
+- Every file kind has a strict zod schema; read with `parseFile`, write with
+  `serializeFile`. Never hand-build a file or bypass validation.
+- **Any** change to a kind's shape bumps its version in `src/kinds.ts` and
+  registers a migration in `src/versioning.ts` (ADR 0007). The completeness
+  test fails until you do.
+- After a schema change run `pnpm export-schema` and commit
+  `packages/core/json-schema/`; CI fails on drift.
+- Dates are `YYYY-MM-DD` strings. Use `dates.ts`; local-time `Date` methods are
+  banned in core by lint, and core's tests run under both UTC and
+  Australia/Sydney.
+- Task keys are `A` (mine) and `B` (waiting), allocated with `allocateKey` from
+  the counters in `tasks.json`, never invented or reused.
 
 ## Privacy and what stays out of the tree
 
