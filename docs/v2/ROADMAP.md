@@ -221,6 +221,27 @@ alarm coalescing, webhook refresh, key index); GitHub App and allowlist; `/api`;
 `/mcp` with the OAuth provider; MCP tools plus a stdio entry for local use;
 preview and production environments.
 
+Delivered as five sequential PRs. Code PRs test against an in-memory fake
+GitHub; the first run against real data is the deploy PR's.
+
+- [x] `feat/github-store` — `packages/github-store`: the branch head read
+      conditionally (ETag), commits, trees and blobs cached by SHA so a refresh
+      fetches only what changed, many files written as one commit (tree with
+      inline content, commit, unforced ref update), non-fast-forward reported
+      rather than overwritten, tree diffs for rebuild-or-replay; App JWT
+      (PKCS#1 or PKCS#8 key) and cached installation tokens; webhook signature
+      checks; a fake GitHub for tests. Platform-neutral: fetch and WebCrypto.
+- [ ] `feat/worker-do` — `apps/worker` and `WorkspaceDO`: load from git, apply
+      ops (`dryRun`, `ifVersion`, opId dedupe), alarm-coalesced commits,
+      non-fast-forward rebuild and replay, activity append, webhook refresh.
+- [ ] `feat/worker-auth` — GitHub login with the single-user allowlist and a
+      session cookie for `/api`; the OAuth provider for `/mcp`; signed `/hooks`.
+- [ ] `feat/mcp-v2` — the MCP tools and resources, after a transport spike;
+      a stdio entry for local use.
+- [ ] `chore/worker-deploy` — preview and production Workers, deploy workflow
+      and setup docs (App registration, secrets); `migrate-v1` onto the `v2`
+      data branch after the leftover-names review; the acceptance checks.
+
 **Acceptance:** MCP Inspector lists the tools; the claude.ai connector
 authenticates and `get_briefing` works on the `v2` branch; 20 ops in 60 s
 produce at most 2 commits; concurrent app and MCP ops both survive; an external

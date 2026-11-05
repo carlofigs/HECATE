@@ -49,6 +49,14 @@ export default defineConfig([
     },
   },
   {
+    // Storage runs inside the Cloudflare Worker as well as in Node: fetch and
+    // WebCrypto only, like core.
+    files: ['packages/github-store/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [{ group: ['node:*'], message: 'github-store runs in the Worker: use fetch and WebCrypto.' }] }],
+    },
+  },
+  {
     // Tests break valid fixtures on purpose by poking raw JSON. The unsafe-any
     // rules exist to protect production code from untyped data; in a test that
     // is the point.

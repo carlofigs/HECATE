@@ -22,6 +22,7 @@ frozen and still live; v2 is being built alongside it. Read
 | `mcp/` | v1 stdio MCP server (`@hecate/mcp-v1`) | Frozen — fixes only |
 | `packages/core/` | v2 data contract (`@hecate/core`): file schemas, versioning, dates, keys | Active |
 | `packages/migrate-v1/` | One-off v1 → v2 conversion with a dry-run report (`@hecate/migrate-v1`) | Until cutover, then deleted |
+| `packages/github-store/` | v2 storage (`@hecate/github-store`): Git Data API, App tokens, webhook signatures | Active |
 | `packages/*` (other) | further v2 shared packages | From P1 |
 | `apps/*` (other) | v2 web app and Worker | From P2 |
 | `docs/` | Roadmap and ADRs | Living |
@@ -111,6 +112,11 @@ sessions pushing by hand. Treat every write as concurrent with someone else's.
   exception is `migrate-v1`, which builds files directly to keep v1's task
   numbers and timestamps, and validates them with the same loader and checks
   (ADR 0008).
+- **Storage is `@hecate/github-store`.** It runs in the Worker, so like core it
+  uses fetch and WebCrypto only (no `node:*`, enforced by lint). Writes are one
+  commit per change set and never force the ref: a non-fast-forward comes back
+  as a result for the caller to rebuild or replay (ADR 0002). Tests use the
+  in-memory fake from `@hecate/github-store/testing`, never the real data repo.
 - **Read through the views.** Waiting On, blocked, today, sprint position and
   the briefing come from `src/views/selectors.ts`, and markdown from
   `src/views/render.ts`. Don't recompute them elsewhere, or the app and Claude
