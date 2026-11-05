@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "weeks": [
+    {
+      "weekOf": "2026-03-28",
+      "archivedAt": "2026-03-28T03:00:00.000Z",
+      "done": [
+        { "id": "t-a8", "title": "Send the March numbers", "note": "", "tags": ["reporting"], "originalColumn": "done" }
+      ],
+      "notDoing": []
+    },
+    {
+      "weekOf": "2026-03-27",
+      "archivedAt": "2026-03-27T07:00:00.000Z",
+      "done": [
+        { "id": "t-a7", "title": "Agree the metric definitions", "note": "", "tags": ["Scorecard"], "originalColumn": "unknown" },
+        { "id": "t-a3", "title": "Tidy the backlog", "note": "Cut to live work.", "tags": [], "originalColumn": "unknown" }
+      ],
+      "notDoing": [
+        { "id": "t-b2", "title": "Old dashboard access", "note": "No longer needed.", "tags": [], "originalColumn": "closed" }
+      ]
+    },
+    {
+      "weekOf": "2026-03-20",
+      "archivedAt": "2026-03-20T07:00:00.000Z",
+      "done": [
+        { "id": "t-a1", "title": "Set up the workspace", "note": "", "tags": [], "originalColumn": "done" },
+        { "id": null, "title": "Book the review room", "note": "", "tags": [], "originalColumn": "to-do" }
+      ],
+      "notDoing": []
+    },
+    {
+      "weekOf": "2026-03-14",
+      "archivedAt": "2026-03-14T03:00:00.000Z",
+      "done": [
+        { "id": "t-a1", "title": "Set up the workspace", "note": "", "tags": [], "originalColumn": "done" },
+        { "id": "t-a2", "title": "Read the handover notes", "note": "From Alex.", "tags": ["handover"], "originalColumn": "done" }
+      ],
+      "notDoing": []
+    }
+  ]
+}

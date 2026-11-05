@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "weekOf": "2026-04-14",
+  "sprintLabel": "Sprint 19 / Tracker sprint 21",
+  "updatedAt": "2026-04-14T08:00:00.000Z",
+  "sections": [
+    { "id": "today", "title": "Today: Tue 14 Apr", "content": "1. Finish t-a12.\n2. Chase Sam Lee on t-b3." },
+    { "id": "waiting-on", "title": "Waiting On", "content": "| Item | Who |\n|---|---|\n| t-b3 | Sam |\n| t-b9 | Finance |" },
+    { "id": "keep-in-mind", "title": "Keep in Mind", "content": "Use `t-a12` in code spans as written." }
+  ],
+  "calendarEvents": [
+    {
+      "id": "event-1",
+      "date": "2026-04-14",
+      "startTime": "09:30",
+      "endTime": "09:45",
+      "title": "Stand-up",
+      "type": "meeting",
+      "isAllDay": false,
+      "isRecurring": true,
+      "location": "Room 2",
+      "taskIds": ["t-a12"],
+      "calLink": "https://calendar.example.com/event-1"
+    },
+    {
+      "id": "event-2",
+      "date": "2026-04-17",
+      "startTime": "",
+      "endTime": "",
+      "title": "Leave",
+      "type": "ooo",
+      "isAllDay": true,
+      "isRecurring": false,
+      "calLink": "https://calendar.example.com/event-2"
+    }
+  ]
+}

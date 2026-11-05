@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "oneOnOnePeople": ["Sam Lee"],
+  "defaultView": "board",
+  "autoSaveDebounceMs": 1500,
+  "pollIntervalMs": 60000,
+  "theme": "dark"
+}

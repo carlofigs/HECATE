@@ -77,7 +77,8 @@ packages/core/         zod schemas, per-file migrations, ops + apply, selectors,
 packages/github-store/ Git Data API adapter (replaces both v1 GitHub clients)
 packages/ui/           design tokens (@theme), primitives, <Markdown> with task-key chips
 plugin/                Claude plugin: manifest, .mcp.json, skills
-scripts/               migrate-v1 (dry-run report), package-skills, export-schema
+packages/migrate-v1/   one-off v1 → v2 conversion with a dry-run report; deleted at cutover
+scripts/               package-skills
 design/                DESIGN-STANDARD (vendored), DLS.md, foundations.md, DECISIONS.md, audit.md
 docs/adr/              architecture decision records
 ```
@@ -201,7 +202,12 @@ Delivered as five sequential PRs (the original third PR was split in two to keep
       `briefing`) and markdown renderers: the focus week in the skills' FOCUS.md
       format, dry-run previews, refusals and the briefing. Golden files under
       `packages/core/src/__fixtures__/rendered/`.
-- [ ] `feat/migrate-v1` — `scripts/migrate-v1` with a dry-run report.
+- [x] `feat/migrate-v1` — `packages/migrate-v1` (`pnpm migrate-v1`): every v1
+      field mapped, rendered to text or dropped with a reason (an unknown field
+      fails the run); A/B keys kept from v1 ids, others allocated in creation
+      order; archive and week logs as legacy sprints; sanitised workspaces by
+      name → role; deterministic output validated with core's own loader and
+      checks; a dry-run report. Settings come from a private config. ADR 0008.
 
 **Acceptance:** typecheck, lint, knip, test and build green in CI;
 `migrate-v1 --dry-run` reports zero validation errors for every workspace and
@@ -267,9 +273,11 @@ cursor matches `ack_activity`; Today is editable, including end-of-day outcomes.
   `legacyIds`; archive and week-log entries become legacy sprint files; memory
   splits into profile, people, glossary and references; old focus pages keep
   their sections as freeform markdown; stored calendar events are dropped
-  (ADR 0006).
+  (ADR 0006). ADR 0008 records the rules.
 - **Beta:** the migration runs onto a `v2` branch of the data repo, which the
-  preview Worker reads. v1 keeps working on `main`.
+  preview Worker reads. v1 keeps working on `main`. The run is
+  `pnpm migrate-v1 --data <checkout> --config <private config> --out <dir>`,
+  after reviewing the dry run (and `--names` for sanitised workspaces).
 - **Cutover:** tag `v1-final` in both repos; re-run the migration and the import
   from the latest data onto `main`; delete the disabled calendar workflow and its
   scripts from the data repo (ADR 0006); point the Pages site at the new URL;

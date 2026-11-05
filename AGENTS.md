@@ -21,6 +21,7 @@ frozen and still live; v2 is being built alongside it. Read
 | `apps/web-v1/` | v1 React app, deployed to GitHub Pages under `/HECATE/` | Frozen — fixes only |
 | `mcp/` | v1 stdio MCP server (`@hecate/mcp-v1`) | Frozen — fixes only |
 | `packages/core/` | v2 data contract (`@hecate/core`): file schemas, versioning, dates, keys | Active |
+| `packages/migrate-v1/` | One-off v1 → v2 conversion with a dry-run report (`@hecate/migrate-v1`) | Until cutover, then deleted |
 | `packages/*` (other) | further v2 shared packages | From P1 |
 | `apps/*` (other) | v2 web app and Worker | From P2 |
 | `docs/` | Roadmap and ADRs | Living |
@@ -53,6 +54,7 @@ pnpm dev                                                  # v1 app at http://loc
 pnpm --filter web-v1 preview                              # serve the built v1 app
 pnpm mcp                                                  # v1 MCP server over stdio (needs HECATE_* env)
 pnpm export-schema                                        # regenerate packages/core/json-schema after a schema change
+pnpm migrate-v1 --data <checkout> --config <file>         # v1 → v2 dry run of a data-repo checkout; add --out <dir> to write
 ```
 
 CI (`.github/workflows/ci.yml`) gates pull requests; `deploy.yml` runs the same
@@ -105,7 +107,10 @@ sessions pushing by hand. Treat every write as concurrent with someone else's.
   `applyBatch(state, batch)`; commit `changedFiles(result.state, result.changed)`,
   delete `result.deleted`, and append `result.activity` to the weekly log. Never
   edit a state or file directly: the engine is what keeps keys, order,
-  `completedAt`, references and policy consistent (ADR 0004).
+  `completedAt`, references and policy consistent (ADR 0004). The one
+  exception is `migrate-v1`, which builds files directly to keep v1's task
+  numbers and timestamps, and validates them with the same loader and checks
+  (ADR 0008).
 - **Read through the views.** Waiting On, blocked, today, sprint position and
   the briefing come from `src/views/selectors.ts`, and markdown from
   `src/views/render.ts`. Don't recompute them elsewhere, or the app and Claude
@@ -122,6 +127,12 @@ workspace names, tokens, or personal machine paths in committed files —
 including tests, fixtures, comments and PR descriptions. Fixtures use
 `Alex`/`Sam`-style names and generic task titles. Work workspaces follow the
 `sanitised` policy (ADR 0005): roles, never names.
+
+The `migrate-v1` config (workspace names, time zones, sprint cadences and
+name → role replacements) describes real workspaces: keep it outside this repo
+and pass it with `--config`. The dry-run report names each workspace directory
+but carries counts, not content; `--names` prints possible leftover names to
+the terminal only.
 
 Git history is shared with everyone who can read the repo, so removing a
 secret is not enough — rotate it too.

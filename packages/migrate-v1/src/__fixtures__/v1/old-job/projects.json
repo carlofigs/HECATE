@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "projects": [
+    {
+      "id": "p-scorecard",
+      "name": "Scorecard",
+      "subtitle": "Monthly targets view",
+      "summary": "One page of actuals against targets.",
+      "status": "in-progress",
+      "phase": "Build",
+      "currentFocus": "Targets for t-a12.",
+      "nextAction": "Draft targets (t-a12) once t-b3 lands",
+      "jira": "TRACK-12",
+      "branch": "feature/scorecard",
+      "tag": "scorecard",
+      "owner": "Alex Smith",
+      "updatedAt": "2026-03-27",
+      "timeline": [
+        { "phase": "Discovery", "start": "2026-03-02", "end": "2026-03-13", "status": "completed" },
+        { "phase": "Build", "start": "2026-03-16", "end": null, "status": "active" },
+        { "phase": "Publish", "start": null, "end": null, "status": "pending" }
+      ],
+      "openQuestions": [
+        { "id": "oq-1", "question": "Who owns the targets?", "blocker": true, "status": "resolved", "resolution": "Sam Lee, via t-b3." },
+        { "id": "oq-3", "question": "Monthly or weekly?", "blocker": false, "status": "open", "resolution": null },
+        { "id": "oq-3", "question": "Which time zone for cut-offs?", "blocker": false, "status": "deferred", "resolution": null },
+        { "id": null, "question": "Do we need a mobile view?", "blocker": false, "status": "open", "resolution": null }
+      ],
+      "models": [
+        { "name": "stg_sales", "layer": "staging", "materialisationDev": "view", "materialisationProd": "view", "status": "Done" },
+        { "name": "mart_scorecard", "layer": "mart", "materialisationDev": "table", "materialisationProd": "incremental (TBC)", "status": "Skeleton | blocked OQ-03" }
+      ],
+      "sections": [
+        { "id": "decisions", "title": "Decisions", "content": "- Targets live in the scorecard." },
+        { "id": "decisions", "title": "More decisions", "content": "- Weekly refresh." }
+      ]
+    },
+    {
+      "id": "p-handover",
+      "name": "Handover",
+      "subtitle": null,
+      "summary": "",
+      "status": "completed",
+      "phase": "Done",
+      "currentFocus": "",
+      "nextAction": "",
+      "jira": null,
+      "branch": null,
+      "tag": "handover",
+      "owner": "",
+      "updatedAt": "2026-03-13",
+      "timeline": [],
+      "openQuestions": [],
+      "models": null,
+      "sections": []
+    }
+  ]
+}

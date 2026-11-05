@@ -1,0 +1,15 @@
+{
+  "columns": [
+    { "id": "todo", "name": "To Do", "columnType": null, "tasks": [
+      { "id": "club-02", "title": "Print the fixtures", "note": "", "tags": ["Fixtures"], "priority": "medium", "blockedSince": null, "createdAt": "2026-05-01T00:00:00.000Z", "updatedAt": "2026-05-01T00:00:00.000Z" }
+    ] },
+    { "id": "doing", "name": "Doing", "columnType": "in-progress", "tasks": [
+      { "id": "club-10", "title": "Book the field", "note": "Alex has the contact.", "tags": [], "priority": null, "blockedSince": null, "createdAt": "2026-05-01T00:00:00.000Z", "updatedAt": "2026-05-02T00:00:00.000Z" }
+    ] },
+    { "id": "done", "name": "Done", "columnType": "done", "tasks": [
+      { "id": "club-01", "title": "Draft the season dates", "note": "", "tags": ["Fixtures"], "priority": null, "blockedSince": null, "createdAt": "2026-05-01T00:00:00.000Z", "updatedAt": "2026-05-03T00:00:00.000Z" }
+    ] },
+    { "id": "parked", "name": "Parked", "columnType": "not-doing", "tasks": [] },
+    { "id": "ideas", "name": "Ideas", "columnType": "backlog", "tasks": [] }
+  ]
+}

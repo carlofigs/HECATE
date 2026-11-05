@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "weeks": [
+    {
+      "weekOf": "2026-03-23",
+      "dateRange": "23 Mar – 27 Mar 2026",
+      "generatedAt": "2026-03-27T06:00:00.000Z",
+      "updatedAt": "2026-03-27T06:30:00.000Z",
+      "completed": [
+        { "id": "t-a3", "title": "Tidy the backlog", "note": "Cut to live work.", "tags": [] },
+        { "id": "t-a99", "title": "Something since deleted", "note": "", "tags": ["reporting"] }
+      ],
+      "carriedForward": [
+        { "id": "t-a12", "title": "Draft the scorecard targets", "note": "Waiting on t-b3.\nSecond line.", "tags": ["Scorecard"] }
+      ],
+      "delayed": [
+        { "id": null, "title": "Workshop with the product team", "note": "", "tags": [] }
+      ],
+      "nextWeek": ["Finish the targets", ""],
+      "narrative": {
+        "meetingsAndDiscussions": "Check-in with Alex Smith on the layout.",
+        "decisionsMade": "Targets live in the scorecard, not a separate sheet.",
+        "frustrations": "",
+        "oneOnOnePrep": {
+          "people": ["Sam Lee", "Casey"],
+          "sections": {
+            "Sam Lee": "Raise t-a12 and the sign-off date.",
+            "Casey": "Ask about the handover."
+          }
+        }
+      }
+    },
+    {
+      "weekOf": "2026-03-16",
+      "dateRange": "16 Mar – 20 Mar 2026",
+      "generatedAt": "2026-03-20T06:00:00.000Z",
+      "updatedAt": "2026-03-20T06:00:00.000Z",
+      "completed": [
+        { "id": "t-a1", "title": "Set up the workspace", "note": "", "tags": [] }
+      ],
+      "carriedForward": [],
+      "delayed": [],
+      "nextWeek": [],
+      "narrative": {
+        "meetingsAndDiscussions": "",
+        "decisionsMade": "",
+        "frustrations": "Access requests are slow.",
+        "oneOnOnePrep": { "people": [], "sections": {} }
+      }
+    },
+    {
+      "weekOf": "2026-03-09",
+      "dateRange": "9 Mar – 13 Mar 2026",
+      "generatedAt": "2026-03-13T06:00:00.000Z",
+      "updatedAt": "2026-03-13T06:00:00.000Z",
+      "completed": [
+        { "id": "t-a2", "title": "Read the handover notes", "note": "", "tags": ["handover"] }
+      ],
+      "carriedForward": [],
+      "delayed": [],
+      "nextWeek": ["Start on the scorecard"],
+      "narrative": {
+        "meetingsAndDiscussions": "Intro with Sam.",
+        "decisionsMade": "",
+        "frustrations": "",
+        "oneOnOnePrep": { "people": [], "sections": {} }
+      }
+    }
+  ]
+}

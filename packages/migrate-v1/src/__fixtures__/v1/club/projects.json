@@ -1,0 +1,25 @@
+{
+  "projects": [
+    {
+      "id": "p-fixtures",
+      "name": "Season fixtures",
+      "subtitle": null,
+      "summary": null,
+      "status": "active",
+      "phase": null,
+      "currentFocus": null,
+      "nextAction": null,
+      "jira": null,
+      "branch": null,
+      "tag": "fixtures",
+      "owner": "Alex",
+      "updatedAt": "2026-05-03",
+      "timeline": [],
+      "openQuestions": [
+        { "id": "oq-1", "question": "Two fields or one?", "blocker": false, "status": "resolved", "resolution": null }
+      ],
+      "models": null,
+      "sections": []
+    }
+  ]
+}
