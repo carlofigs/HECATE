@@ -6,6 +6,9 @@ settings:
 
 catalogs:
   default:
+    '@cloudflare/workers-oauth-provider':
+      specifier: ^1.2.4
+      version: 1.2.4
     '@cloudflare/workers-types':
       specifier: ^5.20261104.1
       version: 5.20261104.1
@@ -195,6 +198,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@cloudflare/workers-oauth-provider':
+        specifier: 'catalog:'
+        version: 1.2.4
       '@hecate/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -917,6 +923,9 @@ packages:
     engines: {node: '>=16'}
     cpu: [x64]
     os: [win32]
+
+  '@cloudflare/workers-oauth-provider@1.2.4':
+    resolution: {integrity: sha512-ayo6Z8DBHdAxwDpplFU8BrEoxoSn6wNo+E7ypTENRHUOc8R89A8/+nZ+a8pMZjjXzF0JXfpYXhw/7qqG+DC18Q==}
 
   '@cloudflare/workers-types@5.20261104.1':
     resolution: {integrity: sha512-XSPcK88JXnW/oC82wuXvaP7vgyk2myydugbgOd/RcLKwqkwW0cP09Ozp9ItACa4IAZ7uKtMIfxZpUTXajYVd1Q==}
@@ -5777,6 +5786,8 @@ snapshots:
 
   '@cloudflare/workerd-windows-64@1.20261103.1':
     optional: true
+
+  '@cloudflare/workers-oauth-provider@1.2.4': {}
 
   '@cloudflare/workers-types@5.20261104.1': {}
 

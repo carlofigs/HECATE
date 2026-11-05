@@ -238,8 +238,13 @@ GitHub; the first run against real data is the deploy PR's.
       reporting it); a broken head is never adopted; activity appended to the
       weekly log; refresh on demand and on stale reads. Tested in Node and in
       workerd via Miniflare. Rules recorded as an amendment to ADR 0002.
-- [ ] `feat/worker-auth` — GitHub login with the single-user allowlist and a
-      session cookie for `/api`; the OAuth provider for `/mcp`; signed `/hooks`.
+- [x] `feat/worker-auth` — GitHub sign-in through the App's OAuth client with
+      the single-user allowlist (by id); a signed `__Host-` session cookie and
+      Origin check for `/api` (me, workspaces, snapshot, ops, flush); the OAuth
+      provider for `/mcp` with DCR and CIMD, a redirect-host allowlist, a
+      consent page and GitHub sign-in bound to the browser; the signed push
+      webhook refreshing touched workspaces. End-to-end tests in workerd.
+      Recorded as an amendment to ADR 0003.
 - [ ] `feat/mcp-v2` — the MCP tools and resources, after a transport spike;
       a stdio entry for local use.
 - [ ] `chore/worker-deploy` — preview and production Workers, deploy workflow

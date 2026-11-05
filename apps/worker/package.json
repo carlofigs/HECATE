@@ -12,6 +12,7 @@
     "test": "TZ=UTC vitest run && TZ=Australia/Sydney vitest run"
   },
   "dependencies": {
+    "@cloudflare/workers-oauth-provider": "catalog:",
     "@hecate/core": "workspace:*",
     "@hecate/github-store": "workspace:*"
   },

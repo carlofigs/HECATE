@@ -125,6 +125,15 @@ sessions pushing by hand. Treat every write as concurrent with someone else's.
   for what only the runtime can show (storage, alarms). Keep the DO class a
   thin adapter. Its compatibility date stays within what the pinned Miniflare
   supports.
+- **The Worker's routes** (`apps/worker/src/index.ts`): `/mcp` (OAuth bearer
+  only), `/authorize` and `/oauth/github/callback` (connecting an MCP client),
+  `/auth/*` and `/api/*` (the web app: a signed `__Host-` session cookie, with
+  an Origin check on writes), `/hooks/github` (signed), `/health`. Never accept
+  the cookie on `/mcp` or a bearer token on `/api`. Never loosen the allowlist,
+  the Origin check or the redirect-host allowlist without an ADR (ADR 0003).
+  Settings are vars (`PUBLIC_URL`, `GITHUB_CLIENT_ID`, `ALLOWED_GITHUB_USER_ID`,
+  `MCP_REDIRECT_HOSTS`) and secrets (`GITHUB_CLIENT_SECRET`, `AUTH_SECRET`,
+  `GITHUB_WEBHOOK_SECRET`, `GITHUB_APP_PRIVATE_KEY`); none is ever committed.
 - **Read through the views.** Waiting On, blocked, today, sprint position and
   the briefing come from `src/views/selectors.ts`, and markdown from
   `src/views/render.ts`. Don't recompute them elsewhere, or the app and Claude
