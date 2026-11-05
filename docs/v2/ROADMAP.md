@@ -179,7 +179,7 @@ Dependabot; `@hecate/core` schemas, migrations, date helpers (tests under
 selectors with idempotency and ordering tests; `migrate-v1` with a dry-run
 report; `AGENTS.md` and README rewrite.
 
-Delivered as four sequential PRs:
+Delivered as five sequential PRs (the original third PR was split in two to keep each reviewable):
 
 - [x] `chore/pnpm-monorepo` — v1 moved to `apps/web-v1` (frozen, own versions);
       v1 MCP server packaged in place at `mcp/`; pnpm 11, Node 24, CI, deploy,
@@ -190,7 +190,15 @@ Delivered as four sequential PRs:
       (tested under UTC and Australia/Sydney), A/B key allocation, ULIDs, the
       sanitised-policy check, committed JSON Schemas with a drift test; the
       shared catalog, TypeScript 6 and type-aware ESLint 10 for v2 packages.
-- [ ] `feat/core-ops` — op catalogue, `apply`, selectors, focus→markdown renderer.
+- [x] `feat/core-ops` — the write engine: `prepareBatch` / `applyBatch`
+      (atomic, deterministic, validated before success), 35 ops across tasks,
+      workspace, profile, focus, keep-in-mind, projects, sprints, people,
+      glossary, references, meetings and the activity log; `$n` placeholders;
+      fractional ordering; atomic sprint close; cross-file `checkWorkspace`;
+      automatic activity events; whole-workspace file I/O; `ops.schema.json`.
+- [ ] `feat/core-views` — selectors (Waiting On, blocked, today, sprint
+      position, `briefing`), the focus-week markdown renderer in the skills'
+      format, and the dry-run preview renderer.
 - [ ] `feat/migrate-v1` — `scripts/migrate-v1` with a dry-run report.
 
 **Acceptance:** typecheck, lint, knip, test and build green in CI;

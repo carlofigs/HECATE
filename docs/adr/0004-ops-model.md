@@ -44,3 +44,27 @@ Every change is an **op**: a plain, serialisable object defined and applied in
 |---|---|
 | Whole-file writes (v1) | Overwrites concurrent changes; no meaningful preview. |
 | One MCP tool per verb with its own `dryRun` | Cannot preview or commit a multi-module batch atomically; inflates the tool list every session loads. |
+
+## Amendment — engine rules (Nov 2026, with `feat/core-ops`)
+
+Recorded when the engine was built in `packages/core`:
+
+- **Canonical batches.** A writer sends `{ ops }`. `prepareBatch` fills every
+  generated id, normalises tag and area names, and stamps `opId`, `at` and
+  `actor`. That canonical batch is what is stored and replayed.
+- **Deterministic apply.** `applyBatch(state, batch)` uses only the batch's own
+  time (`today` is the workspace-local date at `at`) and seeds the ids of
+  automatic activity entries from `opId`. The same state and batch always give
+  the same result, which is what makes replay and dry runs trustworthy.
+- **All or nothing, validated.** The first failing op aborts the batch. Before
+  success, every changed file is validated against its schema and the
+  workspace against cross-file checks (`checkWorkspace`).
+- **Placeholders are named, not positional.** `task.add` may declare `ref:
+  "$1"`; keys are allocated in batch order and substituted only in key-typed
+  fields, never in prose. Sending a subset of a proposal keeps every remaining
+  reference valid; a reference to a dropped op fails by name.
+- **New tags and activity areas are added automatically** and reported as
+  warnings, so a dry-run preview shows them before anything is written.
+- **The activity log is append-only.** `applyBatch` returns the entries to
+  append; nothing rewrites a weekly log file.
+
