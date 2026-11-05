@@ -14,12 +14,21 @@
 import { z } from 'zod'
 import { CURRENT_VERSION, FILE_KINDS, type FileKind } from './kinds.ts'
 import { schemas } from './files.ts'
+import { batchInputSchema } from './batch.ts'
 
 const OPTIONS = { target: 'draft-2020-12', unrepresentable: 'throw', reused: 'inline' } as const
 
 export function toJsonSchema(kind: FileKind, io: 'input' | 'output' = 'input'): Record<string, unknown> {
   const { $schema, ...rest } = z.toJSONSchema(schemas[kind], { ...OPTIONS, io }) as Record<string, unknown>
   return { $schema, $id: `urn:hecate:${kind}:v${CURRENT_VERSION[kind]}`, ...rest }
+}
+
+/** The JSON Schema of a batch a writer sends: what MCP's apply_ops accepts. */
+export const OPS_SCHEMA_VERSION = 1
+
+export function toOpsJsonSchema(io: 'input' | 'output' = 'input'): Record<string, unknown> {
+  const { $schema, ...rest } = z.toJSONSchema(batchInputSchema, { ...OPTIONS, io }) as Record<string, unknown>
+  return { $schema, $id: `urn:hecate:ops:v${OPS_SCHEMA_VERSION}`, ...rest }
 }
 
 export function toJsonSchemas(): Record<FileKind, Record<string, unknown>> {

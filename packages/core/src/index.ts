@@ -43,3 +43,15 @@ export { peopleSchema, Person } from './schemas/people.ts'
 export { glossarySchema } from './schemas/glossary.ts'
 export { activityEntrySchema } from './schemas/activity.ts'
 export { meetingFrontmatterSchema } from './schemas/meeting.ts'
+
+// ─── Writing: ops, batches and the engine ───────────────────────────────────
+export {
+  emptyState, stateFromFiles, filesFromState, changedFiles, fileContent, parseMeetingFile, serializeMeetingFile,
+  WorkspaceLoadError, type WorkspaceState, type Meeting, type FocusWeek, type Project, type Sprint, type MeetingFrontmatter,
+  type WorkspaceFile,
+} from './state.ts'
+export { opSchema, OP_TYPES, type Op, type OpType } from './ops/index.ts'
+export { OpFailure, slugify, type Actor, type OpErrorCode, type Warning } from './ops/context.ts'
+export { ActorSchema, batchInputSchema, batchSchema, prepareBatch, BatchInputError, type Batch, type BatchInput, type PrepareOptions } from './batch.ts'
+export { applyBatch, type ApplyResult, type ApplySuccess, type ApplyFailure, type OpError } from './apply.ts'
+export { checkWorkspace, findPossibleNames, type Issue } from './check.ts'
