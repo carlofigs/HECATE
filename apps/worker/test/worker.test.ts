@@ -1,44 +1,20 @@
 /**
  * The Worker in the real Workers runtime (workerd, through Miniflare), with
- * GitHub answered by the in-memory fake: Durable Object storage, RPC-free
+ * GitHub answered by the in-memory fake: Durable Object storage, its JSON
  * routes and the alarm that commits, end to end.
  */
-import { build } from 'esbuild'
-import { Miniflare, type Request as MiniflareRequest } from 'miniflare'
+import type { Miniflare } from 'miniflare'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { FakeGitHub } from '@hecate/github-store/testing'
 import { DIR, addTask, seededFake } from './helpers.ts'
+import { ORIGIN, startWorker } from './runtime.ts'
 
 let mf: Miniflare
 let fake: FakeGitHub
 
 beforeAll(async () => {
   fake = await seededFake()
-  const bundle = await build({
-    entryPoints: [new URL('../src/index.ts', import.meta.url).pathname],
-    bundle: true,
-    format: 'esm',
-    platform: 'neutral',
-    target: 'es2022',
-    conditions: ['workerd', 'worker', 'browser'],
-    mainFields: ['module', 'main'],
-    external: ['cloudflare:*'],
-    // As wrangler does: libraries such as immer read process.env.NODE_ENV.
-    define: { 'process.env.NODE_ENV': '"production"' },
-    write: false,
-  })
-  mf = new Miniflare({
-    modules: true,
-    script: bundle.outputFiles[0]?.text ?? '',
-    compatibilityDate: '2026-08-01',
-    durableObjects: { WORKSPACE: { className: 'WorkspaceDO', useSQLite: true } },
-    bindings: { GITHUB_OWNER: fake.owner, GITHUB_REPO: fake.repo, GITHUB_BRANCH: fake.branch, GITHUB_TOKEN: 'test-token', COMMIT_INTERVAL_MS: '200' },
-    outboundService: async (request: MiniflareRequest) => {
-      const body = request.method === 'GET' || request.method === 'HEAD' ? undefined : await request.text()
-      const response = await fake.fetch(request.url, { method: request.method, headers: Object.fromEntries(request.headers), ...(body !== undefined ? { body } : {}) })
-      return new Response(response.body, { status: response.status, headers: response.headers }) as never
-    },
-  })
+  mf = await startWorker(fake)
 })
 
 afterAll(async () => {
@@ -52,9 +28,10 @@ async function call<T>(verb: string, body: Record<string, unknown>): Promise<T> 
 }
 
 describe('the Worker in workerd', () => {
-  it('answers a health check, and nothing else yet', async () => {
-    expect(await (await mf.dispatchFetch('http://hecate.test/health')).json()).toEqual({ ok: true })
-    expect((await mf.dispatchFetch('http://hecate.test/api/workspaces')).status).toBe(404)
+  it('answers a health check; everything else needs sign-in', async () => {
+    expect(await (await mf.dispatchFetch(`${ORIGIN}/health`)).json()).toEqual({ ok: true })
+    expect((await mf.dispatchFetch(`${ORIGIN}/api/workspaces`)).status).toBe(401)
+    expect((await mf.dispatchFetch(`${ORIGIN}/nowhere`)).status).toBe(404)
   })
 
   it('applies ops in the Durable Object and commits them when its alarm fires', async () => {

@@ -7,10 +7,18 @@
   "main": "src/index.ts",
   // Keep within what the pinned Miniflare (tests) supports.
   "compatibility_date": "2026-08-01",
+  // Client ID Metadata Documents are fetched from client-chosen URLs; this
+  // flag keeps those fetches on the public internet (SSRF protection).
+  "compatibility_flags": ["global_fetch_strictly_public"],
   "durable_objects": {
     "bindings": [{ "name": "WORKSPACE", "class_name": "WorkspaceDO" }]
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["WorkspaceDO"] }],
+  // OAuth clients, grants and token hashes. Provisioned on first deploy.
+  "kv_namespaces": [{ "binding": "OAUTH_KV" }],
+  // PUBLIC_URL, GITHUB_OWNER, GITHUB_REPO, GITHUB_APP_ID, GITHUB_CLIENT_ID and
+  // ALLOWED_GITHUB_USER_ID are set per environment at deploy. Secrets:
+  // GITHUB_APP_PRIVATE_KEY, GITHUB_CLIENT_SECRET, AUTH_SECRET, GITHUB_WEBHOOK_SECRET.
   "vars": {
     "GITHUB_BRANCH": "v2",
     "COMMIT_INTERVAL_MS": "30000"

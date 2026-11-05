@@ -19,6 +19,23 @@ export interface Env {
   GITHUB_TOKEN?: string
   /** Milliseconds between coalesced commits. */
   COMMIT_INTERVAL_MS?: string
+
+  // ─── Sign-in and the MCP connector (ADR 0003) ───
+  /** Where this Worker is served, e.g. https://hecate.example.workers.dev. */
+  PUBLIC_URL?: string
+  /** The GitHub App's OAuth client, used to sign in. The secret is a Worker secret. */
+  GITHUB_CLIENT_ID?: string
+  GITHUB_CLIENT_SECRET?: string
+  /** The one GitHub user (numeric id) allowed in. */
+  ALLOWED_GITHUB_USER_ID?: string
+  /** Signs sessions and remembered consent: 32+ characters, a Worker secret. */
+  AUTH_SECRET?: string
+  /** Verifies the data repository's push webhook. A Worker secret. */
+  GITHUB_WEBHOOK_SECRET?: string
+  /** Hosts an MCP client may redirect to (comma-separated); loopback is always allowed. */
+  MCP_REDIRECT_HOSTS?: string
+  /** OAuth clients, grants and tokens (hashed), kept by @cloudflare/workers-oauth-provider. */
+  OAUTH_KV: KVNamespace
 }
 
 export function storeFor(env: Env, blobs: Map<string, string>): GitStore {

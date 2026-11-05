@@ -14,6 +14,7 @@ packages:
 # The frozen v1 packages (apps/web-v1, mcp) deliberately pin their own versions:
 # they are deleted at cutover and are not migrated to the v2 toolchain.
 catalog:
+  "@cloudflare/workers-oauth-provider": "^1.2.4"
   "@cloudflare/workers-types": "^5.20261104.1"
   "@types/node": "^24.10.1"
   "esbuild": "^0.28.2"
