@@ -1,0 +1,5 @@
+{
+  "name": "hecate",
+  "version": "2.0.0",
+  "description": "Focus drafting, meeting processing and session logging against HECATE, through its MCP tools. Set HECATE_MCP_URL to your Worker's /mcp URL."
+}

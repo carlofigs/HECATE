@@ -1,0 +1,21 @@
+{
+  "name": "@hecate/plugin",
+  "private": true,
+  "version": "2.0.0",
+  "description": "HECATE's Claude skills: a Claude Code plugin, and zips for claude.ai uploads.",
+  "type": "module",
+  "scripts": {
+    "package": "tsx scripts/package-skills.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@hecate/core": "workspace:*",
+    "@types/node": "catalog:",
+    "fflate": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
