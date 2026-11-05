@@ -58,10 +58,13 @@ pnpm mcp                                                  # v1 MCP server over s
 pnpm export-schema                                        # regenerate packages/core/json-schema after a schema change
 pnpm migrate-v1 --data <checkout> --config <file>         # v1 → v2 dry run of a data-repo checkout; add --out <dir> to write
 pnpm --filter @hecate/worker build                        # bundle the Worker (wrangler --dry-run; no Cloudflare account needed)
+pnpm --filter @hecate/worker smoke <url>                  # anonymous, read-only checks of a deployed Worker
 ```
 
 CI (`.github/workflows/ci.yml`) gates pull requests; `deploy.yml` runs the same
-gates on `main` and then publishes `apps/web-v1/dist` to Pages. knip must stay
+gates on `main` and then publishes `apps/web-v1/dist` to Pages; `worker.yml`
+deploys the v2 Worker to its preview environment (production by hand; see
+[`docs/v2/DEPLOY.md`](docs/v2/DEPLOY.md)). knip must stay
 clean; the frozen v1 packages are excluded in `knip.json`.
 
 Verify UI changes in a browser, not by reading the code back. The app talks to

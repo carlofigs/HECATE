@@ -1,0 +1,96 @@
+name: Deploy Worker
+
+# Deploys apps/worker to Cloudflare (docs/v2/DEPLOY.md).
+#
+# - preview (hecate-preview, the data repo's `v2` branch): on every push to
+#   main that touches the Worker or what it bundles, and by hand.
+# - production (hecate, `main`): by hand only, from cutover on. Give the
+#   `worker-production` environment a required reviewer.
+#
+# Until CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are set, the job says so
+# and stops, so an unconfigured repo or a fork stays green. Gates already ran
+# on the PR (ci.yml) and on main (deploy.yml); the Worker's own tests run
+# again here because they are what a deploy depends on.
+on:
+  push:
+    branches: [main]
+    paths:
+      - apps/worker/**
+      - packages/core/**
+      - packages/github-store/**
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - .github/workflows/worker.yml
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Where to deploy
+        type: choice
+        options: [preview, production]
+        default: preview
+
+permissions:
+  contents: read
+
+# One deploy per environment at a time; never cancel one halfway.
+concurrency:
+  group: worker-${{ inputs.environment || 'preview' }}
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: worker-${{ inputs.environment || 'preview' }}
+    env:
+      TARGET: ${{ inputs.environment || 'preview' }}
+    steps:
+      - name: Check for Cloudflare credentials
+        id: ready
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$ACCOUNT" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Cloudflare credentials are not set, so the Worker was not deployed. See docs/v2/DEPLOY.md."
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.ready.outputs.ok == 'true'
+
+      - uses: ./.github/actions/setup
+        if: steps.ready.outputs.ok == 'true'
+
+      - name: Test the Worker and what it bundles
+        if: steps.ready.outputs.ok == 'true'
+        run: pnpm --filter "@hecate/worker..." test
+
+      - name: Deploy
+        if: steps.ready.outputs.ok == 'true'
+        working-directory: apps/worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: "false"
+        run: pnpm exec wrangler deploy --env "$TARGET"
+
+      # The Worker's URL names the account's workers.dev subdomain, so it is a
+      # repository variable (HECATE_PREVIEW_URL / HECATE_PRODUCTION_URL), not
+      # committed. Without it the smoke check is skipped.
+      - name: Smoke check
+        if: steps.ready.outputs.ok == 'true'
+        env:
+          URL: ${{ inputs.environment == 'production' && vars.HECATE_PRODUCTION_URL || vars.HECATE_PREVIEW_URL }}
+        run: |
+          if [ -z "$URL" ]; then
+            echo "::notice::No URL variable for $TARGET, so the smoke check was skipped."
+          else
+            pnpm --filter @hecate/worker smoke "$URL"
+          fi

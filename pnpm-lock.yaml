@@ -235,6 +235,9 @@ importers:
       miniflare:
         specifier: 'catalog:'
         version: 4.20260730.0
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.15
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
