@@ -1,0 +1,20 @@
+{
+  "name": "@hecate/github-store",
+  "private": true,
+  "version": "0.0.0",
+  "description": "HECATE v2 storage: the GitHub Git Data API, App installation tokens and webhook signatures, over fetch and WebCrypto.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing/fake-github.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
