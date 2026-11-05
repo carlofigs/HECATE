@@ -196,9 +196,11 @@ Delivered as five sequential PRs (the original third PR was split in two to keep
       glossary, references, meetings and the activity log; `$n` placeholders;
       fractional ordering; atomic sprint close; cross-file `checkWorkspace`;
       automatic activity events; whole-workspace file I/O; `ops.schema.json`.
-- [ ] `feat/core-views` — selectors (Waiting On, blocked, today, sprint
-      position, `briefing`), the focus-week markdown renderer in the skills'
-      format, and the dry-run preview renderer.
+- [x] `feat/core-views` — derived views (Waiting On, blocked, in progress,
+      today, sprint position, due soon, cutoffs and leave, completed since,
+      `briefing`) and markdown renderers: the focus week in the skills' FOCUS.md
+      format, dry-run previews, refusals and the briefing. Golden files under
+      `packages/core/src/__fixtures__/rendered/`.
 - [ ] `feat/migrate-v1` — `scripts/migrate-v1` with a dry-run report.
 
 **Acceptance:** typecheck, lint, knip, test and build green in CI;

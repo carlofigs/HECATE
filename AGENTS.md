@@ -106,6 +106,11 @@ sessions pushing by hand. Treat every write as concurrent with someone else's.
   delete `result.deleted`, and append `result.activity` to the weekly log. Never
   edit a state or file directly: the engine is what keeps keys, order,
   `completedAt`, references and policy consistent (ADR 0004).
+- **Read through the views.** Waiting On, blocked, today, sprint position and
+  the briefing come from `src/views/selectors.ts`, and markdown from
+  `src/views/render.ts`. Don't recompute them elsewhere, or the app and Claude
+  will disagree. Rendered output is pinned by golden files in
+  `src/__fixtures__/rendered/`; review their diff when you change a renderer.
 - Adding an op: schema and handler in `src/ops/<area>.ts`, registered in
   `src/ops/index.ts` (both maps), tests in `ops.test.ts`, then
   `pnpm export-schema` for `json-schema/ops.schema.json`.
