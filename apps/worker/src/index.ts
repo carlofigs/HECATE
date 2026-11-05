@@ -1,8 +1,9 @@
 /**
  * The HECATE v2 Worker (ADR 0003).
  *
- * - /mcp: bearer tokens issued by @cloudflare/workers-oauth-provider, which
- *   also serves discovery, /oauth/token and /oauth/register.
+ * - /mcp: HECATE's MCP tools (mcp/server.ts), behind bearer tokens issued by
+ *   @cloudflare/workers-oauth-provider, which also serves discovery,
+ *   /oauth/token and /oauth/register.
  * - /authorize, /oauth/github/callback: connecting an MCP client.
  * - /auth/*, /api/*: the web app's GitHub sign-in and its cookie-session API.
  * - /hooks/github: the data repository's signed push webhook.
@@ -20,7 +21,7 @@ import { storeFor, type Env } from './env.ts'
 import { handleApi } from './routes/api.ts'
 import { authorize, githubCallback } from './routes/authorize.ts'
 import { githubHook } from './routes/hooks.ts'
-import { mcpHandler } from './routes/mcp.ts'
+import { mcpApiHandler } from './routes/mcp.ts'
 import { callback, login, logout } from './routes/web-auth.ts'
 import type { WorkspaceRpc } from './routes/workspace-rpc.ts'
 import { WorkspaceList } from './workspaces.ts'
@@ -71,7 +72,11 @@ async function route(request: Request, env: Env, ctx: ExecutionContext, settings
 function providerOptions(settings: AuthSettings): OAuthProviderOptions<Env> {
   return {
     apiRoute: '/mcp',
-    apiHandler: mcpHandler,
+    apiHandler: mcpApiHandler<Env>(env => ({
+      listWorkspaces: () => current().workspaces.get(),
+      workspace: dir => workspaceRpc(env, dir),
+      defaultWorkspace: env.DEFAULT_WORKSPACE || null,
+    })),
     defaultHandler: { fetch: (request, env, ctx) => route(request, env, ctx, settings) },
     authorizeEndpoint: '/authorize',
     tokenEndpoint: '/oauth/token',

@@ -132,8 +132,14 @@ sessions pushing by hand. Treat every write as concurrent with someone else's.
   the cookie on `/mcp` or a bearer token on `/api`. Never loosen the allowlist,
   the Origin check or the redirect-host allowlist without an ADR (ADR 0003).
   Settings are vars (`PUBLIC_URL`, `GITHUB_CLIENT_ID`, `ALLOWED_GITHUB_USER_ID`,
-  `MCP_REDIRECT_HOSTS`) and secrets (`GITHUB_CLIENT_SECRET`, `AUTH_SECRET`,
+  `MCP_REDIRECT_HOSTS`, `DEFAULT_WORKSPACE`) and secrets (`GITHUB_CLIENT_SECRET`, `AUTH_SECRET`,
   `GITHUB_WEBHOOK_SECRET`, `GITHUB_APP_PRIVATE_KEY`); none is ever committed.
+- **MCP tools** live in `apps/worker/src/mcp/server.ts`. Reads go to the
+  workspace's Durable Object (`read(query)` in `src/queries.ts`), which answers
+  from memory through core's views and renderers; `apply_ops` is the only
+  write, as actor `claude`. Tool output is markdown for the model plus the
+  same facts as `structuredContent`. Adding a tool: register it there, answer
+  it through core views, and cover it in `test/mcp.test.ts`.
 - **Read through the views.** Waiting On, blocked, today, sprint position and
   the briefing come from `src/views/selectors.ts`, and markdown from
   `src/views/render.ts`. Don't recompute them elsewhere, or the app and Claude

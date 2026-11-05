@@ -32,6 +32,8 @@ export interface Env {
   AUTH_SECRET?: string
   /** Verifies the data repository's push webhook. A Worker secret. */
   GITHUB_WEBHOOK_SECRET?: string
+  /** The workspace MCP tools use when a call names none. */
+  DEFAULT_WORKSPACE?: string
   /** Hosts an MCP client may redirect to (comma-separated); loopback is always allowed. */
   MCP_REDIRECT_HOSTS?: string
   /** OAuth clients, grants and tokens (hashed), kept by @cloudflare/workers-oauth-provider. */

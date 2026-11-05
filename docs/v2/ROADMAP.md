@@ -129,18 +129,27 @@ and a file with no version is treated as a v1 file (it reaches v2 only through
 
 ## MCP v2
 
-About ten tools, with the op catalogue and JSON Schemas exposed as resources:
+Nine tools (`apps/worker/src/mcp/server.ts`), with the op catalogue
+(`hecate://schema/ops`) and every file kind's JSON Schema
+(`hecate://schema/<kind>`) as resources. Served by
+`@modelcontextprotocol/server` v2's `createMcpHandler`: the 2026-07-28
+revision, with stateless serving for clients still on 2025 revisions.
 
 | Tool | Purpose |
 |---|---|
-| `list_workspaces` | Workspaces with policy and default |
-| `get_briefing` | Sprint position, focus week, in-progress, waiting-on, deadlines, cutoffs, keep-in-mind, profile, unread activity — in one call |
-| `find_tasks` | Filter by key, status, kind, tag, project, urgency |
-| `get_entity` | Task (including archived), project, person, term, sprint, focus week, reference |
+| `list_workspaces` | Workspaces with name, policy and the default |
+| `get_briefing` | Sprint position, this week, today, in progress, waiting on, blocked, due soon, cutoffs and leave, keep in mind, profile, and Claude's unread activity — in one call |
+| `find_tasks` | Filter by key or legacy id, status, kind, tag, project, urgency and text; open, board or all (archived too) |
+| `get_entity` | One thing in full: task (including archived), project, person, term, sprint, focus week, reference, meeting, profile, keep in mind |
 | `search` | Full text across all modules |
-| `apply_ops` | The only write tool: `{ops[], dryRun, ifVersion}`, one commit; dry run returns a rendered preview and diff; `$1` placeholders resolve to real keys on commit |
+| `apply_ops` | The only write tool: `{ops[], dryRun, ifVersion, opId}`, one batch; a dry run returns the rendered preview; `$1` placeholders resolve to real keys |
 | `render_focus` | A focus week as markdown, in the format the skills already use |
-| `get_activity` / `ack_activity` | Read since a named cursor; advance it |
+| `get_activity` / `ack_activity` | Claude's unread activity; advance its cursor |
+
+The stdio entry planned for local use is deferred. Claude Code connects to the
+remote `/mcp` with OAuth directly, and a local server writing to the data repo
+would be a second writer, against ADR 0002. A read-only local mode over a v2
+tree on disk can follow if a need appears.
 
 ---
 
@@ -245,8 +254,13 @@ GitHub; the first run against real data is the deploy PR's.
       consent page and GitHub sign-in bound to the browser; the signed push
       webhook refreshing touched workspaces. End-to-end tests in workerd.
       Recorded as an amendment to ADR 0003.
-- [ ] `feat/mcp-v2` — the MCP tools and resources, after a transport spike;
-      a stdio entry for local use.
+- [x] `feat/mcp-v2` — the transport spike passed (the MCP SDK v2 serves from
+      workerd, so no fallback was needed); nine tools and the schema resources
+      over `createMcpHandler`; reads answered inside the Durable Object
+      through new core views (`findTasks`, `searchWorkspace`, `getEntity`,
+      list renderers); activity read cursors; tested with the SDK client in
+      Node and, behind OAuth, in workerd. The stdio entry is deferred (see
+      MCP v2).
 - [ ] `chore/worker-deploy` — preview and production Workers, deploy workflow
       and setup docs (App registration, secrets); `migrate-v1` onto the `v2`
       data branch after the leftover-names review; the acceptance checks.
@@ -318,6 +332,6 @@ cursor matches `ack_activity`; Today is editable, including end-of-day outcomes.
 | Item | Note |
 |---|---|
 | Cloudflare Workers Paid | ~US$5/month for CPU headroom and Durable Objects; GitHub stays free |
-| MCP SDK v2 on Workers | Spike first in P2; fall back to Cloudflare's `agents` McpAgent |
+| MCP SDK v2 on Workers | Spiked in P2: `createMcpHandler` runs in workerd; no fallback needed |
 | Sanitised policy is heuristic | Name detection only warns; the guarantee is that skills write roles |
 | Two systems during beta | v1 and v2 use separate data branches; no real-use writes to `v2` before cutover |

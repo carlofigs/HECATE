@@ -228,6 +228,18 @@ describe('refresh', () => {
   })
 })
 
+describe('reading', () => {
+  it('skips an activity log that does not parse instead of failing the read', async () => {
+    const h = await harness()
+    await h.engine.snapshot()
+    await h.fake.push({ 'work/activity/2026-W45.jsonl': 'not json\n' })
+    await h.engine.refresh()
+    expect(await h.engine.read({ kind: 'activity', cursor: 'claude' })).toMatchObject({ status: 'ok', data: { unread: 0 } })
+    expect(await h.engine.read({ kind: 'briefing', cursor: 'Not A Cursor' })).toMatchObject({ status: 'not-found' })
+    expect(await h.engine.ackActivity('claude')).toMatchObject({ status: 'ok', acknowledged: 0 })
+  })
+})
+
 describe('GitHub limits', () => {
   it('defers a commit until a spent rate limit resets', async () => {
     const h = await harness()

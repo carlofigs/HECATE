@@ -8,7 +8,8 @@
  */
 
 import { DurableObject } from 'cloudflare:workers'
-import { WorkspaceEngine, type ApplyRequest, type ApplyOutcome, type FlushOutcome, type RefreshOutcome, type Snapshot } from './engine.ts'
+import { WorkspaceEngine, type AckOutcome, type ApplyRequest, type ApplyOutcome, type FlushOutcome, type ReadOutcome, type RefreshOutcome, type Snapshot } from './engine.ts'
+import type { ReadQuery } from './queries.ts'
 import { storeFor, type Env } from './env.ts'
 import type { Persistence } from './persistence.ts'
 
@@ -72,6 +73,14 @@ export class WorkspaceDO extends DurableObject<Env> {
 
   async refresh(dir: string): Promise<RefreshOutcome> {
     return (await this.required(dir)).refresh()
+  }
+
+  async read(dir: string, query: ReadQuery): Promise<ReadOutcome> {
+    return (await this.required(dir)).read(query)
+  }
+
+  async ackActivity(dir: string, cursor: string, upTo?: string): Promise<AckOutcome> {
+    return (await this.required(dir)).ackActivity(cursor, upTo)
   }
 
   override async alarm(): Promise<void> {

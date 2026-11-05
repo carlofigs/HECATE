@@ -33,6 +33,7 @@ import {
 import { RateLimitError, type GitStore, type Head } from '@hecate/github-store'
 import { commitMessage, type CommittedBatch } from './commit-message.ts'
 import type { AlarmClock, Persistence } from './persistence.ts'
+import { activityEntries, CURSOR_PATTERN, runQuery, unread, type Cursor, type ReadQuery } from './queries.ts'
 
 // ─── Public types ───────────────────────────────────────────────────────────
 
@@ -83,6 +84,16 @@ export type Snapshot =
     lastError: { at: number; message: string } | null
     lastReplay: ReplayReport | null
   }
+  | { status: 'unavailable'; message: string }
+
+export type ReadOutcome =
+  | { status: 'ok'; version: number; text: string; data: Record<string, unknown> }
+  | { status: 'not-found'; version: number; message: string }
+  | { status: 'unavailable'; message: string }
+
+export type AckOutcome =
+  | { status: 'ok'; version: number; acknowledged: number; cursor: Cursor | null }
+  | { status: 'not-found'; version: number; message: string }
   | { status: 'unavailable'; message: string }
 
 export interface EngineDeps {
@@ -154,6 +165,7 @@ const MAX_ATTEMPTS = 3
 const RETRY_MS = 60_000
 const FILE = 'file:'
 const OP = 'op:'
+const CURSOR = 'cursor:'
 
 const mergeReports = (a: ReplayReport | null, b: ReplayReport): ReplayReport =>
   a === null ? b : { renumbered: [...a.renumbered, ...b.renumbered], dropped: [...a.dropped, ...b.dropped] }
@@ -214,6 +226,40 @@ export class WorkspaceEngine {
       status: 'ok', version: m.meta.version, state: m.state, head: m.meta.base.commit, pending: m.pending.batches.length,
       lastError: m.meta.lastError, lastReplay: m.meta.lastReplay,
     }
+  }
+
+  /** A view of the workspace for a reader (MCP): markdown plus data. */
+  async read(query: ReadQuery): Promise<ReadOutcome> {
+    const m = await this.ready()
+    if (!m) return { status: 'unavailable', message: this.unavailable?.message ?? 'Unavailable' }
+    if (this.now() - m.meta.lastCheckedAt > this.freshness) await this.refresh()
+    const cursorName = query.kind === 'briefing' || query.kind === 'activity' ? query.cursor : null
+    if (cursorName !== null && !CURSOR_PATTERN.test(cursorName)) return { status: 'not-found', version: m.meta.version, message: `"${cursorName}" is not a cursor name (a-z, 0-9, -)` }
+    const cursor = cursorName === null ? null : ((await this.persistence.get<Cursor>(`${CURSOR}${cursorName}`)) ?? null)
+    const result = runQuery(m.state, query, { now: this.now(), activity: () => activityEntries(m.files), cursor })
+    return result.found
+      ? { status: 'ok', version: m.meta.version, text: result.text, data: result.data }
+      : { status: 'not-found', version: m.meta.version, message: result.message }
+  }
+
+  /** Move a reader's cursor forward to `upTo` (an entry id), or to the newest entry. */
+  async ackActivity(cursorName: string, upTo?: string): Promise<AckOutcome> {
+    const m = await this.ready()
+    if (!m) return { status: 'unavailable', message: this.unavailable?.message ?? 'Unavailable' }
+    const version = m.meta.version
+    if (!CURSOR_PATTERN.test(cursorName)) return { status: 'not-found', version, message: `"${cursorName}" is not a cursor name (a-z, 0-9, -)` }
+    return this.exclusive(async (): Promise<AckOutcome> => {
+      const entries = activityEntries(m.files)
+      const current = (await this.persistence.get<Cursor>(`${CURSOR}${cursorName}`)) ?? null
+      const target = upTo === undefined ? entries.at(-1) : entries.find(e => e.id === upTo)
+      if (upTo !== undefined && !target) return { status: 'not-found', version, message: `No activity entry ${upTo}` }
+      if (!target) return { status: 'ok', version, acknowledged: 0, cursor: current }
+      const position: Cursor = { at: target.at, id: target.id }
+      const acknowledged = unread(entries, current).filter(e => !unread([e], position).length).length
+      if (acknowledged === 0) return { status: 'ok', version, acknowledged: 0, cursor: current }
+      await this.persistence.write({ [`${CURSOR}${cursorName}`]: position })
+      return { status: 'ok', version, acknowledged, cursor: position }
+    })
   }
 
   // ─── Writing ──────────────────────────────────────────────────────────────

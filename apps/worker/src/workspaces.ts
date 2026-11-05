@@ -5,11 +5,15 @@
  * conditional head read, which is free when nothing moved.
  */
 
+import { safeParseFile } from '@hecate/core'
 import type { GitStore } from '@hecate/github-store'
 
 export interface WorkspaceEntry {
   dir: string
   hidden: boolean
+  /** From workspace.json; null when it does not parse. */
+  name: string | null
+  policy: 'open' | 'sanitised' | null
 }
 
 const WORKSPACE_FILE = /^([^/]+)\/workspace\.json$/
@@ -35,11 +39,21 @@ export class WorkspaceList {
     this.checkedAt = this.now()
     if ('unchanged' in head && this.list) return this.list
     if ('unchanged' in head) throw new Error('Unexpected 304 without a cached list')
-    const dirs = (await this.store.readTree(head.tree)).flatMap(e => {
+    const found = (await this.store.readTree(head.tree)).flatMap(e => {
       const dir = WORKSPACE_FILE.exec(e.path)?.[1]
-      return dir && DIR_PATTERN.test(dir) ? [dir] : []
+      return dir && DIR_PATTERN.test(dir) ? [{ dir, sha: e.sha }] : []
     })
-    this.list = dirs.sort().map(dir => ({ dir, hidden: dir.startsWith('_') }))
+    const entries = await Promise.all(found.map(async ({ dir, sha }): Promise<WorkspaceEntry> => {
+      let settings = null
+      try {
+        const parsed = safeParseFile('workspace', JSON.parse(await this.store.readBlob(sha)))
+        if (parsed.ok) settings = parsed.data
+      } catch {
+        // Not JSON: listed without a name or policy.
+      }
+      return { dir, hidden: dir.startsWith('_'), name: settings?.name ?? null, policy: settings?.policy ?? null }
+    }))
+    this.list = entries.sort((a, b) => a.dir.localeCompare(b.dir))
     this.etag = head.etag
     return this.list
   }

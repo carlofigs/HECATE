@@ -63,4 +63,5 @@ export {
   type TaskSummary, type TaskLocation, type WaitingItem, type SprintPosition, type TodayView, type DueItem,
   type CutoffItem, type CompletedItem, type Briefing,
 } from './views/selectors.ts'
-export { renderFocusWeek, renderPreview, renderErrors, renderBriefing } from './views/render.ts'
+export { renderFocusWeek, renderPreview, renderErrors, renderBriefing, renderTasks, renderSearch, renderActivity } from './views/render.ts'
+export { findTasks, searchWorkspace, getEntity, type TaskFilter, type FoundTask, type SearchHit, type Entity, type EntityKind } from './views/query.ts'

@@ -192,6 +192,14 @@ function fakeRpc(calls: unknown[]): WorkspaceRpc {
       calls.push(['refresh', dir])
       return Promise.resolve({ status: 'unchanged', version: 1, head: 'x' })
     },
+    read: (dir: string) => {
+      calls.push(['read', dir])
+      return Promise.resolve({ status: 'unavailable', message: 'test' })
+    },
+    ackActivity: (dir: string) => {
+      calls.push(['ack', dir])
+      return Promise.resolve({ status: 'unavailable', message: 'test' })
+    },
   }
 }
 
@@ -229,7 +237,7 @@ describe('/api', () => {
     const calls: unknown[] = []
     const deps = { settings: SETTINGS, workspaces: await listFor(await seededFake()), workspace: () => fakeRpc(calls), now: () => NOW }
     const get = async (path: string) => handleApi(new Request(`https://hecate.test${path}`, { headers: { cookie: await sessionCookie() } }), deps)
-    expect(await (await get('/api/workspaces')).json()).toEqual({ workspaces: [{ dir: '_old', hidden: true }, { dir: 'work', hidden: false }] })
+    expect(await (await get('/api/workspaces')).json()).toEqual({ workspaces: [{ dir: '_old', hidden: true, name: null, policy: null }, { dir: 'work', hidden: false, name: 'Work', policy: 'open' }] })
     expect((await get('/api/workspaces/club')).status).toBe(404)
     expect((await get('/api/workspaces/..%2Fwork')).status).toBe(404)
     expect((await get('/api/workspaces/work')).status).toBe(503)

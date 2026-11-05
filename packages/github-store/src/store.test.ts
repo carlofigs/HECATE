@@ -77,6 +77,12 @@ describe('readFiles', () => {
     expect(Object.keys((await store.readFiles(head.tree, '')).files)).toHaveLength(5)
   })
 
+  it('reads one blob by SHA, through the cache', async () => {
+    const { fake, store, head } = await setup()
+    const entry = (await store.readTree(head.tree)).find(e => e.path === 'work/workspace.json')
+    expect(await requestsDuring(fake, async () => expect(await store.readBlob(entry?.sha ?? '')).toBe(SEED['work/workspace.json']))).toEqual([])
+  })
+
   it('reads each blob once, and after an upstream change only what changed', async () => {
     const { fake, store, head } = await setup()
     expect(await requestsDuring(fake, () => store.readFiles(head.tree, 'work'))).toEqual([])

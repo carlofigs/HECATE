@@ -11,6 +11,7 @@ import { createGitStore, type Fetch } from '@hecate/github-store'
 import { createFakeGitHub, type FakeGitHub } from '@hecate/github-store/testing'
 import { WorkspaceEngine } from '../src/engine.ts'
 import { memoryPersistence, type Persistence } from '../src/persistence.ts'
+import type { WorkspaceRpc } from '../src/routes/workspace-rpc.ts'
 
 const SEED_AT = '2026-11-04T23:00:00.000Z'
 export const START = Date.parse('2026-11-05T00:00:00.000Z')
@@ -117,3 +118,15 @@ export async function harness(options: { dir?: string; fetch?: (fake: FakeGitHub
 }
 
 export const addTask = (title: string, ref = '$1') => ({ type: 'task.add', ref, kind: 'action', title })
+
+/** A WorkspaceRpc over an engine in this process, as the Durable Object stub would be. */
+export function rpcFor(engine: () => WorkspaceEngine): WorkspaceRpc {
+  return {
+    apply: (_dir, request) => engine().apply(request),
+    snapshot: () => engine().snapshot(),
+    flush: () => engine().flush(),
+    refresh: () => engine().refresh(),
+    read: (_dir, query) => engine().read(query),
+    ackActivity: (_dir, cursor, upTo) => engine().ackActivity(cursor, upTo),
+  }
+}

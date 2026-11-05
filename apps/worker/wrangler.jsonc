@@ -16,8 +16,8 @@
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["WorkspaceDO"] }],
   // OAuth clients, grants and token hashes. Provisioned on first deploy.
   "kv_namespaces": [{ "binding": "OAUTH_KV" }],
-  // PUBLIC_URL, GITHUB_OWNER, GITHUB_REPO, GITHUB_APP_ID, GITHUB_CLIENT_ID and
-  // ALLOWED_GITHUB_USER_ID are set per environment at deploy. Secrets:
+  // PUBLIC_URL, GITHUB_OWNER, GITHUB_REPO, GITHUB_APP_ID, GITHUB_CLIENT_ID,
+  // ALLOWED_GITHUB_USER_ID and DEFAULT_WORKSPACE are set per environment at deploy. Secrets:
   // GITHUB_APP_PRIVATE_KEY, GITHUB_CLIENT_SECRET, AUTH_SECRET, GITHUB_WEBHOOK_SECRET.
   "vars": {
     "GITHUB_BRANCH": "v2",
