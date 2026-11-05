@@ -12,5 +12,6 @@ record stays, with its status changed and a link to the record that replaces it.
 | [0005](0005-work-data-policy.md) | Per-workspace `open` / `sanitised` data policy | Accepted |
 | [0006](0006-retire-calendar-sync.md) | Retire the calendar sync; skills read the calendar directly | Accepted |
 | [0007](0007-strict-versioned-schemas-and-ab-keys.md) | Strict, versioned file schemas; A/B task keys everywhere | Accepted |
+| [0008](0008-migrating-v1-data.md) | Migrating v1 data: direct files, kept keys, legacy sprints, names to roles | Accepted |
 
 Template: **Status · Context · Decision · Consequences · Alternatives considered.**

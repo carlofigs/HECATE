@@ -1,0 +1,27 @@
+{
+  "name": "@hecate/migrate-v1",
+  "private": true,
+  "version": "0.0.0",
+  "description": "One-way conversion of HECATE v1 workspaces to the v2 file layout, with a dry-run report. Deleted with v1 at cutover.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "migrate": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "TZ=UTC vitest run && TZ=Australia/Sydney vitest run"
+  },
+  "dependencies": {
+    "@hecate/core": "workspace:*",
+    "fractional-indexing": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

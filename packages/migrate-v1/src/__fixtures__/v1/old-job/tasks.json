@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "columns": [
+    {
+      "id": "to-do",
+      "name": "To Do",
+      "tasks": [
+        {
+          "id": "t-a12",
+          "title": "Draft the scorecard targets",
+          "note": "Needs t-b3 first. Ask Alex Smith about the layout.",
+          "tags": ["Scorecard", "reporting"],
+          "priority": "high",
+          "blockedSince": null,
+          "createdAt": "2026-03-03T22:00:00.000Z",
+          "updatedAt": "2026-03-18T01:00:00.000Z"
+        },
+        {
+          "id": "t-a12-2",
+          "title": "Draft the scorecard targets\n(second half)",
+          "note": "",
+          "tags": ["Scorecard"],
+          "priority": null,
+          "blockedSince": null,
+          "createdAt": "2026-03-10T22:00:00.000Z",
+          "updatedAt": "2026-03-10T22:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "in_progress",
+      "name": "In Progress",
+      "columnType": null,
+      "tasks": [
+        {
+          "id": "t-a5",
+          "title": "Rebuild the weekly extract",
+          "note": "Jordan Park has the old query.",
+          "tags": [],
+          "priority": "medium",
+          "blockedSince": "2026-03-20",
+          "createdAt": "2026-03-01T22:00:00.000Z",
+          "updatedAt": "2026-03-20T05:00:00.000Z"
+        },
+        {
+          "id": "t-a-lx3k9r",
+          "title": "Check the refresh schedule",
+          "note": null,
+          "tags": ["reporting"],
+          "priority": null,
+          "blockedSince": null,
+          "createdAt": "2026-03-12T22:00:00.000Z",
+          "updatedAt": "2026-03-12T22:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "in_review",
+      "name": "In Review",
+      "tasks": [
+        {
+          "id": "t-b3",
+          "title": "Layout sign-off from Sam",
+          "note": "Sammy said Friday.",
+          "tags": ["Scorecard"],
+          "priority": null,
+          "blockedSince": null,
+          "createdAt": "2026-03-02T22:00:00.000Z",
+          "updatedAt": "2026-03-16T22:00:00.000Z"
+        },
+        {
+          "id": "t-b-lx3k9s",
+          "title": "Access to the finance tables",
+          "note": null,
+          "tags": [],
+          "priority": null,
+          "blockedSince": null,
+          "createdAt": "2026-03-11T22:00:00.000Z",
+          "updatedAt": "2026-03-11T22:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "done",
+      "name": "Done",
+      "tasks": [
+        {
+          "id": "t-a7",
+          "title": "Agree the metric definitions",
+          "note": null,
+          "tags": ["Scorecard"],
+          "priority": null,
+          "blockedSince": null,
+          "createdAt": "2026-02-25T22:00:00.000Z",
+          "updatedAt": "2026-03-26T04:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "backlog",
+      "name": "Backlog",
+      "tasks": [
+        {
+          "id": "t-b4",
+          "title": "Budget numbers from finance",
+          "note": null,
+          "tags": [],
+          "priority": "low",
+          "blockedSince": null,
+          "createdAt": "2026-03-04T22:00:00.000Z",
+          "updatedAt": "2026-03-04T22:00:00.000Z"
+        },
+        {
+          "id": "t-a5",
+          "title": "Rebuild the weekly extract (copy)",
+          "note": null,
+          "tags": [],
+          "priority": null,
+          "blockedSince": null,
+          "createdAt": "2026-03-02T01:00:00.000Z",
+          "updatedAt": "2026-03-02T01:00:00.000Z"
+        }
+      ]
+    }
+  ]
+}

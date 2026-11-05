@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-04-01T00:00:00.000Z",
+  "me": "Analyst on the reporting team.",
+  "people": [
+    { "name": "Alex Smith", "aliases": ["Lex"], "role": "Product manager", "notes": "Owns the scorecard. Lex prefers async." },
+    { "name": "Sam Lee", "aliases": ["Sammy"], "role": "Head of data", "notes": null },
+    { "name": "Riley", "aliases": [], "role": "Riley Chen", "notes": "Riley runs the finance tables." }
+  ],
+  "terms": [
+    { "term": "GMV", "meaning": "Gross merchandise value." },
+    { "term": "gmv", "meaning": "Before returns." },
+    { "term": "Scorecard", "meaning": "The monthly targets view." }
+  ],
+  "projects": [
+    { "name": "Handover", "summary": "Notes passed on by Alex when they moved teams." },
+    { "name": "Old pipeline", "summary": "Retired in February." }
+  ],
+  "recurringResponsibilities": [
+    { "name": "Monthly numbers", "cadence": "Monthly", "notes": "First working day." }
+  ],
+  "preferences": "Short updates.\nTables over prose.",
+  "productivitySystem": "A/B task keys.",
+  "referenceFiles": {
+    "context/team.md": "\n# Team\n\nAlex Smith leads product; Sam Lee leads data.\n",
+    "people/alex-smith.md": "# Notes\n\nPrefers written updates.\n"
+  }
+}
