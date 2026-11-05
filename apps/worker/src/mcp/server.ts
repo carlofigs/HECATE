@@ -48,11 +48,13 @@ const fromRead = (outcome: ReadOutcome): ToolResult => {
 
 function fromApply(outcome: ApplyOutcome): ToolResult {
   switch (outcome.status) {
-    case 'dry-run':
+    case 'dry-run': {
+      const weeks = outcome.focus.map(f => `\n---\n\n**Proposed focus week:**\n\n${f.markdown}`).join('')
       return reply(
-        `${outcome.preview}\nWorkspace version ${outcome.version}. To apply, send the same ops with dryRun: false and ifVersion: ${outcome.version}.\n`,
+        `${outcome.preview}${weeks}\nWorkspace version ${outcome.version}. To apply, send the same ops with dryRun: false and ifVersion: ${outcome.version}.\n`,
         { ...outcome },
       )
+    }
     case 'applied':
       return reply(`${outcome.preview}${outcome.duplicate ? '\n(Already applied earlier with this opId; nothing new was written.)\n' : ''}\nWorkspace version ${outcome.version}.\n`, { ...outcome })
     case 'rejected':

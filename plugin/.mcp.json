@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "hecate": {
+      "type": "http",
+      "url": "${HECATE_MCP_URL}"
+    }
+  }
+}

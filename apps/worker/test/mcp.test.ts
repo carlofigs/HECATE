@@ -100,6 +100,14 @@ describe('tools', () => {
     expect(stateFromFiles(committed).tasks.tasks.map(t => t.title)).toContain('Draw the target view')
   })
 
+  it('shows the focus week a dry run would produce', async () => {
+    const c = await connect(await harness())
+    const dry = await call(c, 'apply_ops', { ops: [{ type: 'focus.setPlan', date: '2026-11-05', items: [{ lead: 'Draft the scorecard', keys: ['A1'], urgency: 'high' }] }], dryRun: true })
+    expect(dry.text).toContain('**Proposed focus week:**\n\n# Week of 2 Nov 2026')
+    expect(dry.text).toContain("**Today's tasks:**\n1. 🔴 **Draft the scorecard** (A1)")
+    expect(dry.data).toMatchObject({ focus: [{ weekOf: '2026-11-02' }] })
+  })
+
   it('shows unread activity until Claude acknowledges it', async () => {
     const c = await connect(await harness())
     await call(c, 'apply_ops', { ops: [{ type: 'activity.log', entry: 'session', area: 'bau', delta: 'Drafted the scorecard', keys: ['A1'] }], dryRun: false })

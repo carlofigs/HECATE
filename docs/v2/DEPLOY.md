@@ -167,6 +167,16 @@ or on your machine, never here.
 The consent page shows where access will be sent. Tick "Don't ask again" to
 skip it for that client for 30 days.
 
+### 7. Install the skills
+
+The planning skills (`hecate-focus`, `hecate-meeting`, `hecate-log`) are in
+[`plugin/`](../../plugin/README.md):
+
+- **Claude Code:** install the plugin from this repository and set
+  `HECATE_MCP_URL` to `PUBLIC_URL/mcp`.
+- **claude.ai and Cowork:** run `pnpm package-skills` and upload each zip
+  from `plugin/dist/` under Settings → Capabilities → Skills.
+
 ## Acceptance (P2)
 
 | Check | How | Also proven by |
