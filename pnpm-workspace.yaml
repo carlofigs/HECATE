@@ -21,6 +21,8 @@ catalog:
   "fractional-indexing": "^4.0.0"
   "immer": "^11.2.9"
   "miniflare": "4.20260730.0"
+  "@modelcontextprotocol/client": "^2.4.0"
+  "@modelcontextprotocol/server": "^2.4.0"
   "tsx": "^4.23.15"
   "typescript": "~6.0.3"
   "vitest": "^5.1.0"

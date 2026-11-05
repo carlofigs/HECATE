@@ -78,6 +78,8 @@ export interface GitStore {
   readTree(tree: string): Promise<TreeEntry[]>
   /** The contents of every file under `prefix` (a directory; '' for the whole tree). */
   readFiles(tree: string, prefix: string): Promise<Files>
+  /** One file's contents by blob SHA (from readTree), through the blob cache. */
+  readBlob(sha: string): Promise<string>
   /** Paths under `prefix` that differ between two trees, relative to the prefix. */
   diffTrees(from: string, to: string, prefix?: string): Promise<TreeDiff>
   /** Write `changes` (path → content, or null to delete) on top of `parent` as one commit. */
@@ -189,6 +191,8 @@ export function createGitStore(options: GitStoreOptions): GitStore {
     },
 
     readTree,
+
+    readBlob,
 
     async readFiles(tree, prefix) {
       const rel = under(prefix)

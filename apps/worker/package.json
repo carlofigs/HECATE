@@ -14,10 +14,13 @@
   "dependencies": {
     "@cloudflare/workers-oauth-provider": "catalog:",
     "@hecate/core": "workspace:*",
-    "@hecate/github-store": "workspace:*"
+    "@hecate/github-store": "workspace:*",
+    "@modelcontextprotocol/server": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
+    "@modelcontextprotocol/client": "catalog:",
     "@types/node": "catalog:",
     "esbuild": "catalog:",
     "miniflare": "catalog:",

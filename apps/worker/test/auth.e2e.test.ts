@@ -1,12 +1,13 @@
 /**
  * Connecting to HECATE end to end, in workerd: an MCP client registering,
- * the consent page, GitHub sign-in, the token and /mcp; the web app's
+ * the consent page, GitHub sign-in, the token and the MCP tools; the web app's
  * sign-in and /api; and the push webhook. GitHub (git and OAuth) is faked
  * in Node; see runtime.ts.
  */
 import { createHash, createHmac, randomBytes } from 'node:crypto'
 import type { Miniflare, Response as MiniflareResponse } from 'miniflare'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
 import type { FakeGitHub } from '@hecate/github-store/testing'
 import { DIR, addTask, seededFake } from './helpers.ts'
 import { CookieJar, ORIGIN, WEBHOOK_SECRET, startWorker } from './runtime.ts'
@@ -111,9 +112,21 @@ describe('connecting an MCP client', () => {
     const token = (await tokenResponse.json()) as { access_token: string; refresh_token: string; token_type: string }
     expect(token.token_type.toLowerCase()).toBe('bearer')
 
-    const mcp = await send('/mcp', { method: 'POST', headers: { authorization: `Bearer ${token.access_token}`, 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }) })
-    expect(mcp.status).toBe(200)
-    expect(await mcp.json()).toEqual({ jsonrpc: '2.0', id: 1, error: { code: -32601, message: 'HECATE MCP tools are not available yet' } })
+    // An MCP client with the token: the real SDK client, talking to the Worker in workerd.
+    const client = new Client({ name: 'claude-test', version: '0.0.0' })
+    await client.connect(new StreamableHTTPClientTransport(new URL(`${ORIGIN}/mcp`), {
+      fetch: (url, init) => mf.dispatchFetch(String(url), init as never) as never,
+      requestInit: { headers: { authorization: `Bearer ${token.access_token}` } },
+    }))
+    try {
+      expect((await client.listTools()).tools.map(t => t.name)).toContain('apply_ops')
+      const briefing = (await client.callTool({ name: 'get_briefing', arguments: {} })) as { content: { text: string }[] }
+      expect(briefing.content[0]?.text).toMatch(/^# Work — /)
+      const dry = (await client.callTool({ name: 'apply_ops', arguments: { ops: [addTask('Over MCP')], dryRun: true } })) as { content: { text: string }[] }
+      expect(dry.content[0]?.text).toMatch(/^\*\*Dry run/)
+    } finally {
+      await client.close()
+    }
     const cookieOnly = await send('/mcp', { method: 'POST', body: '{}' }, jar)
     expect(cookieOnly.status).toBe(401)
   })
@@ -170,7 +183,7 @@ describe('the web app', () => {
     expect(response.status).toBe(200)
     expect(jar.has('__Host-hecate-session')).toBe(true)
     expect(await (await send('/api/me', {}, jar)).json()).toEqual({ userId: '42', login: 'owner' })
-    expect(await (await send('/api/workspaces', {}, jar)).json()).toEqual({ workspaces: [{ dir: DIR, hidden: false }] })
+    expect(await (await send('/api/workspaces', {}, jar)).json()).toEqual({ workspaces: [{ dir: DIR, hidden: false, name: 'Work', policy: 'open' }] })
     expect((await send('/api/workspaces/club', {}, jar)).status).toBe(404)
 
     const ops = (origin?: string) => send(`/api/workspaces/${DIR}/ops`, {

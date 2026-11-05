@@ -15,6 +15,8 @@ import type { WorkspaceState } from '../state.ts'
 import type { ApplyFailure, ApplySuccess } from '../apply.ts'
 import { cell, indentContinuation, keysSuffix, leadAndRest, quote, timeRange } from './markdown.ts'
 import { sprintPosition, todayView, waitingOn, type Briefing, type SprintPosition } from './selectors.ts'
+import type { FoundTask, SearchHit } from './query.ts'
+import type { FileData } from '../files.ts'
 
 const urgency = (u: keyof typeof URGENCY_EMOJI | null): string => (u ? `${URGENCY_EMOJI[u]} ` : '')
 
@@ -194,4 +196,36 @@ export function renderBriefing(b: Briefing): string {
   section('Keep in mind', b.keepInMind.map(k => `- ${leadAndRest(k.lead, k.text).split('\n')[0]}`))
   section('Recent activity', b.activity.map(a => `- ${a.date} · ${a.type}${a.area ? ` · ${a.area}` : ''}: ${a.delta}`))
   return `${out.join('\n')}\n`
+}
+
+/** Tasks as a list: key, urgency, title, then status, waiting, project, tags and due date. */
+export function renderTasks(tasks: readonly FoundTask[], total = tasks.length): string {
+  if (tasks.length === 0) return 'No matching tasks.\n'
+  const lines = tasks.map(t => {
+    const facts = [
+      t.where === 'archived' ? `${t.statusName}, sprint ${t.sprint ?? '?'}` : t.statusName,
+      t.waitingOn ? `waiting on ${t.waitingOn}` : null,
+      t.blockedBy.length > 0 ? `blocked by ${t.blockedBy.join(', ')}` : null,
+      t.projectSlug,
+      ...t.tags.map(tag => `#${tag}`),
+      t.due ? `due ${formatDay(t.due)}` : null,
+    ].filter(Boolean)
+    return `- ${urgency(t.urgency)}**${t.key}** ${t.title} — ${facts.join(' · ')}`
+  })
+  if (total > tasks.length) lines.push(`- … ${total - tasks.length} more`)
+  return `${lines.join('\n')}\n`
+}
+
+/** Search hits: what, where to look, and the matching text. */
+export function renderSearch(hits: readonly SearchHit[], total = hits.length): string {
+  if (hits.length === 0) return 'Nothing found.\n'
+  const lines = hits.map(h => `- **${h.title}** (\`${h.ref}\`)${h.snippet ? `: ${h.snippet}` : ''}`)
+  if (total > hits.length) lines.push(`- … ${total - hits.length} more`)
+  return `${lines.join('\n')}\n`
+}
+
+/** Activity entries, newest first. */
+export function renderActivity(entries: readonly FileData<'activityEntry'>[]): string {
+  if (entries.length === 0) return 'Nothing new.\n'
+  return `${entries.map(a => `- ${a.date} · ${a.type}${a.area ? ` · ${a.area}` : ''}: ${a.delta}${keysSuffix(a.keys)}`).join('\n')}\n`
 }
