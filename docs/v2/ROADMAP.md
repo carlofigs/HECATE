@@ -261,9 +261,14 @@ GitHub; the first run against real data is the deploy PR's.
       list renderers); activity read cursors; tested with the SDK client in
       Node and, behind OAuth, in workerd. The stdio entry is deferred (see
       MCP v2).
-- [ ] `chore/worker-deploy` — preview and production Workers, deploy workflow
-      and setup docs (App registration, secrets); `migrate-v1` onto the `v2`
-      data branch after the leftover-names review; the acceptance checks.
+- [ ] `chore/worker-deploy` — preview (`v2` branch) and production (`main`,
+      from cutover) Workers, with account-identifying settings as Worker
+      secrets; the deploy workflow (preview on merge, production by hand, a
+      post-deploy smoke check); the runbook [`DEPLOY.md`](DEPLOY.md) (Cloudflare,
+      GitHub App, secrets, the data branch, connecting Claude, operations);
+      `migrate-v1` onto the `v2` data branch after the leftover-names review.
+      Ticked once the owner's setup is done and the acceptance checks below
+      pass on the live Worker.
 
 **Acceptance:** MCP Inspector lists the tools; the claude.ai connector
 authenticates and `get_briefing` works on the `v2` branch; 20 ops in 60 s

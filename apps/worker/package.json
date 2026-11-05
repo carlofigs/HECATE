@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "WRANGLER_SEND_METRICS=false wrangler dev",
-    "build": "WRANGLER_SEND_METRICS=false wrangler deploy --dry-run --outdir dist",
+    "build": "WRANGLER_SEND_METRICS=false wrangler deploy --dry-run --env preview --outdir dist",
+    "smoke": "tsx test/smoke.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p test",
     "lint": "eslint .",
     "test": "TZ=UTC vitest run && TZ=Australia/Sydney vitest run"
@@ -24,6 +25,7 @@
     "@types/node": "catalog:",
     "esbuild": "catalog:",
     "miniflare": "catalog:",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "wrangler": "catalog:"

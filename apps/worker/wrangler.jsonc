@@ -1,27 +1,94 @@
-// HECATE v2 Worker. Account, routes and the data repository are set per
-// environment at deploy time (P2 · chore/worker-deploy); secrets are never
-// committed: GITHUB_APP_PRIVATE_KEY is a Worker secret.
+// HECATE v2 Worker (docs/v2/DEPLOY.md).
+//
+// Two deployed environments, separate Workers so a broken preview cannot take
+// down the connector Claude depends on (ADR 0003):
+//   preview    → hecate-preview: the data repo's `v2` branch, during beta;
+//   production → hecate: `main`, from cutover on.
+// The top level is for `wrangler dev` only.
+//
+// Everything that identifies the owner's accounts (the data repo, the GitHub
+// App, the allowlisted user, the public URL) is a Worker secret, set once per
+// environment, so nothing personal is committed here. `secrets.required`
+// lists them.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "hecate",
+  "name": "hecate-dev",
   "main": "src/index.ts",
   // Keep within what the pinned Miniflare (tests) supports.
   "compatibility_date": "2026-08-01",
   // Client ID Metadata Documents are fetched from client-chosen URLs; this
   // flag keeps those fetches on the public internet (SSRF protection).
   "compatibility_flags": ["global_fetch_strictly_public"],
-  "durable_objects": {
-    "bindings": [{ "name": "WORKSPACE", "class_name": "WorkspaceDO" }]
-  },
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": { "enabled": true },
+  "durable_objects": { "bindings": [{ "name": "WORKSPACE", "class_name": "WorkspaceDO" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["WorkspaceDO"] }],
   // OAuth clients, grants and token hashes. Provisioned on first deploy.
   "kv_namespaces": [{ "binding": "OAUTH_KV" }],
-  // PUBLIC_URL, GITHUB_OWNER, GITHUB_REPO, GITHUB_APP_ID, GITHUB_CLIENT_ID,
-  // ALLOWED_GITHUB_USER_ID and DEFAULT_WORKSPACE are set per environment at deploy. Secrets:
-  // GITHUB_APP_PRIVATE_KEY, GITHUB_CLIENT_SECRET, AUTH_SECRET, GITHUB_WEBHOOK_SECRET.
-  "vars": {
-    "GITHUB_BRANCH": "v2",
-    "COMMIT_INTERVAL_MS": "30000"
+  "vars": { "GITHUB_BRANCH": "v2", "COMMIT_INTERVAL_MS": "30000" },
+  "secrets": {
+    "required": [
+      "PUBLIC_URL",
+      "GITHUB_OWNER",
+      "GITHUB_REPO",
+      "GITHUB_APP_ID",
+      "GITHUB_APP_PRIVATE_KEY",
+      "GITHUB_CLIENT_ID",
+      "GITHUB_CLIENT_SECRET",
+      "ALLOWED_GITHUB_USER_ID",
+      "AUTH_SECRET",
+      "GITHUB_WEBHOOK_SECRET"
+    ]
   },
-  "observability": { "enabled": true }
+  "env": {
+    "preview": {
+      "name": "hecate-preview",
+      "workers_dev": true,
+      "preview_urls": false,
+      "observability": { "enabled": true },
+      "durable_objects": { "bindings": [{ "name": "WORKSPACE", "class_name": "WorkspaceDO" }] },
+      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["WorkspaceDO"] }],
+      "kv_namespaces": [{ "binding": "OAUTH_KV" }],
+      "vars": { "GITHUB_BRANCH": "v2", "COMMIT_INTERVAL_MS": "30000" },
+      "secrets": {
+        "required": [
+          "PUBLIC_URL",
+          "GITHUB_OWNER",
+          "GITHUB_REPO",
+          "GITHUB_APP_ID",
+          "GITHUB_APP_PRIVATE_KEY",
+          "GITHUB_CLIENT_ID",
+          "GITHUB_CLIENT_SECRET",
+          "ALLOWED_GITHUB_USER_ID",
+          "AUTH_SECRET",
+          "GITHUB_WEBHOOK_SECRET"
+        ]
+      }
+    },
+    "production": {
+      "name": "hecate",
+      "workers_dev": true,
+      "preview_urls": false,
+      "observability": { "enabled": true },
+      "durable_objects": { "bindings": [{ "name": "WORKSPACE", "class_name": "WorkspaceDO" }] },
+      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["WorkspaceDO"] }],
+      "kv_namespaces": [{ "binding": "OAUTH_KV" }],
+      "vars": { "GITHUB_BRANCH": "main", "COMMIT_INTERVAL_MS": "30000" },
+      "secrets": {
+        "required": [
+          "PUBLIC_URL",
+          "GITHUB_OWNER",
+          "GITHUB_REPO",
+          "GITHUB_APP_ID",
+          "GITHUB_APP_PRIVATE_KEY",
+          "GITHUB_CLIENT_ID",
+          "GITHUB_CLIENT_SECRET",
+          "ALLOWED_GITHUB_USER_ID",
+          "AUTH_SECRET",
+          "GITHUB_WEBHOOK_SECRET"
+        ]
+      }
+    }
+  }
 }
