@@ -24,7 +24,8 @@ frozen and still live; v2 is being built alongside it. Read
 | `packages/migrate-v1/` | One-off v1 → v2 conversion with a dry-run report (`@hecate/migrate-v1`) | Until cutover, then deleted |
 | `packages/github-store/` | v2 storage (`@hecate/github-store`): Git Data API, App tokens, webhook signatures | Active |
 | `packages/*` (other) | further v2 shared packages | From P1 |
-| `apps/*` (other) | v2 web app and Worker | From P2 |
+| `apps/worker/` | v2 Cloudflare Worker (`@hecate/worker`): `WorkspaceDO`, later `/api`, `/mcp`, `/hooks` | Active |
+| `apps/*` (other) | v2 web app | From P4 |
 | `docs/` | Roadmap and ADRs | Living |
 | `branding/` | Source brand assets (SVG/PNG) | Stable |
 
@@ -56,6 +57,7 @@ pnpm --filter web-v1 preview                              # serve the built v1 a
 pnpm mcp                                                  # v1 MCP server over stdio (needs HECATE_* env)
 pnpm export-schema                                        # regenerate packages/core/json-schema after a schema change
 pnpm migrate-v1 --data <checkout> --config <file>         # v1 → v2 dry run of a data-repo checkout; add --out <dir> to write
+pnpm --filter @hecate/worker build                        # bundle the Worker (wrangler --dry-run; no Cloudflare account needed)
 ```
 
 CI (`.github/workflows/ci.yml`) gates pull requests; `deploy.yml` runs the same
@@ -117,6 +119,12 @@ sessions pushing by hand. Treat every write as concurrent with someone else's.
   commit per change set and never force the ref: a non-fast-forward comes back
   as a result for the caller to rebuild or replay (ADR 0002). Tests use the
   in-memory fake from `@hecate/github-store/testing`, never the real data repo.
+- **The Worker's logic is `apps/worker/src/engine.ts`,** not the Durable Object
+  class: storage, the alarm and GitHub are injected, so it is tested in Node.
+  `test/worker.test.ts` runs the bundled Worker in workerd through Miniflare
+  for what only the runtime can show (storage, alarms). Keep the DO class a
+  thin adapter. Its compatibility date stays within what the pinned Miniflare
+  supports.
 - **Read through the views.** Waiting On, blocked, today, sprint position and
   the briefing come from `src/views/selectors.ts`, and markdown from
   `src/views/render.ts`. Don't recompute them elsewhere, or the app and Claude

@@ -1,0 +1,19 @@
+// HECATE v2 Worker. Account, routes and the data repository are set per
+// environment at deploy time (P2 · chore/worker-deploy); secrets are never
+// committed: GITHUB_APP_PRIVATE_KEY is a Worker secret.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hecate",
+  "main": "src/index.ts",
+  // Keep within what the pinned Miniflare (tests) supports.
+  "compatibility_date": "2026-08-01",
+  "durable_objects": {
+    "bindings": [{ "name": "WORKSPACE", "class_name": "WorkspaceDO" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["WorkspaceDO"] }],
+  "vars": {
+    "GITHUB_BRANCH": "v2",
+    "COMMIT_INTERVAL_MS": "30000"
+  },
+  "observability": { "enabled": true }
+}

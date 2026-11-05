@@ -14,15 +14,21 @@ packages:
 # The frozen v1 packages (apps/web-v1, mcp) deliberately pin their own versions:
 # they are deleted at cutover and are not migrated to the v2 toolchain.
 catalog:
+  "@cloudflare/workers-types": "^5.20261104.1"
   "@types/node": "^24.10.1"
+  "esbuild": "^0.28.2"
   "fractional-indexing": "^4.0.0"
   "immer": "^11.2.9"
+  "miniflare": "4.20260730.0"
   "tsx": "^4.23.15"
   "typescript": "~6.0.3"
   "vitest": "^5.1.0"
+  "wrangler": "^4.157.0"
   "zod": "^4.6.7"
 
 # pnpm blocks dependency build scripts unless they are allowed here. esbuild
-# (used by Vite and tsx) needs its postinstall to place the native binary.
+# (used by Vite, tsx and wrangler) and workerd (the Workers runtime that
+# wrangler and Miniflare run) need their postinstall to place a native binary.
 allowBuilds:
   esbuild: true
+  workerd: true
