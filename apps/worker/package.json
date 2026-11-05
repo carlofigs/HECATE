@@ -1,0 +1,27 @@
+{
+  "name": "@hecate/worker",
+  "private": true,
+  "version": "0.0.0",
+  "description": "HECATE v2 Cloudflare Worker: the WorkspaceDO single writer (ADR 0002), and later /api, /mcp and /hooks.",
+  "type": "module",
+  "scripts": {
+    "dev": "WRANGLER_SEND_METRICS=false wrangler dev",
+    "build": "WRANGLER_SEND_METRICS=false wrangler deploy --dry-run --outdir dist",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test",
+    "lint": "eslint .",
+    "test": "TZ=UTC vitest run && TZ=Australia/Sydney vitest run"
+  },
+  "dependencies": {
+    "@hecate/core": "workspace:*",
+    "@hecate/github-store": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
+    "@types/node": "catalog:",
+    "esbuild": "catalog:",
+    "miniflare": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "wrangler": "catalog:"
+  }
+}

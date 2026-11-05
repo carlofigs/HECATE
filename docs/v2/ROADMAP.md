@@ -231,9 +231,13 @@ GitHub; the first run against real data is the deploy PR's.
       rather than overwritten, tree diffs for rebuild-or-replay; App JWT
       (PKCS#1 or PKCS#8 key) and cached installation tokens; webhook signature
       checks; a fake GitHub for tests. Platform-neutral: fetch and WebCrypto.
-- [ ] `feat/worker-do` — `apps/worker` and `WorkspaceDO`: load from git, apply
-      ops (`dryRun`, `ifVersion`, opId dedupe), alarm-coalesced commits,
-      non-fast-forward rebuild and replay, activity append, webhook refresh.
+- [x] `feat/worker-do` — `apps/worker` and `WorkspaceDO`: load from git once,
+      then from Durable Object storage; apply ops (`dryRun`, `ifVersion`, opId
+      dedupe) with read-your-writes; alarm-coalesced commits; on a concurrent
+      push, rebuild on the new head or replay (renumbering or dropping, and
+      reporting it); a broken head is never adopted; activity appended to the
+      weekly log; refresh on demand and on stale reads. Tested in Node and in
+      workerd via Miniflare. Rules recorded as an amendment to ADR 0002.
 - [ ] `feat/worker-auth` — GitHub login with the single-user allowlist and a
       session cookie for `/api`; the OAuth provider for `/mcp`; signed `/hooks`.
 - [ ] `feat/mcp-v2` — the MCP tools and resources, after a transport spike;

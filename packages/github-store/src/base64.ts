@@ -24,7 +24,7 @@ export function base64ToBytes(base64: string): Uint8Array<ArrayBuffer> {
 
 /** UTF-8 text from base64. Throws on bytes that are not valid UTF-8 rather than guessing. */
 export function base64ToText(base64: string): string {
-  return new TextDecoder('utf-8', { fatal: true }).decode(base64ToBytes(base64))
+  return new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(base64ToBytes(base64))
 }
 
 export function textToBase64(text: string): string {
