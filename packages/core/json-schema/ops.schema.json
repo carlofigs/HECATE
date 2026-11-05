@@ -1,0 +1,2377 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:hecate:ops:v1",
+  "type": "object",
+  "properties": {
+    "ops": {
+      "minItems": 1,
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "task.add"
+              },
+              "ref": {
+                "type": "string",
+                "pattern": "^\\$[1-9]\\d*$"
+              },
+              "id": {
+                "$ref": "#/$defs/Ulid"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "action",
+                  "waiting"
+                ]
+              },
+              "title": {
+                "$ref": "#/$defs/Line"
+              },
+              "note": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Markdown"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "status": {
+                "$ref": "#/$defs/Slug"
+              },
+              "urgency": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Urgency"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "project": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Slug"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "waitingOn": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "personId": {
+                        "anyOf": [
+                          {
+                            "$ref": "#/$defs/Ulid"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "text": {
+                        "anyOf": [
+                          {
+                            "$ref": "#/$defs/Line"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "dependsOn": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "due": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/IsoDate"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "after": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "legacyIds": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/Line"
+                }
+              }
+            },
+            "required": [
+              "type",
+              "kind",
+              "title"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "task.update"
+              },
+              "task": {
+                "type": "string",
+                "minLength": 1
+              },
+              "patch": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "$ref": "#/$defs/Line"
+                  },
+                  "note": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/Markdown"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "urgency": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/Urgency"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "project": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/Slug"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "waitingOn": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "personId": {
+                            "anyOf": [
+                              {
+                                "$ref": "#/$defs/Ulid"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "text": {
+                            "anyOf": [
+                              {
+                                "$ref": "#/$defs/Line"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "dependsOn": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "due": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/IsoDate"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "type",
+              "task",
+              "patch"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "task.move"
+              },
+              "task": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "$ref": "#/$defs/Slug"
+              },
+              "after": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "task",
+              "status"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "task.complete"
+              },
+              "task": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "type",
+              "task"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "task.drop"
+              },
+              "task": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "type",
+              "task"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "task.reopen"
+              },
+              "task": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "$ref": "#/$defs/Slug"
+              }
+            },
+            "required": [
+              "type",
+              "task"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "task.delete"
+              },
+              "task": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "type",
+              "task"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "workspace.update"
+              },
+              "patch": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "$ref": "#/$defs/Line"
+                  },
+                  "timezone": {
+                    "type": "string"
+                  },
+                  "policy": {
+                    "type": "string",
+                    "enum": [
+                      "open",
+                      "sanitised"
+                    ]
+                  },
+                  "workdays": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 7
+                    }
+                  },
+                  "sprint": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "anchor": {
+                            "$ref": "#/$defs/IsoDate"
+                          },
+                          "anchorNumber": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "lengthWeeks": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 4
+                          },
+                          "external": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "label": {
+                                    "$ref": "#/$defs/Line"
+                                  },
+                                  "offset": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "label",
+                                  "offset"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "anchor",
+                          "anchorNumber",
+                          "lengthWeeks",
+                          "external"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "statuses": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/Slug"
+                        },
+                        "name": {
+                          "$ref": "#/$defs/Line"
+                        },
+                        "category": {
+                          "type": "string",
+                          "enum": [
+                            "backlog",
+                            "todo",
+                            "active",
+                            "done",
+                            "dropped"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "category"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "label": {
+                          "anyOf": [
+                            {
+                              "$ref": "#/$defs/Line"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "areas": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "label": {
+                          "$ref": "#/$defs/Line"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "type",
+              "patch"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "profile.update"
+              },
+              "patch": {
+                "type": "object",
+                "properties": {
+                  "me": {
+                    "$ref": "#/$defs/Markdown"
+                  },
+                  "preferences": {
+                    "$ref": "#/$defs/Markdown"
+                  },
+                  "productivitySystem": {
+                    "$ref": "#/$defs/Markdown"
+                  },
+                  "responsibilities": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/Ulid"
+                        },
+                        "name": {
+                          "$ref": "#/$defs/Line"
+                        },
+                        "cadence": {
+                          "$ref": "#/$defs/Line"
+                        },
+                        "notes": {
+                          "anyOf": [
+                            {
+                              "$ref": "#/$defs/Markdown"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "cadence"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "type",
+              "patch"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "focus.setSchedule"
+              },
+              "weekOf": {
+                "$ref": "#/$defs/IsoDate"
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/Ulid"
+                    },
+                    "date": {
+                      "$ref": "#/$defs/IsoDate"
+                    },
+                    "start": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/Time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "end": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/Time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "title": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/Line"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "personal": {
+                      "type": "boolean"
+                    },
+                    "relevance": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/Urgency"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "note": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/Line"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "keys": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "important": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "date"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "capturedAt": {
+                "$ref": "#/$defs/Instant"
+              }
+            },
+            "required": [
+              "type",
+              "weekOf",
+              "rows"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "focus.setPlan"
+              },
+              "date": {
+                "$ref": "#/$defs/IsoDate"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/Ulid"
+                    },
+                    "lead": {
+                      "$ref": "#/$defs/Line"
+                    },
+                    "detail": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/Markdown"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "keys": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "urgency": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/Urgency"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "lead"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "type",
+              "date",
+              "items"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "focus.closeDay"
+              },
+              "date": {
+                "$ref": "#/$defs/IsoDate"
+              },
+              "outcomes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/Ulid"
+                    },
+                    "planItemId": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/Ulid"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "result": {
+                      "type": "string",
+                      "enum": [
+                        "done",
+                        "carried",
+                        "dropped"
+                      ]
+                    },
+                    "lead": {
+                      "$ref": "#/$defs/Line"
+                    },
+                    "note": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/Markdown"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "keys": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  },
+                  "required": [
+                    "result",
+                    "lead"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "note": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Markdown"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "date",
+              "outcomes"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "focus.setPriorities"
+              },
+              "weekOf": {
+                "$ref": "#/$defs/IsoDate"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/Ulid"
+                    },
+                    "tier": {
+                      "type": "string",
+                      "enum": [
+                        "focus",
+                        "next",
+                        "ongoing"
+                      ]
+                    },
+                    "lead": {
+                      "$ref": "#/$defs/Line"
+                    },
+                    "detail": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/Markdown"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "keys": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  },
+                  "required": [
+                    "tier",
+                    "lead"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "type",
+              "weekOf",
+              "items"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "focus.setCallouts"
+              },
+              "weekOf": {
+                "$ref": "#/$defs/IsoDate"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/Ulid"
+                    },
+                    "lead": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/Line"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "text": {
+                      "$ref": "#/$defs/Markdown"
+                    },
+                    "keys": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  },
+                  "required": [
+                    "text"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "type",
+              "weekOf",
+              "items"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "focus.setLastWeek"
+              },
+              "weekOf": {
+                "$ref": "#/$defs/IsoDate"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/Ulid"
+                    },
+                    "text": {
+                      "$ref": "#/$defs/Markdown"
+                    },
+                    "keys": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  },
+                  "required": [
+                    "text"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "type",
+              "weekOf",
+              "items"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "focus.setSection"
+              },
+              "weekOf": {
+                "$ref": "#/$defs/IsoDate"
+              },
+              "section": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/Slug"
+                  },
+                  "title": {
+                    "$ref": "#/$defs/Line"
+                  },
+                  "content": {
+                    "$ref": "#/$defs/Markdown"
+                  }
+                },
+                "required": [
+                  "title",
+                  "content"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "type",
+              "weekOf",
+              "section"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "focus.removeSection"
+              },
+              "weekOf": {
+                "$ref": "#/$defs/IsoDate"
+              },
+              "id": {
+                "$ref": "#/$defs/Slug"
+              }
+            },
+            "required": [
+              "type",
+              "weekOf",
+              "id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "keepInMind.add"
+              },
+              "id": {
+                "$ref": "#/$defs/Ulid"
+              },
+              "lead": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Line"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "text": {
+                "$ref": "#/$defs/Markdown"
+              },
+              "keys": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "project": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Slug"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "text"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "keepInMind.update"
+              },
+              "id": {
+                "$ref": "#/$defs/Ulid"
+              },
+              "patch": {
+                "type": "object",
+                "properties": {
+                  "lead": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/Line"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "text": {
+                    "$ref": "#/$defs/Markdown"
+                  },
+                  "keys": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "project": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/Slug"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "type",
+              "id",
+              "patch"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "keepInMind.remove"
+              },
+              "id": {
+                "$ref": "#/$defs/Ulid"
+              }
+            },
+            "required": [
+              "type",
+              "id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "project.create"
+              },
+              "id": {
+                "$ref": "#/$defs/Ulid"
+              },
+              "slug": {
+                "$ref": "#/$defs/Slug"
+              },
+              "name": {
+                "$ref": "#/$defs/Line"
+              },
+              "subtitle": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Line"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "summary": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Markdown"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "planned",
+                  "active",
+                  "paused",
+                  "blocked",
+                  "done",
+                  "dropped"
+                ]
+              },
+              "phase": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Line"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "currentFocus": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Markdown"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "owner": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Line"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "refs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "$ref": "#/$defs/Line"
+                    },
+                    "value": {
+                      "$ref": "#/$defs/Line"
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "deadlines": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/Ulid"
+                    },
+                    "date": {
+                      "$ref": "#/$defs/IsoDate"
+                    },
+                    "title": {
+                      "$ref": "#/$defs/Line"
+                    },
+                    "hard": {
+                      "type": "boolean"
+                    },
+                    "keys": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "note": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/Line"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "date",
+                    "title"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "cutoffs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/Ulid"
+                    },
+                    "date": {
+                      "$ref": "#/$defs/IsoDate"
+                    },
+                    "personId": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/Ulid"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "who": {
+                      "$ref": "#/$defs/Line"
+                    },
+                    "what": {
+                      "$ref": "#/$defs/Line"
+                    },
+                    "keys": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  },
+                  "required": [
+                    "date",
+                    "who",
+                    "what"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "openQuestions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/Ulid"
+                    },
+                    "n": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 9007199254740991
+                    },
+                    "question": {
+                      "$ref": "#/$defs/Markdown"
+                    },
+                    "blocker": {
+                      "type": "boolean"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "open",
+                        "resolved",
+                        "deferred"
+                      ]
+                    },
+                    "resolution": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/Markdown"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "keys": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  },
+                  "required": [
+                    "question"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "nextActions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/Ulid"
+                    },
+                    "text": {
+                      "$ref": "#/$defs/Line"
+                    },
+                    "keys": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  },
+                  "required": [
+                    "text"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "timeline": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/Ulid"
+                    },
+                    "phase": {
+                      "$ref": "#/$defs/Line"
+                    },
+                    "start": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/IsoDate"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "end": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/IsoDate"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "done",
+                        "active",
+                        "pending",
+                        "deferred"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "phase",
+                    "status"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "sections": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/Section"
+                }
+              }
+            },
+            "required": [
+              "type",
+              "slug",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "project.update"
+              },
+              "slug": {
+                "$ref": "#/$defs/Slug"
+              },
+              "patch": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "$ref": "#/$defs/Line"
+                  },
+                  "subtitle": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/Line"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "summary": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/Markdown"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "planned",
+                      "active",
+                      "paused",
+                      "blocked",
+                      "done",
+                      "dropped"
+                    ]
+                  },
+                  "phase": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/Line"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "currentFocus": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/Markdown"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "owner": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/Line"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "refs": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "$ref": "#/$defs/Line"
+                        },
+                        "value": {
+                          "$ref": "#/$defs/Line"
+                        }
+                      },
+                      "required": [
+                        "label",
+                        "value"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "deadlines": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/Ulid"
+                        },
+                        "date": {
+                          "$ref": "#/$defs/IsoDate"
+                        },
+                        "title": {
+                          "$ref": "#/$defs/Line"
+                        },
+                        "hard": {
+                          "type": "boolean"
+                        },
+                        "keys": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "note": {
+                          "anyOf": [
+                            {
+                              "$ref": "#/$defs/Line"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "date",
+                        "title"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "cutoffs": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/Ulid"
+                        },
+                        "date": {
+                          "$ref": "#/$defs/IsoDate"
+                        },
+                        "personId": {
+                          "anyOf": [
+                            {
+                              "$ref": "#/$defs/Ulid"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "who": {
+                          "$ref": "#/$defs/Line"
+                        },
+                        "what": {
+                          "$ref": "#/$defs/Line"
+                        },
+                        "keys": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        }
+                      },
+                      "required": [
+                        "date",
+                        "who",
+                        "what"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "openQuestions": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/Ulid"
+                        },
+                        "n": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        },
+                        "question": {
+                          "$ref": "#/$defs/Markdown"
+                        },
+                        "blocker": {
+                          "type": "boolean"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "open",
+                            "resolved",
+                            "deferred"
+                          ]
+                        },
+                        "resolution": {
+                          "anyOf": [
+                            {
+                              "$ref": "#/$defs/Markdown"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "keys": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        }
+                      },
+                      "required": [
+                        "question"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "nextActions": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/Ulid"
+                        },
+                        "text": {
+                          "$ref": "#/$defs/Line"
+                        },
+                        "keys": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        }
+                      },
+                      "required": [
+                        "text"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "timeline": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/Ulid"
+                        },
+                        "phase": {
+                          "$ref": "#/$defs/Line"
+                        },
+                        "start": {
+                          "anyOf": [
+                            {
+                              "$ref": "#/$defs/IsoDate"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "end": {
+                          "anyOf": [
+                            {
+                              "$ref": "#/$defs/IsoDate"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "done",
+                            "active",
+                            "pending",
+                            "deferred"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "phase",
+                        "status"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "sections": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/Section"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "type",
+              "slug",
+              "patch"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "project.addOpenQuestion"
+              },
+              "slug": {
+                "$ref": "#/$defs/Slug"
+              },
+              "id": {
+                "$ref": "#/$defs/Ulid"
+              },
+              "question": {
+                "$ref": "#/$defs/Markdown"
+              },
+              "blocker": {
+                "type": "boolean"
+              },
+              "keys": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": [
+              "type",
+              "slug",
+              "question"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "project.resolveOpenQuestion"
+              },
+              "slug": {
+                "$ref": "#/$defs/Slug"
+              },
+              "n": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "resolved",
+                  "deferred"
+                ]
+              },
+              "resolution": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Markdown"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "slug",
+              "n",
+              "status"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "sprint.start"
+              },
+              "n": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "goal": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Markdown"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "sprint.update"
+              },
+              "n": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "goal": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Markdown"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "retro": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Markdown"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "sections": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/Section"
+                }
+              }
+            },
+            "required": [
+              "type",
+              "n"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "sprint.close"
+              },
+              "n": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "retro": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Markdown"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "person.upsert"
+              },
+              "id": {
+                "$ref": "#/$defs/Ulid"
+              },
+              "name": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Line"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "aliases": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/Line"
+                }
+              },
+              "role": {
+                "$ref": "#/$defs/Line"
+              },
+              "notes": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Markdown"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "ooo": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "start": {
+                      "$ref": "#/$defs/IsoDate"
+                    },
+                    "end": {
+                      "$ref": "#/$defs/IsoDate"
+                    },
+                    "note": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/Line"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "start",
+                    "end"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "person.remove"
+              },
+              "id": {
+                "$ref": "#/$defs/Ulid"
+              }
+            },
+            "required": [
+              "type",
+              "id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "term.upsert"
+              },
+              "id": {
+                "$ref": "#/$defs/Ulid"
+              },
+              "term": {
+                "$ref": "#/$defs/Line"
+              },
+              "aliases": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/Line"
+                }
+              },
+              "meaning": {
+                "$ref": "#/$defs/Markdown"
+              },
+              "project": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Slug"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "term"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "term.remove"
+              },
+              "id": {
+                "$ref": "#/$defs/Ulid"
+              }
+            },
+            "required": [
+              "type",
+              "id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "reference.put"
+              },
+              "name": {
+                "$ref": "#/$defs/Slug"
+              },
+              "content": {
+                "$ref": "#/$defs/Markdown"
+              }
+            },
+            "required": [
+              "type",
+              "name",
+              "content"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "reference.remove"
+              },
+              "name": {
+                "$ref": "#/$defs/Slug"
+              }
+            },
+            "required": [
+              "type",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "meeting.save"
+              },
+              "id": {
+                "$ref": "#/$defs/Ulid"
+              },
+              "date": {
+                "$ref": "#/$defs/IsoDate"
+              },
+              "slug": {
+                "$ref": "#/$defs/Slug"
+              },
+              "title": {
+                "$ref": "#/$defs/Line"
+              },
+              "input": {
+                "type": "string",
+                "enum": [
+                  "transcript",
+                  "notes",
+                  "multi-source"
+                ]
+              },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/Line"
+                }
+              },
+              "conflicts": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "people": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/Ulid"
+                }
+              },
+              "projects": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/Slug"
+                }
+              },
+              "keys": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "body": {
+                "$ref": "#/$defs/Markdown"
+              }
+            },
+            "required": [
+              "type",
+              "date",
+              "slug",
+              "title",
+              "input",
+              "body"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "activity.log"
+              },
+              "id": {
+                "$ref": "#/$defs/Ulid"
+              },
+              "entry": {
+                "type": "string",
+                "enum": [
+                  "flag",
+                  "session"
+                ]
+              },
+              "area": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "delta": {
+                "$ref": "#/$defs/Line"
+              },
+              "pointers": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/Line"
+                }
+              },
+              "keys": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": [
+              "type",
+              "entry",
+              "delta"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "ops"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "Ulid": {
+      "type": "string",
+      "format": "ulid",
+      "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+    },
+    "Line": {
+      "type": "string",
+      "maxLength": 500,
+      "pattern": "^\\S(?:[^\\r\\n]*\\S)?$"
+    },
+    "Markdown": {
+      "type": "string",
+      "contentMediaType": "text/markdown"
+    },
+    "Slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "Urgency": {
+      "type": "string",
+      "enum": [
+        "high",
+        "med",
+        "low"
+      ]
+    },
+    "IsoDate": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+    },
+    "Time": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+    },
+    "Instant": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+    },
+    "Section": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Slug"
+        },
+        "title": {
+          "$ref": "#/$defs/Line"
+        },
+        "content": {
+          "$ref": "#/$defs/Markdown"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "content"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

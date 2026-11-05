@@ -101,6 +101,14 @@ sessions pushing by hand. Treat every write as concurrent with someone else's.
   Australia/Sydney.
 - Task keys are `A` (mine) and `B` (waiting), allocated with `allocateKey` from
   the counters in `tasks.json`, never invented or reused.
+- **Every write is an op.** Build `{ ops }`, run it through `prepareBatch`, then
+  `applyBatch(state, batch)`; commit `changedFiles(result.state, result.changed)`,
+  delete `result.deleted`, and append `result.activity` to the weekly log. Never
+  edit a state or file directly: the engine is what keeps keys, order,
+  `completedAt`, references and policy consistent (ADR 0004).
+- Adding an op: schema and handler in `src/ops/<area>.ts`, registered in
+  `src/ops/index.ts` (both maps), tests in `ops.test.ts`, then
+  `pnpm export-schema` for `json-schema/ops.schema.json`.
 
 ## Privacy and what stays out of the tree
 
