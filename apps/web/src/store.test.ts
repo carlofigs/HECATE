@@ -1,8 +1,50 @@
+import { applyBatch, CURRENT_VERSION, emptyState, parseFile, prepareBatch, type WorkspaceState } from '@hecate/core'
 import { describe, expect, it } from 'vitest'
-import type { Api, Outcome, Snapshot } from './api.ts'
-import { createAppStore } from './store.ts'
+import type { Api, ApplyAnswer, Outcome, Snapshot } from './api.ts'
+import { createAppStore, type Notice } from './store.ts'
 
 const snapshot = (version: number): Snapshot => ({ version, state: {} as Snapshot['state'], pending: 0, lastError: null })
+
+/** A real workspace with A1 in To Do, built through core's ops as the Worker would. */
+function workspace(): WorkspaceState {
+  const settings = parseFile('workspace', {
+    schemaVersion: CURRENT_VERSION.workspace, name: 'Test', timezone: 'UTC', policy: 'open', workdays: [1, 2, 3, 4, 5], sprint: null, tags: [], areas: [],
+    statuses: [
+      { id: 'to-do', name: 'To Do', category: 'todo' },
+      { id: 'doing', name: 'Doing', category: 'active' },
+      { id: 'done', name: 'Done', category: 'done' },
+      { id: 'dropped', name: 'Dropped', category: 'dropped' },
+    ],
+  })
+  const at = '2026-11-09T00:00:00.000Z'
+  const result = applyBatch(emptyState(settings, at), prepareBatch({ ops: [{ type: 'task.add', kind: 'action', title: 'First' }] }, { opId: 'seed', at, actor: 'app' }))
+  if (!result.ok) throw new Error('fixture')
+  return result.state
+}
+
+const statusOf = (state: WorkspaceState | null | undefined, key: string): string | undefined => state?.tasks.tasks.find(t => t.key === key)?.status
+
+/** An API over a real workspace, whose ops answers come from a queue (applied by default). */
+function writeApi(answers: ApplyAnswer[] = [], version = 1) {
+  const sent: { ops: unknown[]; opId: string }[] = []
+  let snapshots = 0
+  const api: Api = {
+    me: () => Promise.resolve({ kind: 'ok', data: { userId: 42, login: 'owner' } }),
+    workspaces: () => Promise.resolve({ kind: 'ok', data: { workspaces: [], default: null } }),
+    snapshot: () => {
+      snapshots++
+      return Promise.resolve({ kind: 'ok', data: { version, state: workspace(), pending: 0, lastError: null } })
+    },
+    signOut: () => Promise.resolve({ kind: 'ok', data: null }),
+    applyOps: (_dir, body) => {
+      sent.push(body)
+      return Promise.resolve(answers.shift() ?? { kind: 'applied', version: version + sent.length, keyMap: {}, duplicate: false })
+    },
+  }
+  return { api, sent, snapshots: () => snapshots }
+}
+
+const settle = () => new Promise(resolve => setTimeout(resolve, 0))
 
 /** An API whose snapshot answers come from a queue. */
 function fakeApi(answers: Outcome<Snapshot>[]): Api {
@@ -11,6 +53,7 @@ function fakeApi(answers: Outcome<Snapshot>[]): Api {
     workspaces: () => Promise.resolve({ kind: 'ok', data: { workspaces: [{ dir: 'a', hidden: false, name: null, policy: 'open' }], default: null } }),
     snapshot: () => Promise.resolve(answers.shift() ?? { kind: 'network' }),
     signOut: () => Promise.resolve({ kind: 'ok', data: null }),
+    applyOps: () => Promise.resolve({ kind: 'network' }),
   }
 }
 
@@ -24,7 +67,7 @@ describe('the app store', () => {
 
   it('loads a workspace, then keeps the last good snapshot when a refresh fails', async () => {
     let clock = 1000
-    const store = createAppStore(fakeApi([{ kind: 'ok', data: snapshot(1) }, { kind: 'network' }, { kind: 'ok', data: snapshot(2) }]), () => clock)
+    const store = createAppStore(fakeApi([{ kind: 'ok', data: snapshot(1) }, { kind: 'network' }, { kind: 'ok', data: snapshot(2) }]), { now: () => clock })
     await store.getState().openWorkspace('a')
     expect(store.getState().open).toMatchObject({ dir: 'a', status: 'ready', fetchedAt: 1000, snapshot: { version: 1 } })
 
@@ -63,7 +106,7 @@ describe('the app store', () => {
       calls++
       return Promise.resolve({ kind: 'ok', data: snapshot(calls) })
     }
-    const store = createAppStore(api, () => clock)
+    const store = createAppStore(api, { now: () => clock })
     await store.getState().openWorkspace('a')
     clock = 1000
     await store.getState().refreshIfStale(5000)
@@ -79,5 +122,101 @@ describe('the app store', () => {
     await store.getState().openWorkspace('a')
     expect(store.getState().session).toEqual({ status: 'signed-out' })
     expect(store.getState().open).toBeNull()
+  })
+})
+
+describe('writing', () => {
+  it('shows a change at once, sends it with an opId, and keeps it when the Worker applies it next', async () => {
+    const { api, sent, snapshots } = writeApi()
+    const store = createAppStore(api)
+    await store.getState().openWorkspace('w')
+    const result = store.getState().apply([{ type: 'task.move', task: 'A1', status: 'doing' }], 'Move A1')
+    expect(result).toMatchObject({ ok: true })
+    expect(statusOf(store.getState().open?.view, 'A1')).toBe('doing')
+    await settle()
+    expect(sent).toHaveLength(1)
+    expect(sent[0]?.opId).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/)
+    const open = store.getState().open
+    expect(open).toMatchObject({ queue: [], sending: false, snapshot: { version: 2 } })
+    expect(statusOf(open?.snapshot?.state, 'A1')).toBe('doing')
+    expect(snapshots()).toBe(1)
+  })
+
+  it('gives a new task its id before sending, so the Worker keeps the same task', async () => {
+    const { api, sent } = writeApi()
+    const store = createAppStore(api)
+    await store.getState().openWorkspace('w')
+    const result = store.getState().apply([{ type: 'task.add', ref: '$1', kind: 'action', title: 'Second' }], 'Add a task')
+    expect(result).toEqual({ ok: true, keyMap: { $1: 'A2' } })
+    await settle()
+    const id = (sent[0]?.ops[0] as { id?: string }).id
+    expect(id).toBeTruthy()
+    expect(store.getState().open?.view?.tasks.tasks.find(t => t.key === 'A2')?.id).toBe(id)
+  })
+
+  it('refetches when someone else wrote in between', async () => {
+    const { api, snapshots } = writeApi([{ kind: 'applied', version: 7, keyMap: {}, duplicate: false }])
+    const store = createAppStore(api)
+    await store.getState().openWorkspace('w')
+    store.getState().apply([{ type: 'task.move', task: 'A1', status: 'doing' }], 'Move A1')
+    await settle()
+    expect(snapshots()).toBe(2)
+  })
+
+  it('drops a refused batch, says why, and shows the Worker’s state again', async () => {
+    const notices: Notice[] = []
+    const { api } = writeApi([{ kind: 'rejected', message: 'A1 is archived' }])
+    const store = createAppStore(api, { notify: n => notices.push(n) })
+    await store.getState().openWorkspace('w')
+    store.getState().apply([{ type: 'task.move', task: 'A1', status: 'doing' }], 'Move A1')
+    await settle()
+    expect(notices).toEqual([{ tone: 'danger', title: "Couldn't move A1", description: 'A1 is archived. Nothing was changed.' }])
+    expect(store.getState().open?.queue).toEqual([])
+    expect(statusOf(store.getState().open?.view, 'A1')).toBe('to-do')
+  })
+
+  it('keeps a change while offline and sends it once the Worker answers', async () => {
+    let wake: () => void = () => {}
+    const { api, sent } = writeApi([{ kind: 'network' }])
+    const store = createAppStore(api, { sleep: () => new Promise(resolve => { wake = resolve }) })
+    await store.getState().openWorkspace('w')
+    store.getState().apply([{ type: 'task.complete', task: 'A1' }], 'Complete A1')
+    await settle()
+    expect(store.getState().open).toMatchObject({ sendFailure: { kind: 'network' }, sending: false })
+    expect(store.getState().open?.queue).toHaveLength(1)
+    expect(statusOf(store.getState().open?.view, 'A1')).toBe('done')
+    wake()
+    await settle()
+    expect(sent).toHaveLength(2)
+    expect(sent[0]?.opId).toBe(sent[1]?.opId)
+    expect(store.getState().open).toMatchObject({ queue: [], sendFailure: null })
+  })
+
+  it('ignores a refresh that answers with an older version than a change it just confirmed', async () => {
+    let release: (o: Outcome<Snapshot>) => void = () => {}
+    const { api } = writeApi()
+    const store = createAppStore(api)
+    await store.getState().openWorkspace('w')
+    const original = api.snapshot
+    api.snapshot = () => new Promise(resolve => { release = resolve })
+    const slow = store.getState().refresh()
+    store.getState().apply([{ type: 'task.move', task: 'A1', status: 'doing' }], 'Move A1')
+    await settle()
+    expect(store.getState().open?.snapshot?.version).toBe(2)
+    release(await original('w'))
+    await slow
+    expect(store.getState().open?.snapshot?.version).toBe(2)
+    expect(statusOf(store.getState().open?.view, 'A1')).toBe('doing')
+  })
+
+  it('refuses at once what cannot apply, and sends nothing', async () => {
+    const { api, sent } = writeApi()
+    const store = createAppStore(api)
+    await store.getState().openWorkspace('w')
+    const result = store.getState().apply([{ type: 'task.move', task: 'A9', status: 'doing' }], 'Move A9')
+    expect(result).toMatchObject({ ok: false })
+    await settle()
+    expect(sent).toEqual([])
+    expect(store.getState().open?.queue).toEqual([])
   })
 })

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { FileData } from './files.ts'
 import { isoDate } from './dates.ts'
 import {
-  blockedTasks, blockers, briefing, completedSince, cutoffs, dueSoon, findTask, inProgress, sprintPosition, todayView, waitingOn,
+  blockedTasks, blockers, boardColumns, briefing, completedSince, cutoffs, dueSoon, findTask, inProgress, sprintPosition, todayView, waitingOn,
 } from './views/selectors.ts'
 import { baseState, ok, run } from './__fixtures__/workspace.ts'
 
@@ -28,6 +28,40 @@ describe('blocking', () => {
     expect(blockers(closed, a2)).toEqual([])
     expect(findTask(closed, 'A1')).toMatchObject({ where: 'archived', sprint: 7 })
     expect(findTask(closed, 't-a7')).toMatchObject({ where: 'open', task: { key: 'A2' } })
+  })
+})
+
+describe('boardColumns', () => {
+  it('lists every status in workspace order, each task once, in board order', () => {
+    const { state } = baseState()
+    const columns = boardColumns(state)
+    expect(columns.map(c => c.status.id)).toEqual(state.workspace.statuses.map(s => s.id))
+    const keys = columns.flatMap(c => c.cards.map(k => k.key))
+    expect([...keys].sort()).toEqual(state.tasks.tasks.map(t => t.key).sort())
+    for (const column of columns) {
+      const orders = column.cards.map(card => state.tasks.tasks.find(t => t.key === card.key)!.order)
+      expect(orders).toEqual([...orders].sort())
+    }
+  })
+
+  it('carries what a card shows: kind, tags, dependencies, blockers and who a B task waits on', () => {
+    const { state } = baseState()
+    const cards = boardColumns(state).flatMap(c => c.cards)
+    expect(cards.find(c => c.key === 'A1')).toMatchObject({ kind: 'action', tags: ['reporting'], projectSlug: 'scorecard', urgency: 'high' })
+    expect(cards.find(c => c.title === 'Publish the scorecard')).toMatchObject({ dependsOn: ['A1', 'B1'], blockedBy: ['A1', 'B1'] })
+    expect(cards.find(c => c.key === 'B1')?.waitingOn).toBe(waitingOn(state, d('2026-11-04')).find(w => w.key === 'B1')?.who)
+  })
+
+  it('follows a move: the moved task sits where the op put it', () => {
+    const { state } = baseState()
+    const todo = boardColumns(state).find(c => c.status.category === 'todo')!
+    const [first, second] = todo.cards
+    if (!first || !second) throw new Error('fixture changed')
+    const moved = ok(run(state, [{ type: 'task.move', task: second.key, status: todo.status.id, after: null }])).state
+    expect(boardColumns(moved).find(c => c.status.id === todo.status.id)!.cards.slice(0, 2).map(c => c.key)).toEqual([second.key, first.key])
+    const done = ok(run(state, [{ type: 'task.complete', task: first.key }])).state
+    const doneColumn = boardColumns(done).find(c => c.status.category === 'done')!
+    expect(doneColumn.cards.at(-1)).toMatchObject({ key: first.key, completedAt: expect.any(String) })
   })
 })
 

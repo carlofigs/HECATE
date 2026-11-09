@@ -2,7 +2,7 @@
 
 **Status:** candidate   **Since:** 0.2.0   **Profile(s):** app   **Base:** native `<button>` / `<a>`
 
-`packages/ui/src/Button.tsx`: `Button`, `ButtonLink`, `IconButton` and `buttonStyles()` (for router links that look like buttons).
+`packages/ui/src/Button.tsx`: `Button`, `ButtonLink`, `IconButton`, plus `buttonStyles()` (router links that look like buttons) and `iconButtonStyles()` (other icon-only triggers, such as the Menu's).
 
 ## What it is
 
@@ -36,8 +36,9 @@ An action the user takes now (`Button`). There are two other forms: navigation t
 |---|---|---|---|
 | `variant` | `primary` · `secondary` · `ghost` | `secondary` | `IconButton` takes `secondary` or `ghost` only |
 | `icon` | node | none | Shown before the label |
+| `tone` | `neutral` · `danger` | `neutral` | `danger`: a destructive action. Secondary weight in danger colours, never primary (R-24) |
 
-No `size` prop yet: density sets the size (DLS.md §1), and nothing has needed another (C-03, P-09). No `tone` yet: the first destructive action (PR 3) adds `tone="danger"`.
+No `size` prop yet: density sets the size (DLS.md §1), and nothing has needed another (C-03, P-09).
 
 ## States
 
@@ -100,3 +101,4 @@ No `size` prop yet: density sets the size (DLS.md §1), and nothing has needed a
 ## Changelog
 
 - 0.2.0: created.
+- 0.3.0: `tone="danger"`; `iconButtonStyles()`. Icon buttons no longer inherit text padding, which had squeezed their icons.

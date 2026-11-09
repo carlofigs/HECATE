@@ -22,7 +22,7 @@ export const VOCABULARY = {
     'success', 'warning', 'danger', 'info',
     'sans', 'mono', 'regular', 'medium', 'semibold', 'tight', 'snug', 'normal',
     'none', 'full', 'pill', 'modal',
-    'min', 'touch', 'prose', 'app',
+    'min', 'touch', 'prose', 'app', 'column',
     'base', 'dropdown', 'sticky', 'popover', 'toast',
     'instant', 'fast', 'slow', 'deliberate', 'standard', 'enter', 'exit', 'linear',
     'disabled',

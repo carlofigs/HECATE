@@ -31,7 +31,9 @@ type AxeResults = Awaited<ReturnType<AxeBuilder['analyze']>>
 /**
  * Every violation, plus every contrast check axe measured but filed as "needs
  * review" while short of the ratio it expected (one-character text such as a
- * task key falls there). A node it could not measure is attached, not failed.
+ * task key falls there). A node it could not measure is attached, not failed:
+ * axe reports a ratio of 0 for text it cannot see, such as a tab scrolled out
+ * of its list or a dialog behind another; a real shortfall has a positive ratio.
  */
 function shortfalls(results: AxeResults): { failures: string[]; unmeasured: string[] } {
   const failures = results.violations.map(v => `${v.id} (${v.impact ?? '?'}): ${v.help}\n${v.nodes.map(n => `    ${n.target.join(' ')}`).join('\n')}`)
@@ -41,7 +43,7 @@ function shortfalls(results: AxeResults): { failures: string[]; unmeasured: stri
     for (const node of rule.nodes) {
       const data = node.any[0]?.data as { contrastRatio?: number; expectedContrastRatio?: string } | undefined
       const expected = Number.parseFloat(data?.expectedContrastRatio ?? '')
-      if (data?.contrastRatio == null || Number.isNaN(expected)) unmeasured.push(node.target.join(' '))
+      if (!data?.contrastRatio || Number.isNaN(expected)) unmeasured.push(node.target.join(' '))
       else if (data.contrastRatio < expected) failures.push(`color-contrast (needs review): ${data.contrastRatio}:1 is under ${expected}:1\n    ${node.target.join(' ')}`)
     }
   }
@@ -57,3 +59,49 @@ export async function scan(page: Page, where: string): Promise<void> {
 
 /** Whether this project emulates a touch device (touch-first density applies). */
 export const isTouch = (): boolean => test.info().project.name.startsWith('phone') || test.info().project.name.startsWith('narrow')
+
+/** A private copy of the Planning workspace for a test that writes (harness.ts). */
+export async function claimWorkspace(page: Page): Promise<string> {
+  const response = await page.request.get('/__harness/claim')
+  expect(response.ok(), 'the harness has scratch workspaces left').toBe(true)
+  return ((await response.json()) as { dir: string }).dir
+}
+
+interface StoredTask {
+  key: string
+  title: string
+  status: string
+  order: string
+  completedAt: string | null
+}
+
+/**
+ * Waits for the app to finish sending (a change shows before the Worker has
+ * it), commits the workspace's pending changes now, and reads what reached
+ * git: its tasks and the commit messages.
+ */
+export async function committed(page: Page, dir: string): Promise<{ tasks: StoredTask[]; log: string[] }> {
+  await expect(page.getByRole('status').filter({ hasText: /^Saving…$|changes? waiting|Couldn't save/ })).toHaveCount(0)
+  const origin = new URL(page.url()).origin
+  const path = `/api/workspaces/${encodeURIComponent(dir)}`
+  // Flush until nothing is left to commit. Every test writes to the same fake branch at once, so a commit can lose
+  // the race and be deferred (ADR 0002); a flush commits now regardless.
+  await expect
+    .poll(
+      async () => {
+        expect((await page.request.post(`${path}/flush`, { headers: { origin } })).ok(), 'flush').toBe(true)
+        return ((await (await page.request.get(path)).json()) as { pending: number }).pending
+      },
+      { timeout: 30_000 },
+    )
+    .toBe(0)
+  const git = (await (await page.request.get(`/__harness/git?dir=${encodeURIComponent(dir)}`)).json()) as { files: Record<string, string>; log: string[] }
+  const tasks = JSON.parse(git.files['tasks.json'] ?? '{"tasks":[]}') as { tasks: StoredTask[] }
+  return { tasks: tasks.tasks, log: git.log }
+}
+
+/** The keys a Board column shows, in order (wide layout: the column's region; narrow: the open tab). */
+export async function columnKeys(page: Page, status: string): Promise<string[]> {
+  const column = page.locator('section', { has: page.getByRole('heading', { level: 2, name: new RegExp(`^${status}`) }) })
+  return column.locator('article').evaluateAll(cards => cards.map(c => (c.getAttribute('aria-label') ?? '').split(' ')[0] ?? ''))
+}

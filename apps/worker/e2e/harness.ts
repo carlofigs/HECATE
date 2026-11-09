@@ -16,7 +16,7 @@ import { createServer, type IncomingMessage } from 'node:http'
 import { existsSync } from 'node:fs'
 import { createFakeGitHub } from '@hecate/github-store/testing'
 import { startWorker } from '../test/runtime.ts'
-import { fixtureFiles } from './fixture.ts'
+import { fixtureFiles, SCRATCH_COPIES, scratchDir } from './fixture.ts'
 
 const PORT = Number(process.env.E2E_PORT ?? 8788)
 const PUBLIC_URL = process.env.PUBLIC_URL ?? `http://localhost:${PORT}`
@@ -39,9 +39,34 @@ async function body(request: IncomingMessage): Promise<Buffer | undefined> {
   return Buffer.concat(chunks)
 }
 
+let claimed = 0
+
+/** Test-only endpoints. Never deployed: this file is the harness, not the Worker. */
+function harnessRoute(url: URL): { status: number; body: unknown } | null {
+  // A private copy of Planning for one test that writes, so tests never share state.
+  if (url.pathname === '/__harness/claim') {
+    if (claimed >= SCRATCH_COPIES) return { status: 503, body: { error: 'Out of scratch workspaces: restart the harness' } }
+    claimed++
+    return { status: 200, body: { dir: scratchDir(claimed) } }
+  }
+  // What reached git: the workspace's files at the branch head, and the commit messages.
+  if (url.pathname === '/__harness/git') {
+    const dir = url.searchParams.get('dir') ?? ''
+    const files = Object.fromEntries(Object.entries(fake.files()).filter(([path]) => path.startsWith(`${dir}/`)).map(([path, content]) => [path.slice(dir.length + 1), content]))
+    return { status: 200, body: { files, log: fake.log() } }
+  }
+  return null
+}
+
 const server = createServer((request, response) => {
   void (async () => {
     const url = new URL(request.url ?? '/', PUBLIC_URL)
+
+    const own = harnessRoute(url)
+    if (own) {
+      response.writeHead(own.status, { 'content-type': 'application/json', 'cache-control': 'no-store' }).end(JSON.stringify(own.body))
+      return
+    }
 
     // GitHub's consent page, answered as if the allowlisted user approved.
     if (url.pathname === '/__harness/authorize') {

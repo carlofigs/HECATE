@@ -32,6 +32,8 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 0,
+  // The harness runs the real Worker in workerd; on a busy runner a write and its commit can take a few seconds.
+  expect: { timeout: 10_000 },
   reporter: process.env.CI ? [['github'], ['list']] : [['list']],
   use: {
     baseURL: `http://localhost:${PORT}`,

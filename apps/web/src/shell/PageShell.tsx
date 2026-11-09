@@ -11,10 +11,13 @@ export interface PageShellProps {
   title: string
   /** A line under the heading: date, sprint. */
   subtitle?: (snapshot: Snapshot) => ReactNode
+  /** Beside the heading: the page's primary action on wider screens. */
+  actions?: ReactNode
+  /** Gets the snapshot with every pending change applied, as the page should show it. */
   children: (snapshot: Snapshot) => ReactNode
 }
 
-export function PageShell({ title, subtitle, children }: PageShellProps) {
+export function PageShell({ title, subtitle, actions, children }: PageShellProps) {
   const open = useApp(s => s.open)
   const refresh = useApp(s => s.refresh)
   const heading = useRef<HTMLHeadingElement>(null)
@@ -30,16 +33,19 @@ export function PageShell({ title, subtitle, children }: PageShellProps) {
     heading.current?.focus()
   }, [pathname])
 
-  const snapshot = open?.snapshot ?? null
+  const snapshot = open?.snapshot && open.view ? { ...open.snapshot, state: open.view } : (open?.snapshot ?? null)
   const retry = <Button onClick={() => void refresh()}>Try again</Button>
 
   return (
     <div className="flex flex-col gap-stack-lg">
-      <div className="flex flex-col gap-stack-xs">
-        <h1 ref={heading} tabIndex={-1} className="text-heading-1 text-text-primary">
-          {title}
-        </h1>
-        {snapshot && subtitle ? <div className="text-body-md text-text-secondary">{subtitle(snapshot)}</div> : null}
+      <div className="flex flex-wrap items-end justify-between gap-inline-md">
+        <div className="flex flex-col gap-stack-xs">
+          <h1 ref={heading} tabIndex={-1} className="text-heading-1 text-text-primary">
+            {title}
+          </h1>
+          {snapshot && subtitle ? <div className="text-body-md text-text-secondary">{subtitle(snapshot)}</div> : null}
+        </div>
+        {snapshot && actions ? actions : null}
       </div>
 
       {!open || open.status === 'loading' ? (

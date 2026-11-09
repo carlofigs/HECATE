@@ -86,7 +86,7 @@ Primitive families follow their CSS spelling (`--font-line-height-*` → `font.l
   - `size.control.default` is `md`, or `lg` when touch-first;
   - `size.target.default` is `min`, or `touch` when touch-first.
 - **Icons:** `size.icon.sm`/`md`/`lg` (16/20/24 px).
-- **Containers:** `size.container.prose` (72ch, R-18) for running text and `size.container.app` for the page.
+- **Containers:** `size.container.prose` (72ch, R-18) for running text, `size.container.app` for the page, and `size.container.column` for a Board column's narrowest width.
 
 ## Shape and elevation
 
@@ -120,7 +120,7 @@ Every segment of every token name, and every component prop value (C-07), comes 
 | Categories | `color`, `space`, `font`, `text`, `radius`, `border`, `shadow`, `size`, `breakpoint`, `grid`, `z`, `motion`, `opacity` |
 | Ramps | `white`, `neutral`, `amber`, `orange`, `green`, `red`, `blue` |
 | Concepts | `bg`, `text`, `border`, `accent`, `status`, `inset`, `stack`, `inline`, `family`, `size`, `weight`, `lineHeight`, `letterSpacing`, `display`, `heading`, `body`, `label`, `caption`, `code`, `data`, `width`, `control`, `target`, `icon`, `container`, `columns`, `gutter`, `duration`, `easing` |
-| Variants | `canvas`, `surface`, `raised`, `subtle`, `overlay`, `primary`, `secondary`, `muted`, `inverse`, `link`, `on-accent`, `default`, `strong`, `focus`, `success`, `warning`, `danger`, `info`, `sans`, `mono`, `regular`, `medium`, `semibold`, `tight`, `snug`, `normal`, `none`, `full`, `pill`, `modal`, `min`, `touch`, `prose`, `app`, `base`, `dropdown`, `sticky`, `popover`, `toast`, `instant`, `fast`, `slow`, `deliberate`, `standard`, `enter`, `exit`, `linear`, `disabled` |
+| Variants | `canvas`, `surface`, `raised`, `subtle`, `overlay`, `primary`, `secondary`, `muted`, `inverse`, `link`, `on-accent`, `default`, `strong`, `focus`, `success`, `warning`, `danger`, `info`, `sans`, `mono`, `regular`, `medium`, `semibold`, `tight`, `snug`, `normal`, `none`, `full`, `pill`, `modal`, `min`, `touch`, `prose`, `app`, `column`, `base`, `dropdown`, `sticky`, `popover`, `toast`, `instant`, `fast`, `slow`, `deliberate`, `standard`, `enter`, `exit`, `linear`, `disabled` |
 | States | `hover`, `active` |
 | Steps | `0`, `1`, `2`, `3`, `4`, `5`, `6`, `8`, `10`, `12`, `16`, `20`, `24`, `50`, `100`, `200`, `300`, `400`, `500`, `600`, `700`, `800`, `900`, `950`, `xs`, `sm`, `md`, `lg`, `xl`, `2xl`, `3xl`, `4xl` |
 | Component props (C-07) | `variant`: `primary`, `secondary`, `ghost` · `size`: `sm`, `md`, `lg` · `tone`: `neutral`, `accent`, `success`, `warning`, `danger`, `info` |
@@ -130,4 +130,4 @@ Every segment of every token name, and every component prop value (C-07), comes 
 - `on-accent` is one segment: text that sits on an accent fill.
 - `default` means the role's resting value. Under `size.*` it means the current device's density.
 - `touch` is the touch-first target size.
-- `prose` and `app` are the two container widths.
+- `prose`, `app` and `column` are the container widths.

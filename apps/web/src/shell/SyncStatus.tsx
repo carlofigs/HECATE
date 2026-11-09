@@ -8,6 +8,12 @@ const ICON = 'size-(--size-icon-md) shrink-0'
 /** What the sync indicator says, in words with an icon (R-04). design/components/app-shell.md */
 function syncState(open: OpenWorkspace | null): { icon: ReactNode; text: string } | null {
   if (!open) return null
+  const waiting = open.queue.length
+  if (waiting > 0) {
+    if (open.sendFailure?.kind === 'network') return { icon: <WifiOff aria-hidden="true" className={ICON} />, text: `Offline · ${waiting} ${waiting === 1 ? 'change' : 'changes'} waiting` }
+    if (open.sendFailure) return { icon: <CloudOff aria-hidden="true" className={ICON} />, text: "Couldn't save · retrying" }
+    return { icon: <RefreshCw aria-hidden="true" className={ICON} />, text: 'Saving…' }
+  }
   if (open.status === 'loading' || (open.status === 'refreshing' && !open.snapshot)) return { icon: <RefreshCw aria-hidden="true" className={ICON} />, text: 'Checking…' }
   if (open.status === 'stale' || open.status === 'error') {
     return open.failure?.kind === 'network'

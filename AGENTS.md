@@ -170,7 +170,14 @@ sessions pushing by hand. Treat every write as concurrent with someone else's.
   - **Reads:** one snapshot of the workspace (`GET /api/workspaces/:dir`),
     with every view computed from it through core's selectors, as the MCP
     tools do.
-  - **Writes:** only through `POST /api/workspaces/:dir/ops` (from P4 PR 3).
+  - **Writes:** only ops, through the store's `apply` (`apps/web/src/store.ts`):
+    - it applies them locally with core's engine at once, then queues them;
+    - the Worker gets one batch at a time with its own `opId`;
+    - the local result stands when the Worker answers with the next version; any other answer means a refetch;
+    - a refusal is dropped and explained; offline batches retry.
+    - A `task.add` carries a client ULID, so the Worker keeps the same task.
+    - Never write state any other way.
+  - **Moves** are `task.move` with `after` = the new predecessor (`apps/web/src/board/moves.ts`, unit-tested). Drag and drop, the Move menu and Undo all reduce to it.
   - **Routing:** every path the Worker answers is listed in
     `wrangler.jsonc` `assets.run_worker_first`. A new Worker route that is
     missing from that list is served the app's `index.html` instead.

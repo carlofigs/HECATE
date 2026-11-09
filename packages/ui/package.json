@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "lucide-react": "catalog:",
+    "radix-ui": "catalog:",
     "react-markdown": "catalog:",
     "remark-gfm": "catalog:"
   },

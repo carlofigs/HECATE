@@ -2,7 +2,8 @@ import {
   briefing, formatDay, PERSONAL_BLOCKED, type Briefing, type SprintPosition, type TaskSummary,
 } from '@hecate/core'
 import { Badge, KeyChip, Markdown, cn } from '@hecate/ui'
-import type { ReactNode } from 'react'
+import { createContext, use, type ReactNode } from 'react'
+import { Link, useParams } from 'react-router'
 import { timeRange, URGENCY_LABEL, URGENCY_TONE } from '../format.ts'
 import { PageShell } from '../shell/PageShell.tsx'
 import { useNow } from '../useNow.ts'
@@ -12,12 +13,23 @@ import { useNow } from '../useNow.ts'
  * (@hecate/core `briefing`), laid out for a glance. Nothing here derives a
  * view of its own.
  */
+/**
+ * Where a task opens: the Board's editor for it. A task's title is the link;
+ * key chips stay labels, being too small a target (R-07).
+ */
+const TaskLink = createContext<(key: string) => string>(key => `?task=${key}`)
+
+
 export function Today() {
   const now = useNow()
+  const { workspace = '' } = useParams()
+  const taskHref = (key: string): string => `/w/${encodeURIComponent(workspace)}/board?task=${key}`
   return (
-    <PageShell title="Today" subtitle={snapshot => <Subtitle b={briefing(snapshot.state, now)} />}>
-      {snapshot => <TodayBody b={briefing(snapshot.state, now)} />}
-    </PageShell>
+    <TaskLink value={taskHref}>
+      <PageShell title="Today" subtitle={snapshot => <Subtitle b={briefing(snapshot.state, now)} />}>
+        {snapshot => <TodayBody b={briefing(snapshot.state, now)} />}
+      </PageShell>
+    </TaskLink>
   )
 }
 
@@ -64,7 +76,9 @@ function TaskLine({ task, children }: { task: TaskSummary; children?: ReactNode 
     <li className="flex flex-col gap-stack-xs">
       <span className="flex flex-wrap items-baseline gap-inline-sm">
         <KeyChip taskKey={task.key} />
-        <span className="text-body-md text-text-primary">{task.title}</span>
+        <Link to={use(TaskLink)(task.key)} className="inline-flex min-h-(--size-target-default) items-center text-body-md text-text-link underline">
+          {task.title}
+        </Link>
         <Urgency urgency={task.urgency} />
       </span>
       <span className="flex flex-wrap gap-x-inline-md text-body-sm text-text-secondary">

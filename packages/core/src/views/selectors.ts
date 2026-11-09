@@ -101,6 +101,46 @@ export function summarise(state: WorkspaceState, task: Task): TaskSummary {
 
 const openTasks = (state: WorkspaceState): Task[] => state.tasks.tasks.filter(isOpen).sort(byBoardOrder(state))
 
+/** A task as the board shows it: its summary, plus what a card needs to say. */
+export interface BoardCard extends TaskSummary {
+  kind: Task['kind']
+  tags: string[]
+  dependsOn: TaskKey[]
+  /** Who a B task waits on (person and/or text), as Waiting On says it. */
+  waitingOn: string | null
+  completedAt: string | null
+}
+
+export interface BoardColumn {
+  status: { id: string; name: string; category: StatusCategory }
+  cards: BoardCard[]
+}
+
+const waitingLabel = (state: WorkspaceState, t: Task): string | null =>
+  [personLabel(state, t.waitingOn?.personId ?? null), t.waitingOn?.text ?? null].filter((x): x is string => x !== null).join(' — ') || null
+
+/**
+ * The board: every status in the workspace's order, each with its tasks in
+ * board order (fractional order, then key). Closed tasks still in tasks.json
+ * (done or dropped, not yet archived by a sprint close) are on the board too.
+ */
+export function boardColumns(state: WorkspaceState): BoardColumn[] {
+  const sorted = [...state.tasks.tasks].sort(byBoardOrder(state))
+  return state.workspace.statuses.map(status => ({
+    status: { id: status.id, name: status.name, category: status.category },
+    cards: sorted
+      .filter(t => t.status === status.id)
+      .map(t => ({
+        ...summarise(state, t),
+        kind: t.kind,
+        tags: [...t.tags],
+        dependsOn: [...t.dependsOn],
+        waitingOn: waitingLabel(state, t),
+        completedAt: t.completedAt,
+      })),
+  }))
+}
+
 /** Open tasks in an `active` status, in board order. */
 export function inProgress(state: WorkspaceState): TaskSummary[] {
   return openTasks(state).filter(t => statusInfo(state, t.status).category === 'active').map(t => summarise(state, t))
@@ -134,8 +174,7 @@ export function waitingOn(state: WorkspaceState, today: IsoDate): WaitingItem[] 
     .filter(t => t.kind === 'waiting')
     .sort((a, b) => rank(a) - rank(b))
     .map(t => {
-      const person = personLabel(state, t.waitingOn?.personId ?? null)
-      const who = [person, t.waitingOn?.text ?? null].filter((x): x is string => x !== null).join(' — ') || null
+      const who = waitingLabel(state, t)
       const next = (week?.schedule ?? [])
         .filter(r => r.date >= today && r.keys.includes(t.key))
         .sort((a, b) => (a.date + (a.start ?? '')).localeCompare(b.date + (b.start ?? '')))[0]
