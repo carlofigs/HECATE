@@ -237,7 +237,10 @@ describe('/api', () => {
     const calls: unknown[] = []
     const deps = { settings: SETTINGS, workspaces: await listFor(await seededFake()), workspace: () => fakeRpc(calls), now: () => NOW }
     const get = async (path: string) => handleApi(new Request(`https://hecate.test${path}`, { headers: { cookie: await sessionCookie() } }), deps)
-    expect(await (await get('/api/workspaces')).json()).toEqual({ workspaces: [{ dir: '_old', hidden: true, name: null, policy: null }, { dir: 'work', hidden: false, name: 'Work', policy: 'open' }] })
+    const listed = [{ dir: '_old', hidden: true, name: null, policy: null }, { dir: 'work', hidden: false, name: 'Work', policy: 'open' }]
+    expect(await (await get('/api/workspaces')).json()).toEqual({ workspaces: listed, default: null })
+    const withDefault = await handleApi(new Request('https://hecate.test/api/workspaces', { headers: { cookie: await sessionCookie() } }), { ...deps, defaultWorkspace: 'work' })
+    expect(await withDefault.json()).toEqual({ workspaces: listed, default: 'work' })
     expect((await get('/api/workspaces/club')).status).toBe(404)
     expect((await get('/api/workspaces/..%2Fwork')).status).toBe(404)
     expect((await get('/api/workspaces/work')).status).toBe(503)

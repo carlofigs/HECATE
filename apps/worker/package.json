@@ -2,13 +2,15 @@
   "name": "@hecate/worker",
   "private": true,
   "version": "0.0.0",
-  "description": "HECATE v2 Cloudflare Worker: the WorkspaceDO single writer (ADR 0002), and later /api, /mcp and /hooks.",
+  "description": "HECATE v2 Cloudflare Worker: the web app's static assets, /api, /mcp, /auth and /hooks, and the WorkspaceDO single writer (ADR 0002).",
   "type": "module",
   "scripts": {
     "dev": "WRANGLER_SEND_METRICS=false wrangler dev",
     "build": "WRANGLER_SEND_METRICS=false wrangler deploy --dry-run --env preview --outdir dist",
+    "harness": "tsx e2e/harness.ts",
+    "e2e": "pnpm --filter @hecate/web build && playwright test --config e2e/playwright.config.ts",
     "smoke": "tsx test/smoke.ts",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p test",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test && tsc --noEmit -p e2e",
     "lint": "eslint .",
     "test": "TZ=UTC vitest run && TZ=Australia/Sydney vitest run"
   },
@@ -20,8 +22,11 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@axe-core/playwright": "catalog:",
     "@cloudflare/workers-types": "catalog:",
+    "@hecate/web": "workspace:*",
     "@modelcontextprotocol/client": "catalog:",
+    "@playwright/test": "catalog:",
     "@types/node": "catalog:",
     "esbuild": "catalog:",
     "miniflare": "catalog:",

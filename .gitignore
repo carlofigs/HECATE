@@ -41,6 +41,10 @@ Thumbs.db
 # Vite
 .vite/
 
+# Playwright
+test-results/
+playwright-report/
+
 # Tool scratch state — link/credential files that CLIs drop in the working
 # directory. A CLI run from the wrong cwd lands these in the repo root, where
 # `git add -A` would publish them; this repo is public, so that is a real leak

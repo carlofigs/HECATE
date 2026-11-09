@@ -5,6 +5,7 @@
  * code `other` is user 7).
  */
 
+import { readFileSync } from 'node:fs'
 import { build } from 'esbuild'
 import { Miniflare, type Request as MiniflareRequest } from 'miniflare'
 import type { FakeGitHub } from '@hecate/github-store/testing'
@@ -48,8 +49,40 @@ function githubOAuth(url: URL, body: string, headers: Headers): Response | null 
   return null
 }
 
-export async function startWorker(fake: FakeGitHub, bindings: Record<string, string> = {}): Promise<Miniflare> {
+/** wrangler.jsonc, comments removed (they only ever start a line or follow a value, never sit inside a string). */
+function wranglerConfig(): { assets: { not_found_handling: string; run_worker_first: string[] } } {
+  const text = readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8')
+  const json = text.split('\n').map(line => {
+    let inString = false
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === '"' && line[i - 1] !== '\\') inString = !inString
+      if (!inString && line[i] === '/' && line[i + 1] === '/') return line.slice(0, i)
+    }
+    return line
+  }).join('\n')
+  return JSON.parse(json) as never
+}
+
+/** The paths the Worker answers before static assets: wrangler.jsonc's list, so tests route exactly as Cloudflare does. */
+export const RUN_WORKER_FIRST: readonly string[] = wranglerConfig().assets.run_worker_first
+
+export interface StartOptions {
+  /** A directory to serve as the web app's static assets, routed as in wrangler.jsonc. */
+  assets?: string
+}
+
+export async function startWorker(fake: FakeGitHub, bindings: Record<string, string> = {}, options: StartOptions = {}): Promise<Miniflare> {
+  const { assets } = wranglerConfig()
   return new Miniflare({
+    ...(options.assets
+      ? {
+          assets: {
+            directory: options.assets,
+            routerConfig: { has_user_worker: true, static_routing: { user_worker: assets.run_worker_first.filter(p => !p.startsWith('!')) } },
+            assetConfig: { not_found_handling: assets.not_found_handling as 'single-page-application' },
+          },
+        }
+      : {}),
     modules: true,
     script: await bundle(),
     compatibilityDate: '2026-08-01',

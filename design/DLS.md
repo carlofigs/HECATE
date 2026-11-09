@@ -18,9 +18,9 @@ HECATE is a single-user planning system: focus, tasks, projects, sprints, people
 
 | Surface | What it is | Profile | Touch-first |
 |---|---|---|---|
-| Today | The day at a glance: schedule, plan, in progress, waiting on, due soon | `app` | Adaptive (below) |
-| Board | Tasks by status: drag, add, edit, complete | `app` | Adaptive (below) |
-| Sign-in and shell | GitHub sign-in, workspace switcher, navigation, sync status | `app` | Adaptive (below) |
+| Today (built) | The day at a glance: schedule, plan, the week, in progress, waiting on, blocked, due soon, cutoffs, keep in mind | `app` | Adaptive (below) |
+| Board (P4 PR 3) | Tasks by status: drag, add, edit, complete | `app` | Adaptive (below) |
+| Sign-in and shell (built) | GitHub sign-in, workspace switcher, navigation, sync status | `app` | Adaptive (below) |
 
 **Profile:** `app` only. Nothing in P4 is a chart, so `viz` is not declared (M-viz-11 allows one surface to take it later).
 
@@ -33,11 +33,18 @@ HECATE is used at a desk and on a phone, so the declaration follows the device r
 
 Components never branch on this. They size themselves from `size.control.default` and `size.target.default`, and `theme.css` re-maps those two tokens under `(any-pointer: coarse), (width < breakpoint.md)`.
 
-`any-pointer` rather than `pointer` means a touchscreen laptop gets touch targets even while a mouse is attached. The e2e suite measures both sizes (from P4 PR 2).
+`any-pointer` rather than `pointer` means a touchscreen laptop gets touch targets even while a mouse is attached. The e2e suite measures both floors on every control: 44 px at the phone and 320 px widths, 24 px on the desktop (`apps/worker/e2e/layout.spec.ts`).
 
 ## 2. Base component library (C-04)
 
-**Radix primitives** (the `radix-ui` package), unstyled and themed entirely through tokens. Native HTML elements are used wherever they are enough: buttons, links, `<select>`, date inputs. **dnd-kit** handles drag and drop on the Board, always alongside a non-drag way to do the same thing (WCAG 2.5.7 under R-01). No opinionated visual library is used.
+**Radix primitives** (the `radix-ui` package), unstyled and themed entirely through tokens. They arrive with the first dialog and menu in PR 3.
+
+- **Native HTML elements** wherever they are enough: buttons, links, `<select>`, date inputs. The components so far are all native or custom.
+- **Icons:** `lucide-react`, always decorative beside a word, or named by their control.
+- **Markdown:** `react-markdown` with no raw HTML.
+- **Drag and drop:** `dnd-kit` on the Board, always alongside a non-drag way to do the same thing (WCAG 2.5.7 under R-01).
+
+No opinionated visual library is used.
 
 ## 3. Foundations
 
@@ -65,10 +72,28 @@ All five are `draft` until the owner approves this foundation by merging it.
 
 The C-05 ladder runs `draft` → `candidate` → `stable` → `deprecated`. Only `stable` may be depended on by other components.
 
-| Section / component | Status | Blocked on |
+**Candidate** means: a spec in `components/`, in use on a surface, and a clean automated scan. The scan is `apps/worker/e2e`, axe at three widths in both schemes, in CI.
+
+**Stable** needs three more things:
+
+- use on a second surface (the Board, PR 3);
+- the manual keyboard and screen-reader passes (R-29 layers 2 and 3);
+- tests.
+
+The e2e suite covers part of the keyboard pass (focus order and rings through the shell); the screen-reader pass has not been done.
+
+| Section / component | Status | Next |
 |---|---|---|
 | Token layer (`theme.css`, `tokens.json`) | `draft` | The owner's approval of the foundations |
-| Components | none yet | They arrive with the app (P4 PR 2 onwards), each with a spec in `components/` |
+| `Button`, `ButtonLink`, `IconButton` | `candidate` | Second surface; manual passes |
+| `SelectField` | `candidate` | Second surface; manual passes |
+| `Badge`, `KeyChip` | `candidate` | Second surface; manual passes |
+| `Banner` | `candidate` | Second surface; manual passes |
+| `EmptyState` | `candidate` | Second surface; manual passes |
+| `Skeleton`, `VisuallyHidden` | `candidate` | Second surface; manual passes |
+| `Markdown` | `candidate` | Second surface; manual passes |
+| App shell (pattern) | `candidate` | The bottom navigation bar below `md` (PR 3) |
+| PageShell (pattern) | `candidate` | The Board (PR 3) |
 
 ## 5. Brand inputs
 
@@ -91,4 +116,5 @@ The trinity mark appears at 24 px and up. The hero keyblade is used for the 16 p
 | `tokens/tokens.json` | Present, generated |
 | `tokens/tokens.css` | Not used: T-08 (B) makes `packages/ui/src/theme.css` the CSS |
 | `rules.json`, `rules.yaml`, `rules.py`, `build_rules.py` | Vendored |
-| `components/`, `patterns.md`, `content.md` | Created when needed |
+| `components/` | One spec per component and per app pattern (shell, PageShell) |
+| `patterns.md`, `content.md` | Created when needed |

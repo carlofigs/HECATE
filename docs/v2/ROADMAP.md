@@ -317,12 +317,18 @@ session and Origin check (ADR 0003) need it on the Worker's own origin.
       torch amber as the single accent, light and dark) with Tailwind's
       defaults removed, and the generated `tokens.json`. Tests check drift,
       vocabulary, contrast in both themes, type, targets and literal values.
-- [ ] `feat/web-shell` — `apps/web` served as the Worker's static assets;
-      sign-in, the shell and PageShell; read-only Today from core's
-      `briefing`; the Playwright + axe suite, gating PRs from here on.
+- [x] `feat/web-shell` — `apps/web` (React 19, Vite 8) served as the Worker's
+      static assets, with every Worker path listed in `run_worker_first`.
+      GitHub sign-in through the Worker, the shell (workspace switcher, sync
+      status) and PageShell (loading, error, partial). A read-only Today from
+      core's `briefing`. `@hecate/ui` primitives with specs. An e2e harness (the
+      real Worker in workerd, the fake GitHub, the real sign-in flow) and the
+      Playwright + axe suite at three widths in both schemes, gating PRs from
+      here on: P6's gate, brought forward.
 - [ ] `feat/web-board` — the Board on ops: core's `boardColumns`, optimistic
       writes with replay, drag and drop with a keyboard and a non-drag path,
-      add, edit, complete and undo.
+      add, edit, complete and undo; the navigation moves to a bottom bar below
+      `md` once there are two pages.
 - [ ] `feat/web-pwa` — installable (manifest, icons, service worker that never
       answers a Worker route), offline banner and queued writes, docs.
 
@@ -336,7 +342,8 @@ controls.
 show linked tasks by `projectId`, including archived ones; the activity unread
 cursor matches `ack_activity`; Today is editable, including end-of-day outcomes.
 
-**P6:** the Playwright + axe job gates PRs; two open tabs converge within 2 s.
+**P6:** two open tabs converge within 2 s. (The Playwright + axe job already
+gates PRs, since P4 PR 2.)
 
 ### Definition of done (every PR)
 

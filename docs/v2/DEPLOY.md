@@ -9,12 +9,12 @@ settings, never in a committed file.
 
 | Piece | Where | What it is |
 |---|---|---|
-| Worker `hecate-preview` | Cloudflare | v2 during beta: reads and writes the data repo's **`v2` branch** |
+| Worker `hecate-preview` | Cloudflare | v2 during beta: reads and writes the data repo's **`v2` branch**, and serves the web app (`apps/web`) as its static assets |
 | Worker `hecate` | Cloudflare | v2 from cutover: the data repo's `main` |
 | `WorkspaceDO` | inside each Worker | One Durable Object per workspace, the only writer (ADR 0002) |
 | `OAUTH_KV` | inside each Worker | MCP clients, grants and token hashes; provisioned on first deploy |
 | GitHub App | your GitHub account | Storage (contents on the data repo only), sign-in, and the push webhook (ADR 0003) |
-| `.github/workflows/worker.yml` | this repo | Deploys preview on every merge that touches the Worker; production by hand |
+| `.github/workflows/worker.yml` | this repo | Builds the web app and deploys preview on every merge that touches the Worker, the app or what they bundle; production by hand |
 
 The two Workers are separate, so a broken preview never takes down the
 connector Claude relies on. During beta only preview exists, and v1 keeps
@@ -156,7 +156,15 @@ or on your machine, never here.
    Scheduled workflows only run on the default branch, so pushing `v2`
    triggers nothing.
 
-### 6. Connect Claude
+### 6. Open the web app
+
+Open `PUBLIC_URL` and choose **Sign in with GitHub**. You land on Today in the
+default workspace (`DEFAULT_WORKSPACE`, else the first one). The app is the
+Worker's static assets, on the same origin as `/api`. Its session is an
+httpOnly cookie, so no token is ever stored in the browser. To install it
+on a phone, see P4 PR 4.
+
+### 7. Connect Claude
 
 | Client | How |
 |---|---|
@@ -167,7 +175,7 @@ or on your machine, never here.
 The consent page shows where access will be sent. Tick "Don't ask again" to
 skip it for that client for 30 days.
 
-### 7. Install the skills
+### 8. Install the skills
 
 The planning skills (`hecate-focus`, `hecate-meeting`, `hecate-log`) are in
 [`plugin/`](../../plugin/README.md):
@@ -176,6 +184,38 @@ The planning skills (`hecate-focus`, `hecate-meeting`, `hecate-log`) are in
   `HECATE_MCP_URL` to `PUBLIC_URL/mcp`.
 - **claude.ai and Cowork:** run `pnpm package-skills` and upload each zip
   from `plugin/dist/` under Settings → Capabilities → Skills.
+
+## Local development
+
+Run the whole stack locally with no Cloudflare or GitHub account: the bundled
+Worker in workerd, with the fake GitHub seeded from `apps/worker/e2e/fixture.ts`.
+
+```bash
+pnpm --filter @hecate/web build && pnpm --filter @hecate/worker harness
+```
+
+Open `http://localhost:8788` and sign in. Only GitHub's consent page is
+skipped; the Worker's own sign-in runs for real.
+
+For hot reload, start the harness with the dev server's origin, then Vite,
+which proxies `/api` and `/auth` to it:
+
+```bash
+PUBLIC_URL=http://localhost:5173 pnpm --filter @hecate/worker harness
+```
+
+```bash
+pnpm --filter @hecate/web dev
+```
+
+## Acceptance (P4, web app)
+
+| Check | How | Also proven by |
+|---|---|---|
+| The app is served, with its security headers | `pnpm --filter @hecate/worker smoke PUBLIC_URL` | `test/assets.test.ts` |
+| Sign-in works and lands on Today | Open `PUBLIC_URL` and sign in | `e2e/signin.spec.ts` |
+| No token anywhere in the browser | DevTools → Application: one httpOnly `__Host-` cookie, nothing in storage but `hecate:workspace` | `e2e/no-token.spec.ts` |
+| No Tier 0 axe violations; usable at 375 px | A phone, or DevTools at 375 px | `e2e/a11y.spec.ts`, `e2e/layout.spec.ts` |
 
 ## Acceptance (P2)
 

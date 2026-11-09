@@ -50,3 +50,40 @@ jobs:
       # that only fails at build time before it reaches main.
       - name: Build
         run: pnpm build
+
+  # The v2 app end to end: the built web app served by the bundled Worker in
+  # workerd, against the fake GitHub (apps/worker/e2e). Sign-in, Today in every
+  # state, and the accessibility gate (axe, target sizes, reflow, focus) at
+  # three widths in both colour schemes. No secrets: nothing leaves the runner.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup
+
+      - name: Playwright version
+        id: playwright
+        working-directory: apps/worker
+        run: echo "version=$(pnpm exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the browser
+        id: browser-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ steps.playwright.outputs.version }}
+
+      - name: Install Chromium
+        if: steps.browser-cache.outputs.cache-hit != 'true'
+        working-directory: apps/worker
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Install Chromium's system libraries
+        if: steps.browser-cache.outputs.cache-hit == 'true'
+        working-directory: apps/worker
+        run: pnpm exec playwright install-deps chromium
+
+      - name: End-to-end and accessibility
+        run: pnpm --filter @hecate/worker e2e

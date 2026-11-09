@@ -1,6 +1,7 @@
 name: Deploy Worker
 
-# Deploys apps/worker to Cloudflare (docs/v2/DEPLOY.md).
+# Deploys apps/worker, with the web app (apps/web) as its static assets, to
+# Cloudflare (docs/v2/DEPLOY.md).
 #
 # - preview (hecate-preview, the data repo's `v2` branch): on every push to
 #   main that touches the Worker or what it bundles, and by hand.
@@ -16,8 +17,10 @@ on:
     branches: [main]
     paths:
       - apps/worker/**
+      - apps/web/**
       - packages/core/**
       - packages/github-store/**
+      - packages/ui/**
       - pnpm-lock.yaml
       - pnpm-workspace.yaml
       - .github/workflows/worker.yml
@@ -71,6 +74,11 @@ jobs:
       - name: Test the Worker and what it bundles
         if: steps.ready.outputs.ok == 'true'
         run: pnpm --filter "@hecate/worker..." test
+
+      # The web app is the Worker's static assets (wrangler.jsonc `assets`).
+      - name: Build the web app
+        if: steps.ready.outputs.ok == 'true'
+        run: pnpm --filter @hecate/web build
 
       - name: Deploy
         if: steps.ready.outputs.ok == 'true'

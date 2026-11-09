@@ -1,0 +1,9 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    // Playwright runs these in Node; page.evaluate callbacks run in the browser.
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "types": ["node"]
+  },
+  "include": ["."]
+}

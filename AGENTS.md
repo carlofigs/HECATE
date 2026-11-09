@@ -23,10 +23,10 @@ frozen and still live; v2 is being built alongside it. Read
 | `packages/core/` | v2 data contract (`@hecate/core`): file schemas, versioning, dates, keys | Active |
 | `packages/migrate-v1/` | One-off v1 → v2 conversion with a dry-run report (`@hecate/migrate-v1`) | Until cutover, then deleted |
 | `packages/github-store/` | v2 storage (`@hecate/github-store`): Git Data API, App tokens, webhook signatures | Active |
-| `packages/ui/` | v2 design tokens (`@hecate/ui`): the Tailwind v4 `@theme` source, base styles, token checks; UI primitives from P4 PR 2 | Active |
+| `packages/ui/` | v2 design tokens and primitives (`@hecate/ui`): the Tailwind v4 `@theme` source, base styles, token checks, and the shared React components | Active |
 | `packages/*` (other) | further v2 shared packages | From P1 |
-| `apps/worker/` | v2 Cloudflare Worker (`@hecate/worker`): `WorkspaceDO`, later `/api`, `/mcp`, `/hooks` | Active |
-| `apps/*` (other) | v2 web app | From P4 |
+| `apps/worker/` | v2 Cloudflare Worker (`@hecate/worker`): `WorkspaceDO`, `/api`, `/mcp`, `/auth`, `/hooks`, the web app as static assets, and the e2e suite (`e2e/`) | Active |
+| `apps/web/` | v2 web app (`@hecate/web`): React 19, Vite 8, served by the Worker | Active |
 | `plugin/` | v2 Claude skills (`hecate-*`) as a Claude Code plugin, and zips for claude.ai | Active |
 | `design/` | The owner's design standard (vendored) and HECATE's design language: `DLS.md`, `foundations.md`, `DECISIONS.md`, generated `tokens/tokens.json` | Living |
 | `docs/` | Roadmap and ADRs | Living |
@@ -63,6 +63,8 @@ pnpm migrate-v1 --data <checkout> --config <file>         # v1 → v2 dry run of
 pnpm --filter @hecate/worker build                        # bundle the Worker (wrangler --dry-run; no Cloudflare account needed)
 pnpm --filter @hecate/worker smoke <url>                  # anonymous, read-only checks of a deployed Worker
 pnpm package-skills                                       # plugin/dist/<skill>.zip for claude.ai uploads
+pnpm --filter @hecate/web build && pnpm --filter @hecate/worker harness   # the v2 app on http://localhost:8788, fake GitHub, no accounts needed
+pnpm --filter @hecate/worker e2e                          # build the app, then Playwright + axe against the harness
 pnpm tokens                                               # regenerate design/tokens/tokens.json after editing packages/ui/src/theme.css
 python design/rules.py --tier T0                          # the design standard's blocking rules (also --topic, --id, --profile)
 ```
@@ -73,10 +75,16 @@ deploys the v2 Worker to its preview environment (production by hand; see
 [`docs/v2/DEPLOY.md`](docs/v2/DEPLOY.md)). knip must stay
 clean; the frozen v1 packages are excluded in `knip.json`.
 
-Verify UI changes in a browser, not by reading the code back. The app talks to
-`api.github.com` directly, so a browser check mocks that host (Playwright
-`page.route`) and seeds `localStorage` credentials — never point a check at
-the real data repo.
+Verify UI changes in a browser, not by reading the code back.
+
+- **v2:** check the app on the harness (`apps/worker/e2e/harness.ts`): the
+  real Worker in workerd, the built app as its assets, the fake GitHub seeded
+  from `e2e/fixture.ts`, and the real sign-in flow with only GitHub's consent
+  page stubbed. Add what you changed to the e2e suite, which CI runs on every
+  PR. Set `PLAYWRIGHT_CHROMIUM_PATH` to use a preinstalled browser.
+- **v1:** the app talks to `api.github.com` directly, so a browser check mocks
+  that host (Playwright `page.route`) and seeds `localStorage` credentials.
+- **Both:** never point a check at the real data repo.
 
 ## How work lands
 
@@ -155,6 +163,18 @@ sessions pushing by hand. Treat every write as concurrent with someone else's.
   from the workspace at run time, never from the skill text.
   `plugin/test/skills.test.ts` fails if a skill names a tool or op that does
   not exist.
+- **The web app** (`apps/web`) runs on the Worker's origin.
+  - **Session:** an httpOnly cookie it never sees. Nothing credential-like goes
+    in JavaScript storage (`localStorage` holds UI preferences only), and
+    `e2e/no-token.spec.ts` checks it.
+  - **Reads:** one snapshot of the workspace (`GET /api/workspaces/:dir`),
+    with every view computed from it through core's selectors, as the MCP
+    tools do.
+  - **Writes:** only through `POST /api/workspaces/:dir/ops` (from P4 PR 3).
+  - **Routing:** every path the Worker answers is listed in
+    `wrangler.jsonc` `assets.run_worker_first`. A new Worker route that is
+    missing from that list is served the app's `index.html` instead.
+    `test/assets.test.ts` reads the list.
 - **Read through the views.** Waiting On, blocked, today, sprint position and
   the briefing come from `src/views/selectors.ts`, and markdown from
   `src/views/render.ts`. Don't recompute them elsewhere, or the app and Claude

@@ -4,8 +4,8 @@
  *   pnpm --filter @hecate/worker smoke https://hecate-preview.<subdomain>.workers.dev
  *
  * Anonymous and read-only: it never signs in and never writes. It checks that
- * the Worker is up and fully configured, and that every guarded route refuses
- * a stranger. The deploy workflow runs it after each deploy.
+ * the Worker is up and fully configured, that it serves the web app, and that
+ * every guarded route refuses a stranger. The deploy workflow runs it after each deploy.
  */
 
 import { pathToFileURL } from 'node:url'
@@ -30,6 +30,12 @@ export async function smoke(origin: string, call: Fetch = (url, init) => fetch(u
     }
   }
 
+  await check('the app is served, with its security headers', async () => {
+    const r = await call(`${base}/`, { headers: { accept: 'text/html', 'sec-fetch-mode': 'navigate' } })
+    const html = await r.text()
+    const csp = r.headers.get('content-security-policy') ?? ''
+    return [r.status === 200 && html.includes('<div id="root">') && csp.includes("frame-ancestors 'none'"), `${r.status}${csp ? '' : ', no CSP'}`]
+  })
   await check('health', async () => {
     const r = await call(`${base}/health`)
     return [r.status === 200, `${r.status}`]

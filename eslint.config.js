@@ -1,5 +1,6 @@
 import js from '@eslint/js'
 import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
 import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
@@ -10,7 +11,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   globalIgnores(['apps/web-v1/**', 'mcp/**', '**/json-schema/**', '**/dist/**']),
   {
-    files: ['**/*.ts'],
+    files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, tseslint.configs.recommendedTypeChecked],
     languageOptions: {
       parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
@@ -55,6 +56,13 @@ export default defineConfig([
     rules: {
       'no-restricted-imports': ['error', { patterns: [{ group: ['node:*'], message: 'github-store runs in the Worker: use fetch and WebCrypto.' }] }],
     },
+  },
+  {
+    // The v2 UI: React's rules of hooks plus the React Compiler's rules (no
+    // mutation during render, no setState in effects, stable hook order).
+    files: ['apps/web/src/**/*.{ts,tsx}', 'packages/ui/src/**/*.{ts,tsx}'],
+    extends: [reactHooks.configs.flat.recommended],
+    languageOptions: { globals: globals.browser },
   },
   {
     // Tests break valid fixtures on purpose by poking raw JSON. The unsafe-any
