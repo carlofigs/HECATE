@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "icons": "pwa-assets-generator",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run"
@@ -26,13 +27,19 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "catalog:",
+    "@types/culori": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@vite-pwa/assets-generator": "catalog:",
     "@vitejs/plugin-react": "catalog:",
+    "culori": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:"
+    "vite-plugin-pwa": "catalog:",
+    "vitest": "catalog:",
+    "workbox-build": "catalog:",
+    "workbox-window": "catalog:"
   }
 }

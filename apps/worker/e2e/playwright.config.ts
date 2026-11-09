@@ -40,6 +40,8 @@ export default defineConfig({
     trace: 'off',
     locale: 'en-AU',
     timezoneId: 'Australia/Sydney',
+    // The app's service worker would sit between the page and every route mock; pwa.spec.ts allows it.
+    serviceWorkers: 'block',
     ...(executablePath ? { launchOptions: { executablePath } } : {}),
   },
   projects,

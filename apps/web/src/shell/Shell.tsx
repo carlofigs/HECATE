@@ -1,13 +1,16 @@
-import { IconButton, SelectField, Toaster, cn } from '@hecate/ui'
+import { Banner, IconButton, SelectField, Toaster, cn } from '@hecate/ui'
 import { CalendarDays, KanbanSquare, LogOut } from 'lucide-react'
 import { useEffect, type MouseEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { appStore, useApp } from '../appStore.ts'
 import { dismissToast, useToasts } from '../toasts.ts'
+import { useOnline } from '../useOnline.ts'
 import { workspaceLabel } from '../workspace.ts'
 import { Mark } from './Mark.tsx'
 import { setBottomActionSlot } from './slots.ts'
 import { SyncStatus } from './SyncStatus.tsx'
+import { UpdateBanner } from './UpdateBanner.tsx'
+import { reloadToUpdate, useNeedRefresh } from './updates.ts'
 
 /** How often an open, visible page checks for changes made elsewhere (live updates arrive in P6). */
 const REFRESH_MS = 60_000
@@ -67,6 +70,19 @@ export function Shell() {
   const signOut = useApp(s => s.signOut)
   const toasts = useToasts()
   const inAppLinks = useInAppLinks()
+  const online = useOnline()
+  const needRefresh = useNeedRefresh()
+  const unsent = useApp(s => (s.open?.queue.length ?? 0) > 0)
+
+  // Never lose input (M-app-06): changes not yet sent live in this tab, so ask before it closes or reloads.
+  useEffect(() => {
+    if (!unsent) return
+    const warn = (event: BeforeUnloadEvent): void => {
+      event.preventDefault()
+    }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [unsent])
 
   useEffect(() => {
     void appStore.getState().openWorkspace(workspace)
@@ -76,15 +92,20 @@ export function Shell() {
     const check = (): void => {
       if (document.visibilityState === 'visible') void appStore.getState().refreshIfStale(MIN_AGE_MS)
     }
+    // Back online: send what is waiting now, not after the backoff, and catch up.
+    const reconnect = (): void => {
+      appStore.getState().retryNow()
+      check()
+    }
     const timer = setInterval(check, REFRESH_MS)
     document.addEventListener('visibilitychange', check)
     window.addEventListener('focus', check)
-    window.addEventListener('online', check)
+    window.addEventListener('online', reconnect)
     return () => {
       clearInterval(timer)
       document.removeEventListener('visibilitychange', check)
       window.removeEventListener('focus', check)
-      window.removeEventListener('online', check)
+      window.removeEventListener('online', reconnect)
     }
   }, [])
 
@@ -93,11 +114,13 @@ export function Shell() {
   const page = pathname.split('/').at(-1) ?? 'today'
 
   return (
-    <div className="flex min-h-dvh flex-col bg-bg-canvas">
+    // An app layout: only the page scrolls, between the header and the bottom bar, so nothing on it can ever sit under
+    // either (R-07 targets, 2.4.11 focus not obscured).
+    <div className="flex h-dvh flex-col bg-bg-canvas">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-inset-md focus:top-inset-md focus:z-(--z-toast) focus:rounded-control focus:bg-bg-raised focus:p-inset-md focus:text-label focus:shadow-overlay">
         Skip to content
       </a>
-      <header className="sticky top-0 z-(--z-sticky) border-b border-border-subtle bg-bg-surface">
+      <header className="shrink-0 border-b border-border-subtle bg-bg-surface">
         <div className="mx-auto flex w-full max-w-app flex-wrap items-center gap-x-inline-lg gap-y-stack-xs px-inline-lg py-stack-xs lg:px-inline-xl">
           <Link to="/" className="flex min-h-(--size-target-default) items-center gap-inline-sm text-heading-4 text-text-primary no-underline">
             <Mark className="size-(--size-icon-lg)" />
@@ -118,10 +141,18 @@ export function Shell() {
         </div>
       </header>
       {/* Links are clicks on <a> elements; the handler only routes them, so it is not an interaction of its own. */}
-      <main id="main" tabIndex={-1} onClick={inAppLinks} className="mx-auto w-full max-w-app flex-1 px-inline-lg py-stack-lg lg:px-inline-xl">
-        <Outlet />
+      <main id="main" tabIndex={-1} onClick={inAppLinks} className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto flex w-full max-w-app flex-col gap-stack-md px-inline-lg py-stack-lg lg:px-inline-xl">
+          {needRefresh ? <UpdateBanner onReload={reloadToUpdate} /> : null}
+          {online ? null : (
+            <Banner tone="warning" title="You're offline">
+              HECATE shows what it had when the connection dropped. Changes you make are kept and saved when you reconnect; keep this tab open until they are.
+            </Banner>
+          )}
+          <Outlet />
+        </div>
       </main>
-      <div className="sticky bottom-0 z-(--z-sticky) flex items-center justify-between gap-inline-sm border-t border-border-subtle bg-bg-surface px-inline-md py-stack-xs md:hidden">
+      <div className="flex shrink-0 items-center justify-between gap-inline-sm border-t border-border-subtle bg-bg-surface px-inline-md py-stack-xs md:hidden">
         <MainNav workspace={workspace} />
         <div ref={setBottomActionSlot} />
       </div>

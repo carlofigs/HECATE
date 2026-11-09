@@ -65,6 +65,7 @@ pnpm --filter @hecate/worker smoke <url>                  # anonymous, read-only
 pnpm package-skills                                       # plugin/dist/<skill>.zip for claude.ai uploads
 pnpm --filter @hecate/web build && pnpm --filter @hecate/worker harness   # the v2 app on http://localhost:8788, fake GitHub, no accounts needed
 pnpm --filter @hecate/worker e2e                          # build the app, then Playwright + axe against the harness
+pnpm --filter @hecate/web icons                           # regenerate the PWA icons from public/hecate-favicon.svg (commit public/)
 pnpm tokens                                               # regenerate design/tokens/tokens.json after editing packages/ui/src/theme.css
 python design/rules.py --tier T0                          # the design standard's blocking rules (also --topic, --id, --profile)
 ```
@@ -178,6 +179,15 @@ sessions pushing by hand. Treat every write as concurrent with someone else's.
     - A `task.add` carries a client ULID, so the Worker keeps the same task.
     - Never write state any other way.
   - **Moves** are `task.move` with `after` = the new predecessor (`apps/web/src/board/moves.ts`, unit-tested). Drag and drop, the Move menu and Undo all reduce to it.
+  - **Offline and install:** a PWA (`vite-plugin-pwa`, `apps/web/vite.config.ts`).
+    - Its service worker precaches the shell and answers navigations only
+      for the app's routes (`apps/web/src/pwa-routes.ts`; a new top-level
+      route goes there). It never answers a Worker path, and never caches
+      `/api`. `pwa-routes.test.ts` checks it against `run_worker_first`.
+    - It is registered at start-up (`shell/updates.ts`); a new version is
+      offered, never forced.
+    - Icons: `pnpm --filter @hecate/web icons`, then commit `public/`.
+    - The manifest and `theme-color` colours are read from `tokens.json`.
   - **Routing:** every path the Worker answers is listed in
     `wrangler.jsonc` `assets.run_worker_first`. A new Worker route that is
     missing from that list is served the app's `index.html` instead.

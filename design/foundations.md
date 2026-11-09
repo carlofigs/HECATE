@@ -62,6 +62,8 @@ Primitive families follow their CSS spelling (`--font-line-height-*` → `font.l
 
 **Validation.** `test/tokens.test.ts` checks every text-on-background pair (4.5:1), every boundary, focus and icon pair (3:1), each status trio, and accent fills under their text, in both themes, on every CI run (R-02, R-03, T-14). It replaces the upstream kit's `check_palette.py`. Every pair passes. The tightest margins are muted text on the subtle backgrounds and the light theme's focus ring on the subtle background, each within about 5% of its threshold.
 
+**Outside the stylesheet.** The web manifest and the `theme-color` meta tags need plain colours. `apps/web/vite.config.ts` reads them from `tokens.json` at build time and converts them to hex: the light theme's surface and canvas for the manifest, and the surface per scheme for `theme-color`.
+
 **No categorical palette.** HECATE has no data series. Tags are neutral text chips, so R-14's colour-vision check has nothing to run on until a categorical palette is added.
 
 ## Typography

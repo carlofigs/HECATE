@@ -97,7 +97,7 @@ The e2e suite covers part of the keyboard pass (focus order and rings through th
 | `Toast` (`Toaster`) | `candidate` | Manual passes |
 | `TextField`, `TextAreaField`, `RadioGroupField` | `candidate` | Second surface; manual passes |
 | Task card, Board column, Task editor (app) | `candidate` | Manual passes |
-| App shell (pattern) | `candidate` | Manual passes |
+| App shell (pattern), with the offline and update banners | `candidate` | Manual passes |
 | PageShell (pattern) | `candidate` | Manual passes; it now serves Today and the Board |
 
 ## 5. Brand inputs

@@ -338,8 +338,17 @@ session and Origin check (ADR 0003) need it on the Worker's own origin.
       - the bottom navigation bar with New task.
 
       E2E on private workspaces follows each change into git.
-- [ ] `feat/web-pwa` — installable (manifest, icons, service worker that never
-      answers a Worker route), offline banner and queued writes, docs.
+- [x] `feat/web-pwa` — installable:
+      - a manifest and icons, with colours from the tokens;
+      - a service worker that answers only the app's routes and caches no
+        `/api`, and offers new versions;
+      - an app layout where only the page scrolls;
+      - an offline banner, queued writes sent the moment the connection
+        returns, and a warning before closing with unsent changes.
+
+**P4 is complete in code.** Its acceptance is re-checked on preview, on a
+real phone, once the owner's Cloudflare and GitHub App setup is done
+(`DEPLOY.md`).
 
 **Acceptance:** drag, add, edit and complete work on preview; no token anywhere
 in the browser; no Tier 0 axe violations; usable at 375 px with no hover-only
@@ -351,8 +360,9 @@ controls.
 show linked tasks by `projectId`, including archived ones; the activity unread
 cursor matches `ack_activity`; Today is editable, including end-of-day outcomes.
 
-**P6:** two open tabs converge within 2 s. (The Playwright + axe job already
-gates PRs, since P4 PR 2.)
+**P6:** two open tabs converge within 2 s; the snapshot and unsent changes
+survive a reload while offline. (The Playwright + axe job already gates PRs,
+since P4 PR 2.)
 
 ### Definition of done (every PR)
 
