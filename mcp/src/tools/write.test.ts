@@ -7,7 +7,7 @@ import type { McpConfig } from '../config'
 import type { FocusData, Task, TasksData, WeeklyLogData } from '../../../apps/web-v1/src/lib/schemas'
 
 const config: McpConfig = {
-  token: 'ghp_test', owner: 'carlofigs', repo: 'HECATE_Data', workspace: 'kickball',
+  token: 'ghp_test', owner: 'owner', repo: 'data', workspace: 'work',
 }
 
 function task(id: string, title: string): Task {
@@ -49,7 +49,7 @@ let docs: ReturnType<typeof seed>
 let commits: string[]
 
 const storage: StorageAdapter = {
-  async listWorkspaces() { return ['kickball'] },
+  async listWorkspaces() { return ['work'] },
   async readFile(_ws, name) { return { data: docs[name as keyof typeof docs] as never, sha: 's' } },
   async mutateFile(_ws, name, mutate, message) {
     mutate(docs[name as keyof typeof docs] as never)

@@ -7,7 +7,7 @@ import type { McpConfig } from '../config'
 import type { Task, TasksData } from '../../../apps/web-v1/src/lib/schemas'
 
 const config: McpConfig = {
-  token: 'ghp_test', owner: 'carlofigs', repo: 'HECATE_Data', workspace: 'kickball',
+  token: 'ghp_test', owner: 'owner', repo: 'data', workspace: 'work',
 }
 
 function task(id: string, title: string, tags: string[] = []): Task {
@@ -32,7 +32,7 @@ const tasksFixture: TasksData = {
 let asked: { workspace: string; name: string }[] = []
 
 const storage: StorageAdapter = {
-  async listWorkspaces() { return ['kickball', 'woolworths'] },
+  async listWorkspaces() { return ['work', 'club'] },
   async readFile(workspace, name) {
     asked.push({ workspace, name })
     if (name === 'tasks') return { data: tasksFixture as never, sha: 'sha-tasks' }
@@ -79,7 +79,7 @@ describe('tool registration', () => {
 describe('list_workspaces', () => {
   it('returns the workspaces and names the configured default', async () => {
     const out = await call(await connect(), 'list_workspaces')
-    expect(out).toEqual({ workspaces: ['kickball', 'woolworths'], default: 'kickball' })
+    expect(out).toEqual({ workspaces: ['work', 'club'], default: 'work' })
   })
 })
 
@@ -87,18 +87,18 @@ describe('read_data_file', () => {
   it('returns the file with its sha and workspace', async () => {
     const out = await call(await connect(), 'read_data_file', { name: 'tasks' })
     expect(out.sha).toBe('sha-tasks')
-    expect(out.workspace).toBe('kickball')
+    expect(out.workspace).toBe('work')
     expect(out.data.columns).toHaveLength(3)
   })
 
   it('falls back to the configured workspace when none is given', async () => {
     await call(await connect(), 'read_data_file', { name: 'settings' })
-    expect(asked).toEqual([{ workspace: 'kickball', name: 'settings' }])
+    expect(asked).toEqual([{ workspace: 'work', name: 'settings' }])
   })
 
   it('honours an explicit workspace over the default', async () => {
-    await call(await connect(), 'read_data_file', { name: 'settings', workspace: 'woolworths' })
-    expect(asked).toEqual([{ workspace: 'woolworths', name: 'settings' }])
+    await call(await connect(), 'read_data_file', { name: 'settings', workspace: 'club' })
+    expect(asked).toEqual([{ workspace: 'club', name: 'settings' }])
   })
 
   it('rejects a file name that is not part of the schema', async () => {

@@ -1,5 +1,5 @@
 /**
- * workspaces.ts — which top-level directories in HECATE_Data count as workspaces
+ * workspaces.ts — which top-level directories in the data repo count as workspaces
  *
  * Shared by the Setup page's picker and the MCP server, so the two can never
  * disagree about what a workspace is. Previously this lived inline in
