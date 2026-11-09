@@ -2,6 +2,18 @@
 
 Semver (G-01). Each entry lists the rule IDs it concerns.
 
+## [0.4.0] — 2026-11-09
+
+### Added
+
+- **Installable:** a web manifest and icons (trinity on the indigo badge; maskable with a safe zone). The manifest's `theme_color` and `background_color`, and a `theme-color` per scheme, are read from `tokens/tokens.json` (`color.bg.surface`, `color.bg.canvas`), never restated.
+- **The shell's offline banner and update banner,** both `Banner` patterns (M-app-05).
+- **An unload warning** while changes wait to be sent (M-app-06).
+
+### Changed
+
+- **The shell is an app layout:** only the page scrolls, between the header and the bottom bar, so nothing on it can sit under them (R-07; WCAG 2.4.11).
+
 ## [0.3.0] — 2026-11-09
 
 ### Added

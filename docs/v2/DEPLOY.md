@@ -161,8 +161,25 @@ or on your machine, never here.
 Open `PUBLIC_URL` and choose **Sign in with GitHub**. You land on Today in the
 default workspace (`DEFAULT_WORKSPACE`, else the first one). The app is the
 Worker's static assets, on the same origin as `/api`. Its session is an
-httpOnly cookie, so no token is ever stored in the browser. To install it
-on a phone, see P4 PR 4.
+httpOnly cookie, so no token is ever stored in the browser.
+
+**Install it.** It opens standalone, like an app, and its shell loads without
+a connection.
+
+| Where | How |
+|---|---|
+| iPhone or iPad (Safari) | Share → Add to Home Screen |
+| Android (Chrome) | ⋮ → Install app |
+| Desktop (Chrome or Edge) | The install icon in the address bar |
+
+**Offline:**
+
+- **What you see:** the app shows what it had when the connection dropped.
+- **Changes you make:** they wait and are saved on reconnect.
+- **Closing or reloading:** if a change is still waiting, the browser asks first.
+- **Opening the app offline:** it says it can't reach HECATE.
+
+Keeping changes across a reload is P6.
 
 ### 7. Connect Claude
 
@@ -217,6 +234,7 @@ pnpm --filter @hecate/web dev
 | Drag, add, edit and complete work | On the Board: drag a card to another column, add one, edit one, complete one (and Undo). Within about 30 s, `git log origin/v2` in the data repo shows the commits | `e2e/board.spec.ts` |
 | No token anywhere in the browser | DevTools → Application: one httpOnly `__Host-` cookie, nothing in storage but `hecate:workspace` | `e2e/no-token.spec.ts` |
 | No Tier 0 axe violations; usable at 375 px | A phone, or DevTools at 375 px | `e2e/a11y.spec.ts`, `e2e/layout.spec.ts` |
+| Installable; offline-safe | Install it on a phone (step 6). Turn on airplane mode, complete a task (it says "1 change waiting"), turn it off; the change is saved | `e2e/pwa.spec.ts` |
 
 ## Acceptance (P2)
 
@@ -235,7 +253,7 @@ pnpm --filter @hecate/web dev
 | Task | How |
 |---|---|
 | Live logs | `pnpm --filter @hecate/worker exec wrangler tail --env preview` |
-| Redeploy | Actions → Deploy Worker → Run workflow |
+| Redeploy | Actions → Deploy Worker → Run workflow. Open apps notice within an hour (or on focus) and offer "A new version of HECATE is ready" with Reload |
 | Rotate `AUTH_SECRET` | Put a new value. Everyone is signed out of the web app, and remembered consent is forgotten |
 | Rotate the App key | App settings → generate a new key → put `GITHUB_APP_PRIVATE_KEY` → delete the old key |
 | Shut out MCP access | Disconnect the connector in claude.ai; to cut off every token at once, change `ALLOWED_GITHUB_USER_ID` (checked on every call) |

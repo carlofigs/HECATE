@@ -51,6 +51,9 @@ catalogs:
     '@types/react-dom':
       specifier: ~19.2.7
       version: 19.2.7
+    '@vite-pwa/assets-generator':
+      specifier: ^2.0.0
+      version: 2.0.0
     '@vitejs/plugin-react':
       specifier: ^6.3.0
       version: 6.3.0
@@ -105,9 +108,18 @@ catalogs:
     vite:
       specifier: ^8.3.6
       version: 8.3.6
+    vite-plugin-pwa:
+      specifier: ^2.0.0
+      version: 2.0.0
     vitest:
       specifier: ^5.1.0
       version: 5.1.0
+    workbox-build:
+      specifier: ^7.4.1
+      version: 7.4.1
+    workbox-window:
+      specifier: ^7.4.1
+      version: 7.4.1
     wrangler:
       specifier: ^4.157.0
       version: 4.157.0
@@ -183,6 +195,9 @@ importers:
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.5(vite@8.3.6(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+      '@types/culori':
+        specifier: 'catalog:'
+        version: 4.0.1
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.2
@@ -192,9 +207,15 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.2.7(@types/react@19.2.18)
+      '@vite-pwa/assets-generator':
+        specifier: 'catalog:'
+        version: 2.0.0(@types/node@24.19.2)
       '@vitejs/plugin-react':
         specifier: 'catalog:'
         version: 6.3.0(vite@8.3.6(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+      culori:
+        specifier: 'catalog:'
+        version: 4.0.2
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.5
@@ -204,9 +225,18 @@ importers:
       vite:
         specifier: 'catalog:'
         version: 8.3.6(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vite-plugin-pwa:
+        specifier: 'catalog:'
+        version: 2.0.0(@vite-pwa/assets-generator@2.0.0(@types/node@24.19.2))(vite@8.3.6(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(workbox-build@7.4.1(@types/babel__core@7.20.5))(workbox-window@7.4.1)
       vitest:
         specifier: 'catalog:'
         version: 5.1.0(@types/node@24.19.2)(vite@8.3.6(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+      workbox-build:
+        specifier: 'catalog:'
+        version: 7.4.1(@types/babel__core@7.20.5)
+      workbox-window:
+        specifier: 'catalog:'
+        version: 7.4.1
 
   apps/web-v1:
     dependencies:
@@ -3526,6 +3556,11 @@ packages:
     engines: {node: '>=16.14.0'}
     hasBin: true
 
+  '@vite-pwa/assets-generator@2.0.0':
+    resolution: {integrity: sha512-GBjHBLBzOP1GDJTc7MjeDdeJTi+PS9eFjw3HYjNHXnEbkS7vRS/YFwl8VW5/4vWF0Fo35Mji1yXAABvSVzu0Ew==}
+    engines: {node: '>=20.19.0'}
+    hasBin: true
+
   '@vitejs/plugin-react@4.7.0':
     resolution: {integrity: sha512-gUu9hwfWvvEDBBmgtAowQCojwZmJ5mcLn3aufeCsitijs3+f2NsrPtlAWIR6OPiqljl96GVCUbLe0HyqIpVaoA==}
     engines: {node: ^14.18.0 || >=16.0.0}
@@ -3719,6 +3754,10 @@ packages:
   cac@6.7.14:
     resolution: {integrity: sha512-b6Ilus+c3RrdDk+JhLKUAQfzzgLEPy6wcXqS7f/xe1EETvsDP6GORG7SFuOs6cID5YkqchW/LXZbX5bc8j7ZcQ==}
     engines: {node: '>=8'}
+
+  cac@7.1.0:
+    resolution: {integrity: sha512-LMDU/U2yA4IPIY8KT0NsNPWEYZvAMkbgyspxJ6btJaYV+WMDOHAZCmB0lsTObiHaRS1V/ztKAl7+TSkTqXyeoA==}
+    engines: {node: '>=20.19.0'}
 
   cacheable@2.5.0:
     resolution: {integrity: sha512-60cyAOytib/OzBw1JNSoSV/boK1AtHryDIjvVBk7XbN4ugfkM3+Sry7fEjNgPMGgOjuaZPAp8ruZ0Cxafwyq9g==}
@@ -5869,6 +5908,18 @@ packages:
     engines: {node: '>=16.0.0'}
     peerDependencies:
       '@vite-pwa/assets-generator': ^1.0.0
+      vite: ^3.1.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
+      workbox-build: ^7.4.1
+      workbox-window: ^7.4.1
+    peerDependenciesMeta:
+      '@vite-pwa/assets-generator':
+        optional: true
+
+  vite-plugin-pwa@2.0.0:
+    resolution: {integrity: sha512-6G9dsPKT9QKYpeTuTLJM28zZL3HsXUTUM/QUZBEgQk2jbfrPJDq2i8gTewAKqi1c9Mt6MiidrL4SFI+HthiQMg==}
+    engines: {node: '>=20.19.0'}
+    peerDependencies:
+      '@vite-pwa/assets-generator': ^1.0.0 || ^2.0.0
       vite: ^3.1.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
       workbox-build: ^7.4.1
       workbox-window: ^7.4.1
@@ -9328,6 +9379,17 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
+  '@vite-pwa/assets-generator@2.0.0(@types/node@24.19.2)':
+    dependencies:
+      cac: 7.1.0
+      consola: 3.4.2
+      picocolors: 1.1.1
+      sharp: 0.35.5(@types/node@24.19.2)
+      sharp-ico: 0.1.5(@types/node@24.19.2)
+      unconfig: 7.5.0
+    transitivePeerDependencies:
+      - '@types/node'
+
   '@vitejs/plugin-react@4.7.0(vite@6.4.5(@types/node@25.9.9)(jiti@1.21.7)(lightningcss@1.33.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))':
     dependencies:
       '@babel/core': 7.29.7
@@ -9540,6 +9602,8 @@ snapshots:
   bytes@3.1.2: {}
 
   cac@6.7.14: {}
+
+  cac@7.1.0: {}
 
   cacheable@2.5.0:
     dependencies:
@@ -11867,6 +11931,14 @@ snapshots:
 
   setprototypeof@1.2.0: {}
 
+  sharp-ico@0.1.5(@types/node@24.19.2):
+    dependencies:
+      decode-ico: 0.4.1
+      ico-endec: 0.1.6
+      sharp: 0.35.5(@types/node@24.19.2)
+    transitivePeerDependencies:
+      - '@types/node'
+
   sharp-ico@0.1.5(@types/node@25.9.9):
     dependencies:
       decode-ico: 0.4.1
@@ -12447,6 +12519,19 @@ snapshots:
       workbox-window: 7.4.1
     optionalDependencies:
       '@vite-pwa/assets-generator': 1.0.4(@types/node@25.9.9)
+    transitivePeerDependencies:
+      - supports-color
+
+  vite-plugin-pwa@2.0.0(@vite-pwa/assets-generator@2.0.0(@types/node@24.19.2))(vite@8.3.6(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(workbox-build@7.4.1(@types/babel__core@7.20.5))(workbox-window@7.4.1):
+    dependencies:
+      debug: 4.4.3
+      pretty-bytes: 6.1.1
+      tinyglobby: 0.2.17
+      vite: 8.3.6(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      workbox-build: 7.4.1(@types/babel__core@7.20.5)
+      workbox-window: 7.4.1
+    optionalDependencies:
+      '@vite-pwa/assets-generator': 2.0.0(@types/node@24.19.2)
     transitivePeerDependencies:
       - supports-color
 

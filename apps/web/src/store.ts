@@ -78,6 +78,8 @@ export interface AppState {
   refreshIfStale: (minAgeMs: number) => Promise<void>
   /** Applies ops to the open workspace now and queues them for the Worker. Refused at once if they cannot apply. */
   apply: (ops: unknown[], label: string) => LocalResult
+  /** Sends waiting changes now instead of after the backoff: the connection is back. */
+  retryNow: () => void
   signOut: () => Promise<void>
 }
 
@@ -127,6 +129,13 @@ export function createAppStore(api: Api, options: StoreOptions = {}): AppStore {
     }
 
     let attempt = 0
+    /** Ends the current backoff early (retryNow). */
+    let wake: (() => void) | null = null
+    const pause = (ms: number): Promise<void> =>
+      new Promise<void>(resolve => {
+        wake = resolve
+        void sleep(ms).then(resolve)
+      })
 
     async function send(dir: string): Promise<void> {
       const open = get().open
@@ -171,7 +180,8 @@ export function createAppStore(api: Api, options: StoreOptions = {}): AppStore {
       update(dir, () => ({ sending: false, sendFailure: failure }))
       const wait = RETRY_MS[Math.min(attempt, RETRY_MS.length - 1)] as number
       attempt++
-      await sleep(wait)
+      await pause(wait)
+      wake = null
       return send(dir)
     }
 
@@ -242,6 +252,15 @@ export function createAppStore(api: Api, options: StoreOptions = {}): AppStore {
         update(open.dir, o => ({ queue: [...o.queue, batch], view: result.state }))
         void send(open.dir)
         return { ok: true, keyMap: result.keyMap }
+      },
+
+      retryNow() {
+        attempt = 0
+        const backoff = wake
+        wake = null
+        if (backoff) return backoff()
+        const open = get().open
+        if (open && open.queue.length > 0 && !open.sending) void send(open.dir)
       },
 
       async signOut() {

@@ -21,13 +21,15 @@ Everything around a workspace's pages: the skip link, the HECATE mark, the main 
 | Part | Token(s) | Notes |
 |---|---|---|
 | skip link | `color.bg.raised`, `shadow.overlay`, `z.toast` | Visually hidden until focused |
-| header | `color.bg.surface`, `color.border.subtle`, `z.sticky`, `size.container.app` | Sticky |
+| header | `color.bg.surface`, `color.border.subtle`, `size.container.app` | Outside the scrolling page, so always visible |
 | mark | `size.icon.lg`, `color.accent.default` | Decorative, beside the text "HECATE" |
 | nav item | `text.label`, `border.width.md`, `color.accent.text` | The current page is underlined and carries `aria-current="page"` |
 | sync status | `text.body.sm`, `color.text.secondary`, `size.icon.md` | Icon plus words |
 | workspace switcher | `SelectField` (`inline`) | |
 | sign out | `IconButton` | |
-| main | `size.container.app`, `space.inline.lg`/`xl`, `space.stack.lg` | `id="main"`, focusable for the skip link |
+| main | `size.container.app`, `space.inline.lg`/`xl`, `space.stack.lg` | `id="main"`, the only scrolling area, focusable for the skip link |
+| offline banner | `Banner` warning | "You're offline": the data shown is from when the connection dropped, and changes are kept and saved on reconnect |
+| update banner | `Banner` info + Reload | "A new version of HECATE is ready" (`UpdateBanner`) |
 
 ## Variants
 
@@ -49,7 +51,15 @@ None.
 
 ## Behaviour
 
-- **Refreshing:** the open workspace refreshes on window focus, when the page becomes visible, when the connection returns, and every 60 s while visible. No more than once in 5 s. Live updates are P6.
+- **Layout:** the shell is an app layout. Header, page and bottom bar fill the viewport (`h-dvh`), and only the page scrolls. Nothing on the page ever sits under the header or the bar, which keeps targets measurable (R-07) and focus unobscured (WCAG 2.4.11).
+- **Refreshing:** the open workspace refreshes on window focus, when the page becomes visible, and every 60 s while visible, at most once in 5 s.
+  - When the connection returns, waiting changes are sent at once (`retryNow`) and the page catches up.
+  - Live updates are P6.
+- **Offline:**
+  - the offline banner shows while the browser is offline;
+  - the sync status counts the changes waiting;
+  - while any are waiting, closing or reloading the tab asks first (`beforeunload`; M-app-06).
+- **Updates:** the service worker is registered at start-up (`shell/updates.ts`) and checks for a new version on focus and hourly. A waiting version is offered with the update banner, never forced.
 - **Switching workspace** keeps the current page (Today stays Today).
 - **Responsive (C-10):** the header wraps. The controls group moves under the brand and navigation on narrow screens, and the sticky header stays one tap from every control.
 - **Navigation:** Today and Board, in the header from `md`, and in a sticky bottom bar below it (M-app-07). Only one copy is ever displayed, so there is one `nav` landmark at a time.
@@ -98,3 +108,4 @@ None.
 
 - 0.2.0: created.
 - 0.3.0: the Board in the navigation; the bottom bar with an action slot; toasts; in-app links.
+- 0.4.0: the app layout (only the page scrolls); the offline and update banners; an unload warning while changes wait; sending on reconnect.

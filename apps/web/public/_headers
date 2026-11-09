@@ -6,7 +6,7 @@
 # dialogs lock page scroll that way. Scripts stay 'self' only; Markdown from
 # the data never reaches the DOM as HTML (packages/ui Markdown: skipHtml).
 /*
-  Content-Security-Policy: default-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self'; style-src-elem 'self' 'unsafe-inline'; script-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self'; style-src-elem 'self' 'unsafe-inline'; script-src 'self'; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'
   X-Content-Type-Options: nosniff
   Referrer-Policy: same-origin
 

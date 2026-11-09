@@ -209,6 +209,21 @@ describe('writing', () => {
     expect(statusOf(store.getState().open?.view, 'A1')).toBe('doing')
   })
 
+  it('sends at once when the connection is back, instead of waiting out the backoff', async () => {
+    const { api, sent } = writeApi([{ kind: 'network' }])
+    // A backoff that never ends on its own: only retryNow can end it.
+    const store = createAppStore(api, { sleep: () => new Promise(() => {}) })
+    await store.getState().openWorkspace('w')
+    store.getState().apply([{ type: 'task.complete', task: 'A1' }], 'Complete A1')
+    await settle()
+    expect(sent).toHaveLength(1)
+    expect(store.getState().open?.queue).toHaveLength(1)
+    store.getState().retryNow()
+    await settle()
+    expect(sent).toHaveLength(2)
+    expect(store.getState().open).toMatchObject({ queue: [], sendFailure: null })
+  })
+
   it('refuses at once what cannot apply, and sends nothing', async () => {
     const { api, sent } = writeApi()
     const store = createAppStore(api)
