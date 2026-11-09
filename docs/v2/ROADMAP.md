@@ -325,10 +325,19 @@ session and Origin check (ADR 0003) need it on the Worker's own origin.
       real Worker in workerd, the fake GitHub, the real sign-in flow) and the
       Playwright + axe suite at three widths in both schemes, gating PRs from
       here on: P6's gate, brought forward.
-- [ ] `feat/web-board` — the Board on ops: core's `boardColumns`, optimistic
-      writes with replay, drag and drop with a keyboard and a non-drag path,
-      add, edit, complete and undo; the navigation moves to a bottom bar below
-      `md` once there are two pages.
+- [x] `feat/web-board` — the Board on ops:
+      - core's `boardColumns`;
+      - optimistic writes through core's engine, queued with opIds and
+        reconciled by version, retried offline, and explained when refused;
+      - columns from `lg`, tabs below it;
+      - cards whose every action is visible (Complete with Undo, a Move menu
+        as the non-drag path);
+      - dnd-kit by pointer and keyboard, with announcements;
+      - a quick add, and a task editor checked on blur and on submit, with
+        delete behind a confirmation;
+      - the bottom navigation bar with New task.
+
+      E2E on private workspaces follows each change into git.
 - [ ] `feat/web-pwa` — installable (manifest, icons, service worker that never
       answers a Worker route), offline banner and queued writes, docs.
 

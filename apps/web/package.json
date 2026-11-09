@@ -12,9 +12,13 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@dnd-kit/core": "catalog:",
+    "@dnd-kit/sortable": "catalog:",
+    "@dnd-kit/utilities": "catalog:",
     "@hecate/core": "workspace:*",
     "@hecate/ui": "workspace:*",
     "lucide-react": "catalog:",
+    "radix-ui": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-router": "catalog:",

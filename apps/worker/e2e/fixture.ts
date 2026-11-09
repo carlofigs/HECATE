@@ -87,7 +87,15 @@ function club(): Record<string, string> {
 const under = (dir: string, files: Record<string, string>): Record<string, string> =>
   Object.fromEntries(Object.entries(files).map(([path, content]) => [`${dir}/${path}`, content]))
 
-/** The data repository's files: README plus both workspaces. */
+/** How many private copies of Planning the harness holds for tests that write (one each, never shared). */
+export const SCRATCH_COPIES = 150
+
+/** A scratch copy's directory: hidden (a leading underscore), so the switcher leaves it out. */
+export const scratchDir = (n: number): string => `_scratch-${String(n).padStart(3, '0')}`
+
+/** The data repository's files: README, both workspaces, and the scratch copies of Planning. */
 export function fixtureFiles(): Record<string, string> {
-  return { 'README.md': '# Data\n', ...under('planning', planning()), ...under('club', club()) }
+  const copy = planning()
+  const scratch = Array.from({ length: SCRATCH_COPIES }, (_, i) => under(scratchDir(i + 1), copy))
+  return Object.assign({ 'README.md': '# Data\n' }, under('planning', copy), under('club', club()), ...scratch) as Record<string, string>
 }

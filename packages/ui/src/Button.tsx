@@ -17,20 +17,31 @@ const VARIANTS: Record<ButtonVariant, string> = {
   ghost: 'bg-transparent text-text-primary hover:bg-bg-surface-hover active:bg-bg-subtle',
 }
 
+/** A square icon-only button's classes: no horizontal padding, so the icon keeps its size. */
+export function iconButtonStyles(variant: Exclude<ButtonVariant, 'primary'> = 'ghost', className?: string): string {
+  return cn(BASE, VARIANTS[variant], 'size-(--size-control-default) shrink-0', className)
+}
+
 /** The classes a button-styled element takes, for router links that look like buttons. */
 export function buttonStyles(variant: ButtonVariant = 'secondary', className?: string): string {
   return cn(BASE, VARIANTS[variant], 'px-inline-lg', className)
 }
 
+/** A destructive action: secondary weight, danger colours, never the default (R-24). */
+const DANGER = 'bg-bg-surface text-status-danger-text border border-status-danger-border hover:bg-status-danger-bg active:bg-status-danger-bg'
+
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant
+  /** `danger` for an action that destroys something; always secondary weight. */
+  tone?: 'neutral' | 'danger'
   /** Shown before the label; decorative. */
   icon?: ReactNode
 }
 
-export function Button({ variant = 'secondary', icon, className, type = 'button', children, ...rest }: ButtonProps) {
+export function Button({ variant = 'secondary', tone = 'neutral', icon, className, type = 'button', children, ...rest }: ButtonProps) {
+  const classes = tone === 'danger' ? cn(BASE, DANGER, 'px-inline-lg', className) : buttonStyles(variant, className)
   return (
-    <button type={type} className={buttonStyles(variant, className)} {...rest}>
+    <button type={type} className={classes} {...rest}>
       {icon}
       {children}
     </button>
@@ -61,7 +72,7 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
 
 export function IconButton({ label, icon, variant = 'ghost', className, type = 'button', ...rest }: IconButtonProps) {
   return (
-    <button type={type} aria-label={label} title={label} className={cn(BASE, VARIANTS[variant], 'size-(--size-control-default) shrink-0', className)} {...rest}>
+    <button type={type} aria-label={label} title={label} className={iconButtonStyles(variant, className)} {...rest}>
       {icon}
     </button>
   )

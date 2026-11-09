@@ -214,6 +214,7 @@ pnpm --filter @hecate/web dev
 |---|---|---|
 | The app is served, with its security headers | `pnpm --filter @hecate/worker smoke PUBLIC_URL` | `test/assets.test.ts` |
 | Sign-in works and lands on Today | Open `PUBLIC_URL` and sign in | `e2e/signin.spec.ts` |
+| Drag, add, edit and complete work | On the Board: drag a card to another column, add one, edit one, complete one (and Undo). Within about 30 s, `git log origin/v2` in the data repo shows the commits | `e2e/board.spec.ts` |
 | No token anywhere in the browser | DevTools → Application: one httpOnly `__Host-` cookie, nothing in storage but `hecate:workspace` | `e2e/no-token.spec.ts` |
 | No Tier 0 axe violations; usable at 375 px | A phone, or DevTools at 375 px | `e2e/a11y.spec.ts`, `e2e/layout.spec.ts` |
 

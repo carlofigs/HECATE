@@ -38,3 +38,35 @@ test('not found', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible()
   await scan(page, 'not found')
 })
+
+test('Board', async ({ page }) => {
+  await signIn(page, '/w/planning/board')
+  await expect(page.getByRole('heading', { level: 1, name: 'Board' })).toBeVisible()
+  await expect(page.getByRole('article').first()).toBeVisible()
+  await scan(page, 'Board')
+})
+
+test('Board, with the Move menu open', async ({ page }) => {
+  await signIn(page, '/w/planning/board')
+  await page.getByRole('button', { name: 'Move A2' }).click()
+  await expect(page.getByRole('menu')).toBeVisible()
+  await scan(page, 'Board (Move menu)')
+})
+
+test('the task editor, showing its errors', async ({ page }) => {
+  // Signed in first: an open dialog hides the page (and its h1) from the accessibility tree.
+  await signIn(page, '/w/planning/board')
+  await page.goto('/w/planning/board?new=1')
+  const dialog = page.getByRole('dialog', { name: 'New task' })
+  await dialog.getByRole('button', { name: 'Add task' }).click()
+  await expect(dialog.getByRole('alert')).toBeVisible()
+  await scan(page, 'task editor (errors)')
+})
+
+test('the delete confirmation', async ({ page }) => {
+  await signIn(page, '/w/planning/board')
+  await page.goto('/w/planning/board?task=A3')
+  await page.getByRole('dialog', { name: 'Edit A3' }).getByRole('button', { name: 'Delete task' }).click()
+  await expect(page.getByRole('alertdialog')).toBeVisible()
+  await scan(page, 'delete confirmation')
+})

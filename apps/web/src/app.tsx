@@ -2,6 +2,7 @@ import { Skeleton, VisuallyHidden } from '@hecate/ui'
 import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router'
 import { appStore, useApp } from './appStore.ts'
+import { Board } from './board/Board.tsx'
 import { Home } from './pages/Home.tsx'
 import { NotFound } from './pages/NotFound.tsx'
 import { Problem } from './pages/Problem.tsx'
@@ -41,6 +42,7 @@ export function App() {
           <Route path="w/:workspace" element={<Shell />}>
             <Route index element={<Navigate to="today" replace />} />
             <Route path="today" element={<Today />} />
+            <Route path="board" element={<Board />} />
             <Route path="*" element={<Navigate to="today" replace />} />
           </Route>
           <Route path="*" element={<NotFound />} />

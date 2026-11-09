@@ -1,8 +1,12 @@
 # Applied by Workers Static Assets to every response the asset side serves,
 # including the SPA fallback (apps/worker/wrangler.jsonc). Responses the Worker
 # builds itself (/api, /auth, /mcp …) set their own headers.
+#
+# style-src-elem allows <style> elements a library inserts at run time: Radix's
+# dialogs lock page scroll that way. Scripts stay 'self' only; Markdown from
+# the data never reaches the DOM as HTML (packages/ui Markdown: skipHtml).
 /*
-  Content-Security-Policy: default-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self'; style-src-elem 'self' 'unsafe-inline'; script-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'
   X-Content-Type-Options: nosniff
   Referrer-Policy: same-origin
 

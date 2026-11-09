@@ -11,9 +11,9 @@ test.beforeEach(async ({ page }) => {
   await todayLoaded(page)
 })
 
-test('every pointer target meets the floor for this device (R-07)', async ({ page }) => {
-  const floor = isTouch() ? 44 : 24
-  const undersized = await page.evaluate(min => {
+/** Every visible control's size, smallest first. */
+async function undersizedTargets(page: import('@playwright/test').Page, min: number) {
+  return page.evaluate(floor => {
     const selector = 'button, a[href], select, input, [role="tab"], [role="button"]'
     return [...document.querySelectorAll<HTMLElement>(selector)]
       .filter(el => !el.classList.contains('sr-only'))
@@ -21,9 +21,17 @@ test('every pointer target meets the floor for this device (R-07)', async ({ pag
         const r = el.getBoundingClientRect()
         return { label: (el.getAttribute('aria-label') ?? el.textContent ?? el.tagName).trim().slice(0, 40), w: Math.round(r.width), h: Math.round(r.height) }
       })
-      .filter(t => t.w > 0 && (t.w < min || t.h < min))
-  }, floor)
-  expect(undersized, `controls under ${floor} px`).toEqual([])
+      .filter(t => t.w > 0 && (t.w < floor || t.h < floor))
+  }, min)
+}
+
+test('every pointer target meets the floor for this device (R-07)', async ({ page }) => {
+  const floor = isTouch() ? 44 : 24
+  expect(await undersizedTargets(page, floor), `controls under ${floor} px on Today`).toEqual([])
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Board' }).click()
+  await expect(page.getByRole('article').first()).toBeVisible()
+  expect(await undersizedTargets(page, floor), `controls under ${floor} px on the Board`).toEqual([])
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth), 'the Board scrolls sideways').toBe(false)
 })
 
 test('the page never scrolls sideways (R-10)', async ({ page }) => {
@@ -71,7 +79,7 @@ test('the keyboard reaches the skip link first, then every control, each with a 
   await expect(skip).toBeFocused()
   await expect(skip).toBeVisible()
   const order: string[] = []
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 5; i++) {
     await page.keyboard.press('Tab')
     const focused = await page.evaluate(() => {
       const el = document.activeElement as HTMLElement
@@ -83,7 +91,7 @@ test('the keyboard reaches the skip link first, then every control, each with a 
     expect(focused.outline, `focus ring on ${focused.name}`).toBe('solid')
     expect(focused.width, `focus ring on ${focused.name}`).toBe('2px')
   }
-  expect(order).toEqual(['HECATE', 'Today', 'Workspace', 'Sign out'])
+  expect(order).toEqual(['HECATE', 'Today', 'Board', 'Workspace', 'Sign out'])
 })
 
 test('the skip link moves focus to the page', async ({ page }) => {

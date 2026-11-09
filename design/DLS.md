@@ -19,7 +19,7 @@ HECATE is a single-user planning system: focus, tasks, projects, sprints, people
 | Surface | What it is | Profile | Touch-first |
 |---|---|---|---|
 | Today (built) | The day at a glance: schedule, plan, the week, in progress, waiting on, blocked, due soon, cutoffs, keep in mind | `app` | Adaptive (below) |
-| Board (P4 PR 3) | Tasks by status: drag, add, edit, complete | `app` | Adaptive (below) |
+| Board (built) | Tasks by status: drag, move, add, edit, complete, delete | `app` | Adaptive (below) |
 | Sign-in and shell (built) | GitHub sign-in, workspace switcher, navigation, sync status | `app` | Adaptive (below) |
 
 **Profile:** `app` only. Nothing in P4 is a chart, so `viz` is not declared (M-viz-11 allows one surface to take it later).
@@ -37,9 +37,9 @@ Components never branch on this. They size themselves from `size.control.default
 
 ## 2. Base component library (C-04)
 
-**Radix primitives** (the `radix-ui` package), unstyled and themed entirely through tokens. They arrive with the first dialog and menu in PR 3.
+**Radix primitives** (the `radix-ui` package), unstyled and themed entirely through tokens: Dialog, AlertDialog, DropdownMenu, Tabs and Toast.
 
-- **Native HTML elements** wherever they are enough: buttons, links, `<select>`, date inputs. The components so far are all native or custom.
+- **Native HTML elements** wherever they are enough: buttons, links, `<select>`, text, date and radio inputs.
 - **Icons:** `lucide-react`, always decorative beside a word, or named by their control.
 - **Markdown:** `react-markdown` with no raw HTML.
 - **Drag and drop:** `dnd-kit` on the Board, always alongside a non-drag way to do the same thing (WCAG 2.5.7 under R-01).
@@ -76,7 +76,7 @@ The C-05 ladder runs `draft` → `candidate` → `stable` → `deprecated`. Only
 
 **Stable** needs three more things:
 
-- use on a second surface (the Board, PR 3);
+- use on a second surface (`Button`, `Badge`, `Banner`, `SelectField` and `KeyChip` now are, on Today and the Board);
 - the manual keyboard and screen-reader passes (R-29 layers 2 and 3);
 - tests.
 
@@ -92,8 +92,13 @@ The e2e suite covers part of the keyboard pass (focus order and rings through th
 | `EmptyState` | `candidate` | Second surface; manual passes |
 | `Skeleton`, `VisuallyHidden` | `candidate` | Second surface; manual passes |
 | `Markdown` | `candidate` | Second surface; manual passes |
-| App shell (pattern) | `candidate` | The bottom navigation bar below `md` (PR 3) |
-| PageShell (pattern) | `candidate` | The Board (PR 3) |
+| `Dialog`, `ConfirmDialog` | `candidate` | Second surface; manual passes |
+| `Menu` | `candidate` | Second surface; manual passes |
+| `Toast` (`Toaster`) | `candidate` | Manual passes |
+| `TextField`, `TextAreaField`, `RadioGroupField` | `candidate` | Second surface; manual passes |
+| Task card, Board column, Task editor (app) | `candidate` | Manual passes |
+| App shell (pattern) | `candidate` | Manual passes |
+| PageShell (pattern) | `candidate` | Manual passes; it now serves Today and the Board |
 
 ## 5. Brand inputs
 

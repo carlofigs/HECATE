@@ -287,6 +287,8 @@
   --size-icon-lg: 1.5rem;
   --container-prose: 72ch;
   --container-app: 90rem;
+  /* A Board column's narrowest width: a card's title, key and actions on one line. */
+  --container-column: 17rem;
 
   /* Layout */
   --breakpoint-sm: 40rem;

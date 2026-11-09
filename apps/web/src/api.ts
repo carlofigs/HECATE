@@ -42,6 +42,16 @@ export type Outcome<T> =
 
 export type Failure = Exclude<Outcome<unknown>, { kind: 'ok' }>
 
+/** What the Worker did with a batch of ops (apps/worker/src/engine.ts ApplyOutcome). */
+export type ApplyAnswer =
+  | { kind: 'applied'; version: number; keyMap: Record<string, string>; duplicate: boolean }
+  /** The batch was refused as a whole (an op failed, or the input was invalid): nothing changed. */
+  | { kind: 'rejected'; message: string }
+  | { kind: 'signed-out' }
+  | { kind: 'network' }
+  | { kind: 'unavailable'; message: string }
+  | { kind: 'unexpected'; status: number; message: string }
+
 type Fetch = (input: string, init?: RequestInit) => Promise<Response>
 
 const messageOf = async (response: Response): Promise<string> => {
@@ -103,6 +113,38 @@ export function createApi(fetcher: Fetch = (input, init) => fetch(input, init)) 
       ),
 
     signOut: () => call<null>(fetcher, '/auth/logout', { method: 'POST' }, () => null),
+
+    /** Sends one batch (actor `app`). The opId makes a retry of the same batch safe: the Worker answers it once. */
+    async applyOps(dir: string, body: { ops: unknown[]; opId: string }): Promise<ApplyAnswer> {
+      let response: Response
+      try {
+        response = await fetcher(`/api/workspaces/${encodeURIComponent(dir)}/ops`, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { accept: 'application/json', 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        })
+      } catch {
+        return { kind: 'network' }
+      }
+      if (response.status === 401) return { kind: 'signed-out' }
+      let answer: Record<string, unknown> = {}
+      try {
+        answer = (await response.json()) as Record<string, unknown>
+      } catch {
+        // An answer without JSON is judged by its status alone.
+      }
+      const message = typeof answer.message === 'string' ? answer.message : typeof answer.error === 'string' ? answer.error : response.statusText
+      if (response.ok && answer.status === 'applied' && typeof answer.version === 'number') {
+        return { kind: 'applied', version: answer.version, keyMap: (answer.keyMap as Record<string, string> | undefined) ?? {}, duplicate: answer.duplicate === true }
+      }
+      if (response.status === 422 || response.status === 400 || response.status === 409) {
+        const errors = Array.isArray(answer.errors) ? (answer.errors as { message?: string }[]).map(e => e.message).filter(Boolean) : []
+        return { kind: 'rejected', message: errors.length > 0 ? errors.join('; ') : message }
+      }
+      if (response.status === 503) return { kind: 'unavailable', message }
+      return { kind: 'unexpected', status: response.status, message }
+    },
   }
 }
 

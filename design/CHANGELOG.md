@@ -2,6 +2,29 @@
 
 Semver (G-01). Each entry lists the rule IDs it concerns.
 
+## [0.3.0] — 2026-11-09
+
+### Added
+
+- **Components**, with specs, at `candidate` (C-02, C-05):
+  - `Dialog` and `ConfirmDialog` (R-24: focus on Cancel; the action never primary);
+  - `Menu`;
+  - `Toast` (M-app-05: 8 s, pausable, one action);
+  - `TextField`, `TextAreaField`, `RadioGroupField` (M-app-03, R-09, R-27).
+- **The Board's patterns:** task card, Board column, task editor.
+  - Every action is a visible control.
+  - Drag and drop always has a non-drag path (the Move menu, WCAG 2.5.7 under R-01) and screen-reader announcements.
+- **Tokens:** `size.container.column` (vocabulary: `column`); `Button` `tone="danger"`; `iconButtonStyles()`.
+
+### Changed
+
+- **The shell:** a bottom bar below `md` with the navigation and the page's primary action (M-app-07).
+- **Menu layer:** menus sit at `z.popover`, above sticky bars.
+
+### Fixed
+
+- Icon-only buttons no longer inherit text padding, which squeezed their icons.
+
 ## [0.2.0] — 2026-11-09
 
 ### Added
