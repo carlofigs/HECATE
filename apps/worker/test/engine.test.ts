@@ -83,6 +83,21 @@ describe('applying', () => {
     expect(ok(await h.engine.snapshot()).version).toBe(1)
   })
 
+  it('renders each focus week a dry run would change, as it would look', async () => {
+    const h = await harness()
+    const dry = await h.engine.apply({
+      ops: [{ type: 'focus.setPriorities', weekOf: '2026-11-02', items: [{ tier: 'focus', lead: 'Draft the scorecard', keys: ['A1'] }] }],
+      actor: 'claude', dryRun: true,
+    })
+    if (dry.status !== 'dry-run') throw new Error(JSON.stringify(dry))
+    expect(dry.focus).toHaveLength(1)
+    expect(dry.focus[0]?.weekOf).toBe('2026-11-02')
+    expect(dry.focus[0]?.markdown).toMatch(/^# Week of 2 Nov 2026[\s\S]*## This Week's Priorities\n\n- 🎯 \*\*Draft the scorecard\*\* \(A1\)/)
+    expect(ok(await h.engine.snapshot()).state.focusWeeks).toEqual({})
+    const plain = await h.engine.apply({ ops: [addTask('No week here')], actor: 'claude', dryRun: true })
+    expect(plain.status === 'dry-run' && plain.focus).toEqual([])
+  })
+
   it('coalesces 20 ops in a minute into at most two commits', async () => {
     const h = await harness()
     for (let i = 0; i < 20; i++) {

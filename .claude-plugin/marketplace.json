@@ -1,0 +1,12 @@
+{
+  "name": "hecate",
+  "owner": { "name": "HECATE" },
+  "metadata": { "description": "HECATE v2: planning skills that work through the HECATE MCP connector." },
+  "plugins": [
+    {
+      "name": "hecate",
+      "source": "./plugin",
+      "description": "Focus drafting, meeting processing and session logging against HECATE, through its MCP tools."
+    }
+  ]
+}

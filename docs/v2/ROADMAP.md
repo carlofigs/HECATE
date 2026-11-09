@@ -78,7 +78,7 @@ packages/github-store/ Git Data API adapter (replaces both v1 GitHub clients)
 packages/ui/           design tokens (@theme), primitives, <Markdown> with task-key chips
 plugin/                Claude plugin: manifest, .mcp.json, skills
 packages/migrate-v1/   one-off v1 → v2 conversion with a dry-run report; deleted at cutover
-scripts/               package-skills
+plugin/                Claude skills (hecate-*), plugin manifest, .mcp.json; package-skills for claude.ai
 design/                DESIGN-STANDARD (vendored), DLS.md, foundations.md, DECISIONS.md, audit.md
 docs/adr/              architecture decision records
 ```
@@ -282,6 +282,22 @@ propose-and-confirm unchanged; vocabulary read from the workspace, nothing
 personal in this repo); an import skill for the legacy markdown files;
 `package-skills` for claude.ai uploads; plugin manifest; sanitised-policy
 behaviour.
+
+Delivered as two PRs. The new skills have their own names (`hecate-*`), so the
+markdown-based ones keep working until cutover.
+
+- [x] `feat/skills-plugin` — `plugin/`: `hecate-focus`, `hecate-meeting` and
+      `hecate-log`, ported to the MCP tools with today's formats and
+      propose-and-confirm (`apply_ops` dry run, then the same ops). Vocabulary
+      comes from the workspace. Dry runs that change a focus week return it
+      rendered. A Claude Code plugin (marketplace in this repo, connector URL
+      from `HECATE_MCP_URL`), `pnpm package-skills` for claude.ai zips, and
+      checks that every tool and op a skill names exists.
+- [ ] `feat/import-legacy` — `task.import`, which keeps the legacy keys (A76
+      stays A76; an ADR 0007 exception); the work workspace migrated without
+      its stale v1 tasks; a tested importer for the legacy markdown files,
+      producing op batches; the `hecate-import` skill. Waits on the owner
+      copying the files into the data repo (`legacy/work/`).
 
 **Acceptance:** each skill runs end to end on preview (dry run, then confirm)
 with today's output format; a sample import yields the expected counts; a

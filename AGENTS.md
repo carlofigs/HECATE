@@ -26,6 +26,7 @@ frozen and still live; v2 is being built alongside it. Read
 | `packages/*` (other) | further v2 shared packages | From P1 |
 | `apps/worker/` | v2 Cloudflare Worker (`@hecate/worker`): `WorkspaceDO`, later `/api`, `/mcp`, `/hooks` | Active |
 | `apps/*` (other) | v2 web app | From P4 |
+| `plugin/` | v2 Claude skills (`hecate-*`) as a Claude Code plugin, and zips for claude.ai | Active |
 | `docs/` | Roadmap and ADRs | Living |
 | `branding/` | Source brand assets (SVG/PNG) | Stable |
 
@@ -59,6 +60,7 @@ pnpm export-schema                                        # regenerate packages/
 pnpm migrate-v1 --data <checkout> --config <file>         # v1 → v2 dry run of a data-repo checkout; add --out <dir> to write
 pnpm --filter @hecate/worker build                        # bundle the Worker (wrangler --dry-run; no Cloudflare account needed)
 pnpm --filter @hecate/worker smoke <url>                  # anonymous, read-only checks of a deployed Worker
+pnpm package-skills                                       # plugin/dist/<skill>.zip for claude.ai uploads
 ```
 
 CI (`.github/workflows/ci.yml`) gates pull requests; `deploy.yml` runs the same
@@ -143,6 +145,12 @@ sessions pushing by hand. Treat every write as concurrent with someone else's.
   write, as actor `claude`. Tool output is markdown for the model plus the
   same facts as `structuredContent`. Adding a tool: register it there, answer
   it through core views, and cover it in `test/mcp.test.ts`.
+- **Skills** (`plugin/skills/`) are public prompts. They read through the MCP
+  tools and write only through `apply_ops` (dry run, show, confirm). Every
+  personal fact (tags, areas, people, sprint cadence, who the user is) comes
+  from the workspace at run time, never from the skill text.
+  `plugin/test/skills.test.ts` fails if a skill names a tool or op that does
+  not exist.
 - **Read through the views.** Waiting On, blocked, today, sprint position and
   the briefing come from `src/views/selectors.ts`, and markdown from
   `src/views/render.ts`. Don't recompute them elsewhere, or the app and Claude

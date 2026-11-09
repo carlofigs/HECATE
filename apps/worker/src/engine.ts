@@ -26,9 +26,9 @@
  */
 
 import {
-  applyBatch, BatchInputError, changedFiles, checkWorkspace, isoWeekKey, prepareBatch, renderErrors, renderPreview,
-  serializeActivityEntry, stateFromFiles, ulid, WorkspaceLoadError,
-  type Actor, type ApplySuccess, type Batch, type OpError, type Ulid, type Warning, type WorkspaceState,
+  applyBatch, BatchInputError, changedFiles, checkWorkspace, isoWeekKey, prepareBatch, renderErrors, renderFocusWeek, renderPreview,
+  serializeActivityEntry, stateFromFiles, todayIn, ulid, WorkspaceLoadError,
+  type Actor, type ApplySuccess, type Batch, type IsoDate, type OpError, type Ulid, type Warning, type WorkspaceState,
 } from '@hecate/core'
 import { RateLimitError, type GitStore, type Head } from '@hecate/github-store'
 import { commitMessage, type CommittedBatch } from './commit-message.ts'
@@ -49,7 +49,11 @@ export interface ApplyRequest {
 
 export type ApplyOutcome =
   | { status: 'applied'; version: number; opId: string; keyMap: Record<string, string>; summary: string[]; warnings: Warning[]; preview: string; duplicate: boolean }
-  | { status: 'dry-run'; version: number; keyMap: Record<string, string>; summary: string[]; warnings: Warning[]; preview: string; changed: string[]; deleted: string[] }
+  | {
+    status: 'dry-run'; version: number; keyMap: Record<string, string>; summary: string[]; warnings: Warning[]; preview: string; changed: string[]; deleted: string[]
+    /** Each focus week the batch changes, rendered as it would be: what the focus skill proposes. */
+    focus: { weekOf: string; markdown: string }[]
+  }
   | { status: 'rejected'; version: number; errors: OpError[]; message: string }
   | { status: 'invalid'; version: number; message: string }
   | { status: 'version-conflict'; version: number; expected: number }
@@ -166,6 +170,7 @@ const RETRY_MS = 60_000
 const FILE = 'file:'
 const OP = 'op:'
 const CURSOR = 'cursor:'
+const FOCUS_WEEK = /^focus\/(\d{4}-\d{2}-\d{2})\.json$/
 
 const mergeReports = (a: ReplayReport | null, b: ReplayReport): ReplayReport =>
   a === null ? b : { renumbered: [...a.renumbered, ...b.renumbered], dropped: [...a.dropped, ...b.dropped] }
@@ -292,9 +297,15 @@ export class WorkspaceEngine {
       if (!result.ok) return { status: 'rejected', version, errors: result.errors, message: renderErrors(result) }
       const summary = result.summary.map(s => s.text)
       if (request.dryRun) {
+        const today = todayIn(result.state.workspace.timezone, new Date(this.now()))
+        const focus = result.changed
+          .flatMap(path => FOCUS_WEEK.exec(path)?.[1] ?? [])
+          .filter(weekOf => weekOf in result.state.focusWeeks)
+          .sort()
+          .map(weekOf => ({ weekOf, markdown: renderFocusWeek(result.state, weekOf as IsoDate, { today }) }))
         return {
           status: 'dry-run', version, keyMap: result.keyMap, summary, warnings: result.warnings,
-          preview: renderPreview(result, { dryRun: true }), changed: result.changed, deleted: result.deleted,
+          preview: renderPreview(result, { dryRun: true }), changed: result.changed, deleted: result.deleted, focus,
         }
       }
 
