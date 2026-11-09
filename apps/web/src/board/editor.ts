@@ -2,7 +2,7 @@
  * The task editor's form, its checks, and the ops it saves as. Pure, so the
  * rules are tested without a browser; TaskEditor.tsx only renders them.
  */
-import { slugify, type Task, type WorkspaceState } from '@hecate/core'
+import { projectSlug, slugify, type Task, type WorkspaceState } from '@hecate/core'
 import { checkKeys, checkLine, keysIn, nullable, sameList } from '../forms.ts'
 
 export interface TaskForm {
@@ -23,15 +23,13 @@ export interface TaskForm {
 
 export type FormErrors = Partial<Record<keyof TaskForm, string>>
 
-/** A new task's form: an action in `status` (or the first to-do status). */
-export function emptyForm(state: WorkspaceState, status?: string): TaskForm {
+/** A new task's form: an action in `status` (or the first to-do status), in `project` when started from one. */
+export function emptyForm(state: WorkspaceState, status?: string, project?: string): TaskForm {
   const first = state.workspace.statuses.find(s => s.category === 'todo') ?? state.workspace.statuses[0]
   const valid = status && state.workspace.statuses.some(s => s.id === status) ? status : (first?.id ?? '')
-  return { title: '', kind: 'action', waitingOn: '', status: valid, urgency: '', due: '', project: '', dependsOn: '', tags: '', note: '' }
+  const inProject = project && state.projects[project] ? project : ''
+  return { title: '', kind: 'action', waitingOn: '', status: valid, urgency: '', due: '', project: inProject, dependsOn: '', tags: '', note: '' }
 }
-
-const projectSlug = (state: WorkspaceState, id: string | null): string =>
-  id === null ? '' : (Object.values(state.projects).find(p => p.id === id)?.slug ?? '')
 
 export function formFromTask(state: WorkspaceState, task: Task): TaskForm {
   return {
@@ -41,7 +39,7 @@ export function formFromTask(state: WorkspaceState, task: Task): TaskForm {
     status: task.status,
     urgency: task.urgency ?? '',
     due: task.due ?? '',
-    project: projectSlug(state, task.projectId),
+    project: projectSlug(state, task.projectId) ?? '',
     dependsOn: task.dependsOn.join(', '),
     tags: task.tags.join(', '),
     note: task.note ?? '',
@@ -84,7 +82,7 @@ export function opsFor(state: WorkspaceState, form: TaskForm, task: Task | null)
   if (fields.note !== task.note) patch.note = fields.note
   if (fields.urgency !== task.urgency) patch.urgency = fields.urgency
   if (!sameList(fields.tags, task.tags)) patch.tags = fields.tags
-  if (fields.project !== (projectSlug(state, task.projectId) || null)) patch.project = fields.project
+  if (fields.project !== projectSlug(state, task.projectId)) patch.project = fields.project
   if (!sameList(fields.dependsOn, task.dependsOn)) patch.dependsOn = fields.dependsOn
   if (fields.due !== task.due) patch.due = fields.due
   if (task.kind === 'waiting' && nullable(form.waitingOn) !== (task.waitingOn?.text ?? null)) {

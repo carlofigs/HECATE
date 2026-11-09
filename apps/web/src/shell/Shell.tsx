@@ -1,5 +1,5 @@
 import { Banner, IconButton, SelectField, Toaster, cn } from '@hecate/ui'
-import { CalendarDays, KanbanSquare, LogOut } from 'lucide-react'
+import { CalendarDays, FolderOpen, KanbanSquare, LogOut, type LucideIcon } from 'lucide-react'
 import { useEffect, type MouseEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { appStore, useApp } from '../appStore.ts'
@@ -17,30 +17,35 @@ const REFRESH_MS = 60_000
 /** Focus, visibility and reconnecting each ask for a refresh; one is enough within this window. */
 const MIN_AGE_MS = 5_000
 
-const navClass = ({ isActive }: { isActive: boolean }): string =>
+/** The pages, in order. Three fit the phone's bottom bar beside a page's action; a fourth makes the last slot "More" (app-shell.md). */
+const PAGES: readonly { path: string; label: string; icon: LucideIcon }[] = [
+  { path: 'today', label: 'Today', icon: CalendarDays },
+  { path: 'board', label: 'Board', icon: KanbanSquare },
+  { path: 'projects', label: 'Projects', icon: FolderOpen },
+]
+
+const navClass = (compact: boolean) => ({ isActive }: { isActive: boolean }): string =>
   cn(
-    'inline-flex items-center gap-inline-xs min-h-(--size-target-default) px-inline-sm text-label border-b-(length:--border-width-md)',
+    'inline-flex items-center min-h-(--size-target-default) border-b-(length:--border-width-md)',
+    // In the bottom bar each page is an icon over a short label, so the pages and the page's action fit at 320 px.
+    compact ? 'min-w-(--size-target-default) flex-col justify-center text-caption' : 'gap-inline-xs px-inline-sm text-label',
     isActive ? 'border-accent-text text-text-primary' : 'border-transparent text-text-secondary hover:text-text-primary',
   )
 
 /** The pages. One list for both placements: the header from `md`, the bottom bar below it (M-app-02, M-app-07). */
-function MainNav({ workspace, className }: { workspace: string; className?: string }) {
+function MainNav({ workspace, compact = false, className }: { workspace: string; compact?: boolean; className?: string }) {
   const base = `/w/${encodeURIComponent(workspace)}`
   return (
     <nav aria-label="Main" className={className}>
       <ul className="flex items-center gap-inline-xs">
-        <li>
-          <NavLink to={`${base}/today`} className={navClass}>
-            <CalendarDays aria-hidden="true" className="size-(--size-icon-md)" />
-            Today
-          </NavLink>
-        </li>
-        <li>
-          <NavLink to={`${base}/board`} className={navClass}>
-            <KanbanSquare aria-hidden="true" className="size-(--size-icon-md)" />
-            Board
-          </NavLink>
-        </li>
+        {PAGES.map(({ path, label, icon: Icon }) => (
+          <li key={path}>
+            <NavLink to={`${base}/${path}`} className={navClass(compact)}>
+              <Icon aria-hidden="true" className="size-(--size-icon-md)" />
+              {label}
+            </NavLink>
+          </li>
+        ))}
       </ul>
     </nav>
   )
@@ -111,7 +116,8 @@ export function Shell() {
 
   const list = workspaces.status === 'ready' ? workspaces.list.workspaces.filter(w => !w.hidden || w.dir === workspace) : []
   const options = list.some(w => w.dir === workspace) ? list : [...list, { dir: workspace, name: null }]
-  const page = pathname.split('/').at(-1) ?? 'today'
+  // The section to keep when switching workspace: /w/<dir>/projects/<slug> keeps Projects, not the slug.
+  const page = pathname.split('/')[3] ?? 'today'
 
   return (
     // An app layout: only the page scrolls, between the header and the bottom bar, so nothing on it can ever sit under
@@ -153,7 +159,7 @@ export function Shell() {
         </div>
       </main>
       <div className="flex shrink-0 items-center justify-between gap-inline-sm border-t border-border-subtle bg-bg-surface px-inline-md py-stack-xs md:hidden">
-        <MainNav workspace={workspace} />
+        <MainNav workspace={workspace} compact />
         <div ref={setBottomActionSlot} />
       </div>
       <Toaster toasts={toasts} onDismiss={dismissToast} />

@@ -52,7 +52,8 @@ function byBoardOrder(state: WorkspaceState): (a: Task, b: Task) => number {
     a.key.localeCompare(b.key)
 }
 
-function projectSlug(state: WorkspaceState, projectId: string | null): string | null {
+/** The slug of the project with this id, or null. */
+export function projectSlug(state: WorkspaceState, projectId: string | null): string | null {
   if (projectId === null) return null
   return Object.values(state.projects).find(p => p.id === projectId)?.slug ?? null
 }
@@ -254,7 +255,8 @@ export interface DueItem {
   overdue: boolean
 }
 
-const projectIsLive = (status: string): boolean => status !== 'done' && status !== 'dropped'
+/** Whether a project is still going: done and dropped projects are closed. */
+export const projectIsLive = (status: string): boolean => status !== 'done' && status !== 'dropped'
 
 /** Open tasks and project deadlines due by today + `days`, overdue ones included. */
 export function dueSoon(state: WorkspaceState, today: IsoDate, days = 14): DueItem[] {

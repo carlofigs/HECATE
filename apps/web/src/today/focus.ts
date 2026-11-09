@@ -8,8 +8,9 @@
  * Keep-in-mind has an op per item. These are the ops the hecate-focus skill
  * sends, so the app and Claude write the same thing.
  */
-import { findTask, formatDay, ulid, type Briefing, type TodayView, type WorkspaceState } from '@hecate/core'
+import { findTask, formatDay, projectSlug, ulid, type Briefing, type TodayView, type WorkspaceState } from '@hecate/core'
 import { checkKeys, checkLine, keysIn, nullable, sameList } from '../forms.ts'
+import { canMoveIn, moved, upsert, without } from '../lists.ts'
 
 type PlanItem = TodayView['plan'][number]
 type Outcome = TodayView['outcomes'][number]
@@ -37,36 +38,7 @@ export const listsOf = (b: Briefing): Lists => ({
 // ─── Lists ──────────────────────────────────────────────────────────────────
 
 type Identified = { id: string }
-
-/** The list with `item` in place of the one with its id, or added at the end. */
-function upsert<T extends Identified>(list: readonly T[], item: T): T[] {
-  return list.some(x => x.id === item.id) ? list.map(x => (x.id === item.id ? item : x)) : [...list, item]
-}
-
-const without = <T extends Identified>(list: readonly T[], id: string): T[] => list.filter(x => x.id !== id)
-
-/** Where an item moves to: the next item up or down that `same` groups with it (a priority moves within its tier). */
-function target<T extends Identified>(list: readonly T[], id: string, delta: -1 | 1, same: (a: T, b: T) => boolean): number {
-  const from = list.findIndex(x => x.id === id)
-  const item = list[from]
-  if (!item) return -1
-  for (let i = from + delta; i >= 0 && i < list.length; i += delta) {
-    if (same(item, list[i] as T)) return i
-  }
-  return -1
-}
-
-const anyGroup = (): boolean => true
 const sameTier = (a: Priority, b: Priority): boolean => a.tier === b.tier
-
-function moved<T extends Identified>(list: readonly T[], id: string, delta: -1 | 1, same: (a: T, b: T) => boolean = anyGroup): T[] {
-  const to = target(list, id, delta, same)
-  const from = list.findIndex(x => x.id === id)
-  if (to < 0) return [...list]
-  const next = [...list]
-  ;[next[from], next[to]] = [next[to] as T, next[from] as T]
-  return next
-}
 
 // ─── Ops for the whole lists ────────────────────────────────────────────────
 
@@ -103,7 +75,7 @@ export function removeOps(lists: Lists, kind: ItemKind, id: string): unknown[] {
 
 /** Whether an item can move that way: a priority stays within its tier. */
 export function canMove(lists: Lists, kind: ListKind, id: string, delta: -1 | 1): boolean {
-  return kind === 'priority' ? target(lists.priorities, id, delta, sameTier) >= 0 : target(listFor(lists, kind), id, delta, anyGroup) >= 0
+  return kind === 'priority' ? canMoveIn(lists.priorities, id, delta, sameTier) : canMoveIn(listFor(lists, kind), id, delta)
 }
 
 export function moveOps(lists: Lists, kind: ListKind, id: string, delta: -1 | 1): unknown[] {
@@ -131,9 +103,6 @@ export type ItemErrors = Partial<Record<keyof ItemForm, string>>
 
 export const emptyItemForm = (): ItemForm => ({ lead: '', text: '', keys: '', urgency: '', tier: 'focus', project: '' })
 
-const projectSlug = (state: WorkspaceState, id: string | null): string =>
-  id === null ? '' : (Object.values(state.projects).find(p => p.id === id)?.slug ?? '')
-
 /** The form for an existing item, or null if it is no longer there. */
 export function itemFormFor(state: WorkspaceState, lists: Lists, kind: ItemKind, id: string): ItemForm | null {
   const base = emptyItemForm()
@@ -150,7 +119,7 @@ export function itemFormFor(state: WorkspaceState, lists: Lists, kind: ItemKind,
     return c ? { ...base, lead: c.lead ?? '', text: c.text, keys: c.keys.join(', ') } : null
   }
   const k = lists.keep.find(x => x.id === id)
-  return k ? { ...base, lead: k.lead ?? '', text: k.text, keys: k.keys.join(', '), project: projectSlug(state, k.projectId) } : null
+  return k ? { ...base, lead: k.lead ?? '', text: k.text, keys: k.keys.join(', '), project: projectSlug(state, k.projectId) ?? '' } : null
 }
 
 const LEAD_REQUIRED: Record<'plan' | 'priority', string> = { plan: 'Say what to do.', priority: 'Name the priority.' }
@@ -204,7 +173,7 @@ export function saveItemOps(state: WorkspaceState, lists: Lists, kind: ItemKind,
   if (fields.lead !== before.lead) patch.lead = fields.lead
   if (fields.text !== before.text) patch.text = fields.text
   if (!sameList(fields.keys, before.keys)) patch.keys = fields.keys
-  if (fields.project !== (projectSlug(state, before.projectId) || null)) patch.project = fields.project
+  if (fields.project !== projectSlug(state, before.projectId)) patch.project = fields.project
   return Object.keys(patch).length > 0 ? [{ type: 'keepInMind.update', id: before.id, patch }] : []
 }
 
