@@ -1,0 +1,32 @@
+{
+  "name": "@hecate/ui",
+  "private": true,
+  "version": "0.1.0",
+  "description": "HECATE's design tokens: the Tailwind v4 @theme layer every v2 surface is built from, and the generated tokens.json.",
+  "type": "module",
+  "exports": {
+    "./theme.css": "./src/theme.css"
+  },
+  "sideEffects": [
+    "*.css"
+  ],
+  "scripts": {
+    "tokens": "tsx scripts/build-tokens.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "tailwindcss": "catalog:"
+  },
+  "devDependencies": {
+    "@tailwindcss/node": "catalog:",
+    "@types/culori": "catalog:",
+    "@types/node": "catalog:",
+    "culori": "catalog:",
+    "tailwindcss": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -1,0 +1,51 @@
+/*
+ * Element defaults every HECATE surface inherits. Values come from theme.css
+ * only; nothing here is a token of its own.
+ */
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
+  html {
+    background-color: var(--color-bg-canvas);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    font-size: var(--text-body-md);
+    line-height: var(--text-body-md--line-height);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  strong,
+  b {
+    font-weight: var(--font-weight-semibold);
+  }
+
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: var(--font-mono);
+  }
+
+  /* R-05: one focus ring for every interactive element, offset so the canvas
+     shows between element and ring; the ring is validated against bg.*. */
+  :focus-visible {
+    outline: var(--border-width-md) solid var(--color-border-focus);
+    outline-offset: var(--border-width-md);
+  }
+
+  /* R-12: the reduced-motion variant of every animation is no motion. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: var(--motion-duration-instant) !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: var(--motion-duration-instant) !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

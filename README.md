@@ -72,6 +72,7 @@ apps/web-v1/      # v1 app (this README) — frozen until the v2 cutover
     lib/          # schemas, GitHub client, constants, utils
 mcp/              # v1 MCP server over stdio — see mcp/README.md
 packages/         # v2 shared packages (from v2 phase P1)
+design/           # v2 design standard (vendored) and HECATE's design language
 docs/             # v2 roadmap and architecture decision records
 branding/         # source brand assets
 ```

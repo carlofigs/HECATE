@@ -76,7 +76,6 @@ packages/core/         zod schemas, per-file migrations, ops + apply, selectors,
                        tz-safe date-only helpers, key allocation, renderers, JSON Schema export
 packages/github-store/ Git Data API adapter (replaces both v1 GitHub clients)
 packages/ui/           design tokens (@theme), primitives, <Markdown> with task-key chips
-plugin/                Claude plugin: manifest, .mcp.json, skills
 packages/migrate-v1/   one-off v1 → v2 conversion with a dry-run report; deleted at cutover
 plugin/                Claude skills (hecate-*), plugin manifest, .mcp.json; package-skills for claude.ai
 design/                DESIGN-STANDARD (vendored), DLS.md, foundations.md, DECISIONS.md, audit.md
@@ -307,6 +306,25 @@ sanitised workspace rejects meeting notes and person names.
 
 Stories: `design/` layer and tokens; shell and PageShell; Board on ops
 (dnd-kit, keys, urgency, dependencies); read-only Today; login; PWA.
+
+Delivered as four PRs. The app is the Worker's static assets: the cookie
+session and Origin check (ADR 0003) need it on the Worker's own origin.
+
+- [x] `feat/design-layer` — `design/`: the owner's standard (v1.4.0, vendored),
+      `DLS.md` (profile `app`, Extended, touch-first adaptive to the device,
+      Radix primitives), `foundations.md` and the decision register.
+      `packages/ui`: the Tailwind v4 `@theme` token source (brand neutrals,
+      torch amber as the single accent, light and dark) with Tailwind's
+      defaults removed, and the generated `tokens.json`. Tests check drift,
+      vocabulary, contrast in both themes, type, targets and literal values.
+- [ ] `feat/web-shell` — `apps/web` served as the Worker's static assets;
+      sign-in, the shell and PageShell; read-only Today from core's
+      `briefing`; the Playwright + axe suite, gating PRs from here on.
+- [ ] `feat/web-board` — the Board on ops: core's `boardColumns`, optimistic
+      writes with replay, drag and drop with a keyboard and a non-drag path,
+      add, edit, complete and undo.
+- [ ] `feat/web-pwa` — installable (manifest, icons, service worker that never
+      answers a Worker route), offline banner and queued writes, docs.
 
 **Acceptance:** drag, add, edit and complete work on preview; no token anywhere
 in the browser; no Tier 0 axe violations; usable at 375 px with no hover-only

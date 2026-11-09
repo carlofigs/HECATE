@@ -1,0 +1,1747 @@
+{
+  "standard": "DESIGN-STANDARD.md",
+  "version": "1.4.0",
+  "counts": {
+    "rules": 106,
+    "level": {
+      "MUST": 87,
+      "SHOULD": 19
+    },
+    "tier": {
+      "T0": 22,
+      "T1": 58,
+      "T2": 26
+    },
+    "check": {
+      "review": 68,
+      "script": 21,
+      "data": 16,
+      "judgement": 1
+    }
+  },
+  "rules": [
+    {
+      "id": "R-01",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "a11y"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "3.1 Accessibility",
+      "profiles": [
+        "all"
+      ],
+      "text": "The accessibility floor is WCAG 2.2 Level AA. Projects MAY raise it; they MUST NOT lower it."
+    },
+    {
+      "id": "R-02",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "a11y",
+        "color"
+      ],
+      "check": "script",
+      "refines": [
+        "R-01"
+      ],
+      "section": "3.1 Accessibility",
+      "profiles": [
+        "all"
+      ],
+      "text": "Body text contrast MUST be ≥ 4.5:1 against its background. Large text (≥ 24 px regular, or ≥ 18.66 px bold) MUST be ≥ 3:1."
+    },
+    {
+      "id": "R-03",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "a11y",
+        "color"
+      ],
+      "check": "script",
+      "refines": [
+        "R-01"
+      ],
+      "section": "3.1 Accessibility",
+      "profiles": [
+        "all"
+      ],
+      "text": "Non-text UI elements that convey state or boundary (input borders, focus rings, icons, chart marks, toggle states) MUST be ≥ 3:1 against adjacent colours."
+    },
+    {
+      "id": "R-04",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "a11y",
+        "color"
+      ],
+      "check": "review",
+      "refines": [
+        "R-01"
+      ],
+      "section": "3.1 Accessibility",
+      "profiles": [
+        "all"
+      ],
+      "text": "Information MUST NOT be conveyed by colour alone. Pair colour with text, icon, pattern, position or shape. This applies to charts, status badges, form validation and links inside body copy."
+    },
+    {
+      "id": "R-05",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "a11y",
+        "interaction",
+        "layout"
+      ],
+      "check": "script",
+      "refines": [
+        "R-01"
+      ],
+      "section": "3.1 Accessibility",
+      "profiles": [
+        "all"
+      ],
+      "text": "Every interactive element MUST have a visible focus state (`:focus-visible`) whose indicator is ≥ 3:1 against the adjacent background (WCAG 1.4.11) and is not obscured (2.4.11). Focus indicators MUST NOT be removed without an equivalent replacement. Default implementation: a `border.width.md` ring in `color.border.focus`, offset by `border.width.md`, so the canvas shows between element and ring and the ring is validated against `bg.canvas`/`bg.surface` rather than the element fill."
+    },
+    {
+      "id": "R-06",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "a11y"
+      ],
+      "check": "script",
+      "refines": [
+        "R-01"
+      ],
+      "section": "3.1 Accessibility",
+      "profiles": [
+        "all"
+      ],
+      "text": "Every interactive element MUST be operable by keyboard alone, in a logical order, with no keyboard traps."
+    },
+    {
+      "id": "R-07",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "a11y",
+        "interaction"
+      ],
+      "check": "review",
+      "refines": [
+        "R-01"
+      ],
+      "section": "3.1 Accessibility",
+      "profiles": [
+        "all"
+      ],
+      "text": "Pointer targets MUST be ≥ 24 × 24 CSS px (WCAG 2.5.8) on every surface. Surfaces declared touch-first in `DLS.md` (used mainly on phones/tablets or in the field — scoring, check-in, refereeing) MUST use ≥ 44 × 44 px (`size.target.touch`). Control heights below 44 px are permitted elsewhere provided the hit area, including padding and spacing, meets the 24 px minimum."
+    },
+    {
+      "id": "R-08",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "a11y"
+      ],
+      "check": "review",
+      "refines": [
+        "R-01"
+      ],
+      "section": "3.1 Accessibility",
+      "profiles": [
+        "all"
+      ],
+      "text": "Every image, icon and chart MUST have a text alternative appropriate to its purpose: decorative → empty `alt`, informative → concise description, data chart → summary of the takeaway plus access to the underlying data."
+    },
+    {
+      "id": "R-09",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "a11y"
+      ],
+      "check": "review",
+      "refines": [
+        "R-01"
+      ],
+      "section": "3.1 Accessibility",
+      "profiles": [
+        "all"
+      ],
+      "text": "Every form control MUST have a programmatically associated visible label. Placeholder text is not a label."
+    },
+    {
+      "id": "R-10",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "a11y"
+      ],
+      "check": "script",
+      "refines": [
+        "R-01"
+      ],
+      "section": "3.1 Accessibility",
+      "profiles": [
+        "all"
+      ],
+      "text": "Content MUST reflow to a 320 px viewport without horizontal scrolling (except for content that inherently requires 2-D layout such as data tables and maps, which scroll inside their own container)."
+    },
+    {
+      "id": "R-11",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "a11y"
+      ],
+      "check": "script",
+      "refines": [
+        "R-01"
+      ],
+      "section": "3.1 Accessibility",
+      "profiles": [
+        "all"
+      ],
+      "text": "Text MUST remain readable when users apply 200% zoom or override line-height (1.5×), paragraph spacing (2×), letter-spacing (0.12 em) and word-spacing (0.16 em). Do not set fixed heights on text containers."
+    },
+    {
+      "id": "R-12",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "a11y",
+        "motion"
+      ],
+      "check": "review",
+      "refines": [
+        "R-01"
+      ],
+      "section": "3.1 Accessibility",
+      "profiles": [
+        "all"
+      ],
+      "text": "Motion MUST respect `prefers-reduced-motion`. Every animation has a reduced-motion variant; unless the spec says otherwise that variant is no motion at all (`motion.duration.instant`), or an opacity-only fade where a change would otherwise be invisible. Nothing flashes more than 3 times per second."
+    },
+    {
+      "id": "R-13",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "a11y"
+      ],
+      "check": "script",
+      "refines": [
+        "R-01"
+      ],
+      "section": "3.1 Accessibility",
+      "profiles": [
+        "all"
+      ],
+      "text": "Semantic structure MUST be correct: one `h1` per page, heading levels not skipped, landmarks (`header`, `nav`, `main`, `footer`) present, lists as lists, tables as tables with header cells. Equivalent structure applies to documents and decks (real heading styles, real tables)."
+    },
+    {
+      "id": "R-14",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "a11y",
+        "color"
+      ],
+      "check": "script",
+      "refines": [
+        "R-01"
+      ],
+      "section": "3.1 Accessibility",
+      "profiles": [
+        "all"
+      ],
+      "text": "Every categorical or data palette MUST stay distinguishable under deuteranopia, protanopia and tritanopia, checked programmatically, not by eye: minimum ΔE2000 ≥ 8 between any two colours in the set under each simulation (`check_palette.py`). This is a distinguishability test, not a contrast test. Contrast is governed by R-02 and R-03 on the actual colours; a WCAG ratio recomputed on simulated colours is not a conformance criterion and MUST NOT be reported as an R-14 failure. Where a palette cannot be separated — identity colours that cannot change — R-04 applies instead: carry the meaning with something other than hue."
+    },
+    {
+      "id": "R-15",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "tokens"
+      ],
+      "check": "script",
+      "refines": [],
+      "section": "3.2 Tokens and values",
+      "profiles": [
+        "all"
+      ],
+      "text": "Every visual property (colour, type, spacing, radius, shadow, motion, z-index, breakpoint) MUST resolve to a token. Hard-coded literals in component code, chart configs or document styles are conformance failures."
+    },
+    {
+      "id": "R-16",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "type"
+      ],
+      "check": "data",
+      "refines": [],
+      "section": "3.3 Typography, spacing, layout",
+      "profiles": [
+        "all"
+      ],
+      "text": "Base body size MUST be ≥ 16 px (1 rem) on screen. Small/caption text MUST be ≥ 12 px and MUST NOT be used for primary content."
+    },
+    {
+      "id": "R-17",
+      "level": "MUST",
+      "tier": "T2",
+      "topics": [
+        "type"
+      ],
+      "check": "data",
+      "refines": [],
+      "section": "3.3 Typography, spacing, layout",
+      "profiles": [
+        "all"
+      ],
+      "text": "Body line-height MUST be between 1.4 and 1.6. Headings between 1.1 and 1.3."
+    },
+    {
+      "id": "R-18",
+      "level": "MUST",
+      "tier": "T2",
+      "topics": [
+        "type"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "3.3 Typography, spacing, layout",
+      "profiles": [
+        "all"
+      ],
+      "text": "Line length for running text MUST be constrained to 45–80 characters (target 60–75)."
+    },
+    {
+      "id": "R-19",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "type"
+      ],
+      "check": "data",
+      "refines": [],
+      "section": "3.3 Typography, spacing, layout",
+      "profiles": [
+        "all"
+      ],
+      "text": "A project MUST use at most two typeface families (plus a monospace face for code and tabular data where needed)."
+    },
+    {
+      "id": "R-20",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "type",
+        "viz"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "3.3 Typography, spacing, layout",
+      "profiles": [
+        "all"
+      ],
+      "text": "Numeric data in tables and dashboards MUST use tabular (monospaced-width) figures and MUST be right-aligned."
+    },
+    {
+      "id": "R-21",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "color",
+        "tokens"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "3.4 Colour",
+      "profiles": [
+        "all"
+      ],
+      "text": "Every project MUST define the semantic colour roles in §4.5 (background, surface, text, border, accent, and the four status roles) before any component is styled."
+    },
+    {
+      "id": "R-22",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "color"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "3.4 Colour",
+      "profiles": [
+        "all"
+      ],
+      "text": "Status colours (success, warning, danger, info) MUST be reserved for status. They MUST NOT be used decoratively or as brand accents."
+    },
+    {
+      "id": "R-23",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "component"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "3.5 Components and interaction",
+      "profiles": [
+        "all"
+      ],
+      "text": "Every interactive component MUST define and style the states in §6.2 (at minimum: default, hover, focus-visible, active, disabled) and, where applicable, loading, error, selected."
+    },
+    {
+      "id": "R-24",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "interaction"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "3.5 Components and interaction",
+      "profiles": [
+        "all"
+      ],
+      "text": "Destructive actions MUST require confirmation or provide undo. They MUST NOT be the default or primary-styled action in a dialog."
+    },
+    {
+      "id": "R-25",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "interaction"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "3.5 Components and interaction",
+      "profiles": [
+        "all"
+      ],
+      "text": "Every asynchronous action MUST show a loading state within 100 ms of triggering and MUST show a success or failure outcome. Silent failure is a defect."
+    },
+    {
+      "id": "R-26",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "component"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "3.5 Components and interaction",
+      "profiles": [
+        "all"
+      ],
+      "text": "Every data view (table, list, chart, card grid) MUST design and implement its empty, loading, error and partial/degraded states, not just the happy path."
+    },
+    {
+      "id": "R-27",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "content",
+        "interaction"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "3.5 Components and interaction",
+      "profiles": [
+        "all"
+      ],
+      "text": "Error messages MUST say what happened, why (if known), and what to do next, in plain language, adjacent to the point of failure."
+    },
+    {
+      "id": "R-28",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "process"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "3.6 Documentation and governance",
+      "profiles": [
+        "all"
+      ],
+      "text": "Agents MUST run the conformance checklist (Appendix D) before declaring any design work done, and MUST report failures rather than suppress them."
+    },
+    {
+      "id": "R-29",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "a11y"
+      ],
+      "check": "script",
+      "refines": [
+        "R-01"
+      ],
+      "section": "3.6 Documentation and governance",
+      "profiles": [
+        "all"
+      ],
+      "text": "Accessibility is verified in three layers before a component or surface is marked `stable`: (1) automated scan (axe-core or equivalent) with zero violations, run in CI where CI exists; (2) manual keyboard-only pass; (3) screen-reader pass (VoiceOver, NVDA or JAWS) for anything at Extended level or above. A component that fails any layer does not ship as `stable`."
+    },
+    {
+      "id": "T-01",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "tokens"
+      ],
+      "check": "data",
+      "refines": [],
+      "section": "4.2 Token tiers",
+      "profiles": [
+        "all"
+      ],
+      "text": "Tier 1 — Primitive (option) tokens. Raw values with no meaning attached: `color.blue.500`, `space.4`, `font.size.md`. These are the only tokens that hold literal values."
+    },
+    {
+      "id": "T-02",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "tokens"
+      ],
+      "check": "data",
+      "refines": [],
+      "section": "4.2 Token tiers",
+      "profiles": [
+        "all"
+      ],
+      "text": "Tier 2 — Semantic (decision) tokens. Meaning without context: `color.text.primary`, `color.bg.surface`, `space.inset.md`, `text.body.md`. They alias primitives. This is the tier that changes between themes (light/dark/high-contrast) and between brands."
+    },
+    {
+      "id": "T-03",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "tokens"
+      ],
+      "check": "data",
+      "refines": [],
+      "section": "4.2 Token tiers",
+      "profiles": [
+        "all"
+      ],
+      "text": "Tier 3 — Component tokens. Scoped to one component: `button.bg.primary.hover`, `table.row.height`. They alias semantic tokens. Create them only when a component needs an override that would otherwise be hard-coded; do not pre-create them."
+    },
+    {
+      "id": "T-04",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "tokens"
+      ],
+      "check": "script",
+      "refines": [],
+      "section": "4.2 Token tiers",
+      "profiles": [
+        "all"
+      ],
+      "text": "Components and pages MUST consume Tier 2 or Tier 3 only. Referencing a Tier 1 token from a component is a conformance failure."
+    },
+    {
+      "id": "T-05",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "tokens"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "4.2 Token tiers",
+      "profiles": [
+        "all"
+      ],
+      "text": "Theme variation (dark mode, brand skins, print, high-contrast) MUST be expressed as a re-mapping of Tier 2 tokens only. Tier 1 and Tier 3 are theme-invariant. Components MUST NOT contain theme-specific logic or overrides; a component that renders correctly in one theme renders correctly in all of them through its semantic tokens alone."
+    },
+    {
+      "id": "T-06",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "tokens"
+      ],
+      "check": "script",
+      "refines": [],
+      "section": "4.3 Naming grammar",
+      "profiles": [
+        "all"
+      ],
+      "text": "Token names MUST follow `category.concept[.qualifier…][.state]`: `category` (color, space, text…), `concept` (bg, text, status, accent…), then zero or more qualifiers ordered general → specific (a variant such as `danger` or `subtle`, a property such as `text` or `bg`, a level such as `raised`), and an optional interaction state last. Lower-case, dot-separated in JSON, hyphen-separated in CSS (`color.text.primary` → `--color-text-primary`). Test: reading left to right, each segment narrows the previous one, and nothing follows a state."
+    },
+    {
+      "id": "T-07",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "tokens",
+        "content"
+      ],
+      "check": "script",
+      "refines": [],
+      "section": "4.3 Naming grammar",
+      "profiles": [
+        "all"
+      ],
+      "text": "Token names MUST use only the vocabulary declared in `tokens.json` `$extensions.dls.vocabulary` (concepts, variants, states, size steps). A new term MUST be added there and to `foundations.md` before it is used."
+    },
+    {
+      "id": "T-08",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "tokens"
+      ],
+      "check": "data",
+      "refines": [],
+      "section": "4.4 Token implementation — the hybrid rule",
+      "profiles": [
+        "all"
+      ],
+      "text": "Two peer defaults, neither needing an exception. (A) `design/tokens/tokens.json` in W3C DTCG format is the source and `tokens.css` is generated from it. (B) Tailwind v4 `@theme` blocks are the source and `tokens.json` is generated from them. Pick by stack: a Tailwind v4 project takes (B), anything else takes (A), and agents choose without asking. Whichever is the source, the other artefact is generated, never hand-maintained (T-09), and the three tiers and naming grammar hold in both. A project MAY use a third implementation (Style Dictionary, native-platform resources, docx/pptx styles, a chart-library or BI theme) only when the stack cannot consume CSS variables or JSON directly, and then MUST (a) preserve the tiers and grammar, (b) record it in `DECISIONS.md`, and (c) keep `tokens.json` as the human-readable reference."
+    },
+    {
+      "id": "T-09",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "tokens"
+      ],
+      "check": "script",
+      "refines": [],
+      "section": "4.4 Token implementation — the hybrid rule",
+      "profiles": [
+        "all"
+      ],
+      "text": "Tokens MUST be generated, never hand-duplicated. If `tokens.css` is derived from `tokens.json`, the generation script lives in the repo and runs in CI or a pre-commit hook."
+    },
+    {
+      "id": "T-10",
+      "level": "SHOULD",
+      "tier": "T2",
+      "topics": [
+        "tokens"
+      ],
+      "check": "data",
+      "refines": [],
+      "section": "4.4 Token implementation — the hybrid rule",
+      "profiles": [
+        "all"
+      ],
+      "text": "Composite tokens (typography, shadow, border) SHOULD use DTCG composite types so they can be expanded per platform."
+    },
+    {
+      "id": "T-11",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "tokens"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "4.4 Token implementation — the hybrid rule",
+      "profiles": [
+        "all"
+      ],
+      "text": "Across platforms and media, share decisions, not implementation: tokens, naming, type/spacing scales, motion values and component/variant vocabulary are shared; rendering, interaction behaviour, accessibility implementation and platform conventions are per platform. Never port component code between web, native and document stacks — port the tokens and re-implement."
+    },
+    {
+      "id": "T-12",
+      "level": "SHOULD",
+      "tier": "T2",
+      "topics": [
+        "color"
+      ],
+      "check": "script",
+      "refines": [],
+      "section": "4.5 Colour system",
+      "profiles": [
+        "all"
+      ],
+      "text": "The accent hue SHOULD occupy ≤ 10% of rendered pixels on any screen and the neutral ramp ≥ 60% (the 60-30-10 ratio). Check by pixel-counting a screenshot against the token palette; an accent share above 10% means something decorative is using the accent."
+    },
+    {
+      "id": "T-13",
+      "level": "SHOULD",
+      "tier": "T2",
+      "topics": [
+        "color"
+      ],
+      "check": "data",
+      "refines": [],
+      "section": "4.5 Colour system",
+      "profiles": [
+        "all"
+      ],
+      "text": "Pure black `#000` SHOULD NOT be used for text, and `#000`-on-`#fff` SHOULD NOT appear as a text/background pair; use the ramp end (`neutral.950`) for text to reduce halation while keeping ≥ 4.5:1. Pure white MAY be used as a surface."
+    },
+    {
+      "id": "T-14",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "color",
+        "a11y"
+      ],
+      "check": "script",
+      "refines": [
+        "R-02",
+        "R-03"
+      ],
+      "section": "4.5 Colour system",
+      "profiles": [
+        "all"
+      ],
+      "text": "Each status role MUST have a `bg` / `text` / `border` trio that passes R-02/R-03 in combination (e.g. `status.success.text` on `status.success.bg` ≥ 4.5:1)."
+    },
+    {
+      "id": "T-15",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "color",
+        "tokens"
+      ],
+      "check": "script",
+      "refines": [
+        "T-05",
+        "R-02"
+      ],
+      "section": "4.5 Colour system",
+      "profiles": [
+        "all"
+      ],
+      "text": "Dark theme MUST be re-validated for contrast independently of the light theme, and SHOULD take accent and status colours from ramp steps 200–400 rather than 500–700 (lower chroma on dark surfaces)."
+    },
+    {
+      "id": "T-16",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "type"
+      ],
+      "check": "data",
+      "refines": [],
+      "section": "4.7 Typography",
+      "profiles": [
+        "all"
+      ],
+      "text": "A project MUST settle on exactly one type scale and name it in `foundations.md`. Three first-class options, none requiring an exception: (a) a ratio set from `tokens.json` (`$extensions.dls.typeScales` ships 1.25 major-third and 1.333 perfect-fourth); (b) the scale of the framework already in use (Tailwind's default steps, for instance); (c) an empirically derived scale — clustered from real content rather than generated from a ratio. (b) and (c) MUST record the step values and one line of reasoning. Display sizes MAY sit outside the chosen scale. Composite `text.*` tokens reference the step names, so the choice never reaches components."
+    },
+    {
+      "id": "T-17",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "type"
+      ],
+      "check": "data",
+      "refines": [],
+      "section": "4.7 Typography",
+      "profiles": [
+        "all"
+      ],
+      "text": "Composite text tokens MUST exist for at least: `text.display`, `text.heading.{1..4}`, `text.body.{lg,md,sm}`, `text.label`, `text.caption`, `text.code`, `text.data` (tabular numerals enabled)."
+    },
+    {
+      "id": "T-18",
+      "level": "MUST",
+      "tier": "T2",
+      "topics": [
+        "type"
+      ],
+      "check": "data",
+      "refines": [],
+      "section": "4.7 Typography",
+      "profiles": [
+        "all"
+      ],
+      "text": "Web fonts, if used, MUST be self-hosted (default) or served from a CDN named in `foundations.md`, subset to the characters needed, and loaded with `font-display: swap` behind a metric-compatible fallback. The default families are the system stacks in `font.family.*`."
+    },
+    {
+      "id": "T-19",
+      "level": "MUST",
+      "tier": "T2",
+      "topics": [
+        "layout"
+      ],
+      "check": "data",
+      "refines": [],
+      "section": "4.8 Radius, elevation, borders",
+      "profiles": [
+        "all"
+      ],
+      "text": "A project MUST set exactly one `radius.control` and one `radius.container` alias and apply them consistently. Sibling elements of the same kind with different radii are a defect; a deliberate distinction between kinds (a pill button beside a rounded input) is not. `radius.pill` is available for the pill case."
+    },
+    {
+      "id": "T-20",
+      "level": "SHOULD",
+      "tier": "T2",
+      "topics": [
+        "motion",
+        "performance"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "4.9 Motion",
+      "profiles": [
+        "all"
+      ],
+      "text": "Animate only `transform` and `opacity` for anything continuous; layout properties (width, height, top, margin) MAY animate only for one-off state changes and never on scroll."
+    },
+    {
+      "id": "M-app-01",
+      "level": "SHOULD",
+      "tier": "T2",
+      "topics": [
+        "layout"
+      ],
+      "check": "data",
+      "refines": [],
+      "section": "5.1 Profile `app` — web applications",
+      "profiles": [
+        "app"
+      ],
+      "text": "Density is a whole-view setting, never per component: comfortable (`size.control.md`, `space.inset.md`) by default; data-heavy views MAY switch to compact (`size.control.sm`, `space.inset.sm`). On touch-first surfaces comfortable uses `size.control.lg` and compact is not available (R-07)."
+    },
+    {
+      "id": "M-app-02",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "interaction"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "5.1 Profile `app` — web applications",
+      "profiles": [
+        "app"
+      ],
+      "text": "Navigation MUST be consistent across the app: one primary nav location, current location always indicated, and a way back from every screen."
+    },
+    {
+      "id": "M-app-03",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "interaction"
+      ],
+      "check": "review",
+      "refines": [
+        "R-04",
+        "R-09"
+      ],
+      "section": "5.1 Profile `app` — web applications",
+      "profiles": [
+        "app"
+      ],
+      "text": "Forms: labels above inputs; required fields indicated in the label (not by colour alone); inline validation on blur, summary on submit; one primary action per form, positioned consistently (bottom-right on desktop, full-width bottom on mobile)."
+    },
+    {
+      "id": "M-app-04",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "component",
+        "viz"
+      ],
+      "check": "review",
+      "refines": [
+        "R-20",
+        "R-26"
+      ],
+      "section": "5.1 Profile `app` — web applications",
+      "profiles": [
+        "app"
+      ],
+      "text": "Tables: sticky header, right-aligned numerics with tabular figures (R-20), row hover, sortable column indicator, ≤ 8 columns visible at `lg` before the table scrolls horizontally inside its own container, and a defined empty state (R-26)."
+    },
+    {
+      "id": "M-app-05",
+      "level": "SHOULD",
+      "tier": "T2",
+      "topics": [
+        "interaction"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "5.1 Profile `app` — web applications",
+      "profiles": [
+        "app"
+      ],
+      "text": "Feedback level is chosen by persistence and blocking: field-level problems → inline message; confirmation of a completed action → toast (non-blocking, auto-dismiss ≥ 5 s, pausable); a condition that persists until resolved → banner; a decision required before continuing → dialog. Use the lowest level whose condition is met."
+    },
+    {
+      "id": "M-app-06",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "interaction"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "5.1 Profile `app` — web applications",
+      "profiles": [
+        "app"
+      ],
+      "text": "Offline/degraded states MUST be designed for anything used in the field (scoring, check-in, refereeing): show sync status, queue writes, never lose input."
+    },
+    {
+      "id": "M-app-07",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "layout",
+        "a11y"
+      ],
+      "check": "review",
+      "refines": [
+        "R-07"
+      ],
+      "section": "5.1 Profile `app` — web applications",
+      "profiles": [
+        "app"
+      ],
+      "text": "Mobile-first layout. On touch-first surfaces the primary action of each view sits in the bottom 40% of the viewport or in a fixed bottom bar, and targets follow R-07 (≥ 44 px)."
+    },
+    {
+      "id": "M-viz-01",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "viz",
+        "process"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "5.2 Profile `viz` — dashboards and data visualisation",
+      "profiles": [
+        "viz"
+      ],
+      "text": "Every dashboard MUST declare its audience, primary question, and target reading time at the top of its spec (P-03). Layout is then ordered by decision priority: headline KPIs → trend/context → detail/breakdown → raw data access."
+    },
+    {
+      "id": "M-viz-02",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "viz"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "5.2 Profile `viz` — dashboards and data visualisation",
+      "profiles": [
+        "viz"
+      ],
+      "text": "Chart type is chosen by the comparison being made, not by novelty: change over time → line/area; part-to-whole → stacked bar or (≤ 5 slices) donut; ranking → horizontal bar sorted; distribution → histogram/box; relationship → scatter; single value vs target → bullet/KPI tile. Pie charts with > 5 slices, 3-D charts, dual-axis charts with unrelated scales, and gauges are NOT permitted without a recorded decision."
+    },
+    {
+      "id": "M-viz-03",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "viz",
+        "color"
+      ],
+      "check": "script",
+      "refines": [
+        "R-14"
+      ],
+      "section": "5.2 Profile `viz` — dashboards and data visualisation",
+      "profiles": [
+        "viz"
+      ],
+      "text": "Colour: the neutral palette carries the chart (axes, gridlines, non-focus series in `color.text.muted` weight); `color.data.highlight` (typically the accent) marks the one series or point the chart is about. Categorical palettes MUST have ≤ 8 hues, MUST be CVD-checked (R-14), and MUST be assigned to categories consistently across all charts in the product (same category, same colour everywhere)."
+    },
+    {
+      "id": "M-viz-04",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "viz",
+        "color"
+      ],
+      "check": "script",
+      "refines": [],
+      "section": "5.2 Profile `viz` — dashboards and data visualisation",
+      "profiles": [
+        "viz"
+      ],
+      "text": "Sequential and diverging ramps MUST be perceptually uniform (OKLCH- or viridis-style), MUST have a defined neutral midpoint for diverging data, and MUST NOT rely on rainbow hues."
+    },
+    {
+      "id": "M-viz-05",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "viz"
+      ],
+      "check": "review",
+      "refines": [
+        "R-08"
+      ],
+      "section": "5.2 Profile `viz` — dashboards and data visualisation",
+      "profiles": [
+        "viz"
+      ],
+      "text": "Every chart MUST have: a title written as a full sentence stating the takeaway or the question (a bare metric name is not a title), labelled axes with units, a source/as-of timestamp, and a text alternative (R-08). Legends SHOULD be replaced by direct labelling where there are ≤ 4 series."
+    },
+    {
+      "id": "M-viz-06",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "viz"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "5.2 Profile `viz` — dashboards and data visualisation",
+      "profiles": [
+        "viz"
+      ],
+      "text": "Y-axes for bar charts MUST start at zero. Line-chart axes MAY be truncated but MUST show the break or start value explicitly."
+    },
+    {
+      "id": "M-viz-07",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "viz",
+        "component"
+      ],
+      "check": "review",
+      "refines": [
+        "R-04"
+      ],
+      "section": "5.2 Profile `viz` — dashboards and data visualisation",
+      "profiles": [
+        "viz"
+      ],
+      "text": "KPI tiles: value in `text.data` at display size, label in `text.label`, delta with sign + colour + arrow (never colour alone), comparison period stated. Max 6 headline tiles per view."
+    },
+    {
+      "id": "M-viz-08",
+      "level": "SHOULD",
+      "tier": "T2",
+      "topics": [
+        "viz",
+        "color"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "5.2 Profile `viz` — dashboards and data visualisation",
+      "profiles": [
+        "viz"
+      ],
+      "text": "Gridlines and axes use `color.border.subtle` / `color.text.muted`; data marks use `color.data.*`. No chart background, border or drop shadow other than the surface colour; no 3-D, gradients or decorative marks."
+    },
+    {
+      "id": "M-viz-09",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "viz"
+      ],
+      "check": "review",
+      "refines": [
+        "R-26"
+      ],
+      "section": "5.2 Profile `viz` — dashboards and data visualisation",
+      "profiles": [
+        "viz"
+      ],
+      "text": "Interactive dashboards MUST expose filters' current state persistently, MUST show \"no data for this selection\" rather than a blank chart (R-26), and SHOULD allow export of the underlying table."
+    },
+    {
+      "id": "M-viz-10",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "viz",
+        "content",
+        "tokens"
+      ],
+      "check": "data",
+      "refines": [],
+      "section": "5.2 Profile `viz` — dashboards and data visualisation",
+      "profiles": [
+        "viz"
+      ],
+      "text": "Number formatting MUST come from the `format.number.*` tokens (thousands separator, decimals per metric class, unit abbreviations); ad-hoc formatting in a chart or tile is a conformance failure."
+    },
+    {
+      "id": "M-viz-11",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "viz"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "5.2 Profile `viz` — dashboards and data visualisation",
+      "profiles": [
+        "viz"
+      ],
+      "text": "Charts embedded in `app`, `site` or `doc` surfaces follow this profile for the chart itself and the host profile for everything around it."
+    },
+    {
+      "id": "M-site-01",
+      "level": "SHOULD",
+      "tier": "T2",
+      "topics": [
+        "type",
+        "layout"
+      ],
+      "check": "review",
+      "refines": [
+        "R-18",
+        "T-16"
+      ],
+      "section": "5.3 Profile `site` — content and marketing sites",
+      "profiles": [
+        "site"
+      ],
+      "text": "Type scale: 1.333 is the recommended starting point for this profile, but T-16's three options all apply; measure 60–75 ch; generous vertical rhythm (`space.stack.lg` between sections, `space.stack.xl` between major blocks)."
+    },
+    {
+      "id": "M-site-02",
+      "level": "SHOULD",
+      "tier": "T2",
+      "topics": [
+        "interaction",
+        "content"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "5.3 Profile `site` — content and marketing sites",
+      "profiles": [
+        "site"
+      ],
+      "text": "One primary call to action per viewport; the same CTA style across the site."
+    },
+    {
+      "id": "M-site-03",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "performance"
+      ],
+      "check": "script",
+      "refines": [],
+      "section": "5.3 Profile `site` — content and marketing sites",
+      "profiles": [
+        "site"
+      ],
+      "text": "Performance is a design constraint: images sized and lazy-loaded with fixed aspect boxes (no layout shift), fonts subset, no render-blocking scripts for content. Target Largest Contentful Paint < 2.5 s on a mid-range phone."
+    },
+    {
+      "id": "M-site-04",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "performance"
+      ],
+      "check": "script",
+      "refines": [],
+      "section": "5.3 Profile `site` — content and marketing sites",
+      "profiles": [
+        "site"
+      ],
+      "text": "Primary content MUST render with JavaScript disabled (verify by loading the page with scripts blocked); interactivity is progressive enhancement on a working page. Static generation SHOULD be the default build."
+    },
+    {
+      "id": "M-doc-01",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "doc",
+        "a11y"
+      ],
+      "check": "data",
+      "refines": [
+        "R-13"
+      ],
+      "section": "5.4 Profile `doc` — documents and decks",
+      "profiles": [
+        "doc"
+      ],
+      "text": "Documents MUST use real styles (Heading 1–3, Body, Caption, Table Grid) mapped from `text.*` tokens and the `doc.page.*` tokens (format, margins, deck ratio); no direct formatting. This is what makes them navigable, accessible and re-themable."
+    },
+    {
+      "id": "M-doc-02",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "doc",
+        "content"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "5.4 Profile `doc` — documents and decks",
+      "profiles": [
+        "doc"
+      ],
+      "text": "Reports open with a summary of at most one page containing three labelled parts — finding, implication, recommendation — before any detail."
+    },
+    {
+      "id": "M-doc-03",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "doc",
+        "content"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "5.4 Profile `doc` — documents and decks",
+      "profiles": [
+        "doc"
+      ],
+      "text": "Decks: one message per slide, stated in the slide title as a sentence; ≤ 6 lines of body text or one chart per slide; consistent placement of titles, sources and page numbers via master layouts, never manual positioning."
+    },
+    {
+      "id": "M-doc-04",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "doc",
+        "viz"
+      ],
+      "check": "review",
+      "refines": [
+        "M-viz-11"
+      ],
+      "section": "5.4 Profile `doc` — documents and decks",
+      "profiles": [
+        "doc"
+      ],
+      "text": "Charts in documents follow `viz` rules (M-viz-*), rendered at ≥ 150 dpi or as vector, with the palette taken from the same tokens as the on-screen product."
+    },
+    {
+      "id": "M-doc-05",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "doc"
+      ],
+      "check": "review",
+      "refines": [
+        "R-20"
+      ],
+      "section": "5.4 Profile `doc` — documents and decks",
+      "profiles": [
+        "doc"
+      ],
+      "text": "Document tables MUST right-align numeric columns with tabular figures (R-20). Header rows SHOULD use `color.bg.subtle` + `text.label`; zebra striping only when rows > 8."
+    },
+    {
+      "id": "M-doc-06",
+      "level": "MUST",
+      "tier": "T0",
+      "topics": [
+        "doc",
+        "color",
+        "a11y"
+      ],
+      "check": "review",
+      "refines": [
+        "R-04"
+      ],
+      "section": "5.4 Profile `doc` — documents and decks",
+      "profiles": [
+        "doc"
+      ],
+      "text": "Colour in print: verify the accent and status colours still meet contrast when printed greyscale; do not rely on colour for any meaning (R-04)."
+    },
+    {
+      "id": "C-01",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "component",
+        "process"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "6.1 Lifecycle",
+      "profiles": [
+        "all"
+      ],
+      "text": "A component is created when the same UI appears a second time (P-09). Before that it is a one-off built from tokens. A pattern (composition of components) is documented when it appears a third time."
+    },
+    {
+      "id": "C-02",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "component",
+        "docs"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "6.1 Lifecycle",
+      "profiles": [
+        "all"
+      ],
+      "text": "Every component MUST have a spec page (`design/components/<name>.md`, template in Appendix B) before or with its implementation."
+    },
+    {
+      "id": "C-03",
+      "level": "SHOULD",
+      "tier": "T2",
+      "topics": [
+        "component"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "6.1 Lifecycle",
+      "profiles": [
+        "all"
+      ],
+      "text": "Prefer composition over configuration: a component SHOULD expose no more than three boolean props; further variation is a sub-component or a `variant`/`size`/`tone` enum. Variants are limited to what the design actually uses."
+    },
+    {
+      "id": "C-04",
+      "level": "SHOULD",
+      "tier": "T1",
+      "topics": [
+        "component",
+        "process"
+      ],
+      "check": "judgement",
+      "refines": [],
+      "section": "6.1 Lifecycle",
+      "profiles": [
+        "all"
+      ],
+      "text": "Adapt before create. Default to an accessible open-source component foundation (headless/unstyled preferred — e.g. Radix, React Aria, Headless UI, or native HTML elements) themed entirely through tokens; hand-build only where no suitable primitive exists. Record the base library in `DLS.md`. Wholesale adoption of an opinionated visual library (Material, Bootstrap) is a `DEC` entry because it competes with the token layer."
+    },
+    {
+      "id": "C-05",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "component",
+        "process"
+      ],
+      "check": "review",
+      "refines": [
+        "R-29"
+      ],
+      "section": "6.1 Lifecycle",
+      "profiles": [
+        "all"
+      ],
+      "text": "Maturity ladder. Every component carries a status: `draft` (proposed, in validation) → `candidate` (production-ready code, spec written, automated a11y scan clean, in use on one surface) → `stable` (used on ≥ 2 surfaces or projects, complete spec, all three R-29 layers passed, tests, versioned) → `deprecated` (migration path and window stated). Only `stable` components may be depended on by other components."
+    },
+    {
+      "id": "C-06",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "component",
+        "docs"
+      ],
+      "check": "review",
+      "refines": [
+        "D-02"
+      ],
+      "section": "6.3 Anatomy and API",
+      "profiles": [
+        "all"
+      ],
+      "text": "Each spec names the component's parts (anatomy) and the token each part consumes. Example for Button: container (`button.bg.*`, `radius.control`), label (`text.label`, `button.text.*`), leading/trailing icon (`size.icon.md`), focus ring (`border.width.md`, `color.border.focus`)."
+    },
+    {
+      "id": "C-07",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "component",
+        "docs"
+      ],
+      "check": "review",
+      "refines": [
+        "D-02",
+        "T-07"
+      ],
+      "section": "6.3 Anatomy and API",
+      "profiles": [
+        "all"
+      ],
+      "text": "Props/variants use the shared vocabulary in `tokens.json` `$extensions.dls.vocabulary.props` (`variant`, `size`, `tone`) and the state names of §6.2. Do not invent synonyms (`kind`, `type`, `appearance`)."
+    },
+    {
+      "id": "C-08",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "component",
+        "a11y",
+        "docs"
+      ],
+      "check": "review",
+      "refines": [
+        "D-02"
+      ],
+      "section": "6.3 Anatomy and API",
+      "profiles": [
+        "all"
+      ],
+      "text": "Accessibility contract per component: semantic element or ARIA role, accessible name source, keyboard interactions, focus management, announcements. This is written in the spec, not left to the implementation."
+    },
+    {
+      "id": "C-09",
+      "level": "MUST",
+      "tier": "T2",
+      "topics": [
+        "component",
+        "content",
+        "docs"
+      ],
+      "check": "review",
+      "refines": [
+        "D-02"
+      ],
+      "section": "6.3 Anatomy and API",
+      "profiles": [
+        "all"
+      ],
+      "text": "Content contract per component: max label length, tone, what happens on overflow (truncate with tooltip / wrap / hide)."
+    },
+    {
+      "id": "C-10",
+      "level": "MUST",
+      "tier": "T2",
+      "topics": [
+        "component",
+        "layout",
+        "docs"
+      ],
+      "check": "review",
+      "refines": [
+        "D-02"
+      ],
+      "section": "6.3 Anatomy and API",
+      "profiles": [
+        "all"
+      ],
+      "text": "Responsive contract per component: behaviour at each breakpoint or container size, and what collapses first. Component-level responsiveness SHOULD use container queries; `breakpoint.*` tokens are for page layout."
+    },
+    {
+      "id": "D-01",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "docs"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "7.1 Required structure",
+      "profiles": [
+        "all"
+      ],
+      "text": "Every project has a `design/` folder with this structure. Files marked ● MUST exist from day one — `DLS.md` before the first component is built; ○ are created when needed."
+    },
+    {
+      "id": "D-02",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "docs"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "7.2 Writing rules",
+      "profiles": [
+        "all"
+      ],
+      "text": "Every spec answers, in order: what it is → when to use it → when not to (and what to use instead) → anatomy → variants → states → behaviour → accessibility → content → tokens consumed → do/don't → open questions. Sections may be short; they may not be missing."
+    },
+    {
+      "id": "D-03",
+      "level": "SHOULD",
+      "tier": "T2",
+      "topics": [
+        "docs",
+        "content"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "7.2 Writing rules",
+      "profiles": [
+        "all"
+      ],
+      "text": "Docs are written for the newest contributor (human or agent): every product-specific or design-system term used in a spec SHOULD appear in the `content.md` or `foundations.md` glossary."
+    },
+    {
+      "id": "D-04",
+      "level": "SHOULD",
+      "tier": "T2",
+      "topics": [
+        "docs",
+        "content"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "7.2 Writing rules",
+      "profiles": [
+        "all"
+      ],
+      "text": "Every do/don't pair cites the rule or principle ID it rests on, e.g. \"Don't put two primary buttons in one dialog — users can't tell which is the intended path (P-01).\" A pair without a citation is incomplete."
+    },
+    {
+      "id": "D-05",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "docs",
+        "governance"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "7.2 Writing rules",
+      "profiles": [
+        "all"
+      ],
+      "text": "Documentation lives with the code, in Markdown, in version control. External tools (Figma, Storybook, zeroheight-style sites) MAY mirror it but the repo copy is canonical."
+    },
+    {
+      "id": "D-06",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "docs"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "7.2 Writing rules",
+      "profiles": [
+        "all"
+      ],
+      "text": "`DLS.md` carries a status line per section and per component using the C-05 ladder (`draft | candidate | stable | deprecated`) so agents know what is safe to build on."
+    },
+    {
+      "id": "D-07",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "docs"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "7.2 Writing rules",
+      "profiles": [
+        "all"
+      ],
+      "text": "Keep docs current in the same change that alters behaviour. A PR that changes a component without touching its spec is incomplete."
+    },
+    {
+      "id": "D-08",
+      "level": "SHOULD",
+      "tier": "T2",
+      "topics": [
+        "docs",
+        "process"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "7.2 Writing rules",
+      "profiles": [
+        "all"
+      ],
+      "text": "Generate what can be generated: prop tables, token lists and code snippets come from code or `tokens.json` (Storybook autodocs, a script, or a build step), never hand-maintained. The Markdown spec holds what code cannot express — when to use, when not to, do/don't, content rules."
+    },
+    {
+      "id": "D-09",
+      "level": "SHOULD",
+      "tier": "T2",
+      "topics": [
+        "docs",
+        "process"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "7.2 Writing rules",
+      "profiles": [
+        "all"
+      ],
+      "text": "Documentation depth is tiered: comprehensive (full Appendix B) for the highest-traffic components — the top 10–15 in a Reference-level system, every `stable` component in smaller ones; standard (usage, variants, states, a11y) as the baseline for everything else. Nothing ships with name-and-screenshot only."
+    },
+    {
+      "id": "G-01",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "governance"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "8.2 Versioning",
+      "profiles": [
+        "all"
+      ],
+      "text": "This standard and every project DLS use semver. Major: removed/renamed token, changed semantic meaning, breaking component API, raised MUST rule — and every major bump MUST ship a migration note. Minor: new token/component/rule, additive variant. Patch: value tweak within meaning, doc fix, bug fix."
+    },
+    {
+      "id": "G-02",
+      "level": "MUST",
+      "tier": "T2",
+      "topics": [
+        "governance"
+      ],
+      "check": "review",
+      "refines": [
+        "C-05",
+        "G-01"
+      ],
+      "section": "8.2 Versioning",
+      "profiles": [
+        "all"
+      ],
+      "text": "Deprecations are announced at least one minor version before removal and, for Reference-level systems, carry a stated migration window (default 90 days), with an alias or codemod where possible; the deprecated item is marked in docs and emits a warning in code where feasible."
+    },
+    {
+      "id": "G-03",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "governance"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "8.2 Versioning",
+      "profiles": [
+        "all"
+      ],
+      "text": "`CHANGELOG.md` is updated in the same change. Entry format: `## [x.y.z] — YYYY-MM-DD` then `Added / Changed / Deprecated / Removed / Fixed` with rule IDs where relevant."
+    },
+    {
+      "id": "G-04",
+      "level": "SHOULD",
+      "tier": "T2",
+      "topics": [
+        "governance",
+        "process"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "8.3 Change process",
+      "profiles": [
+        "all"
+      ],
+      "text": "A change proposal contains four fields: the change, the motivating rule or principle ID, the projects affected, and the migration path. Proposals missing a field are returned, not reviewed."
+    },
+    {
+      "id": "G-05",
+      "level": "SHOULD",
+      "tier": "T2",
+      "topics": [
+        "governance",
+        "process"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "8.3 Change process",
+      "profiles": [
+        "all"
+      ],
+      "text": "Any change to Layer 0 (this file) is reviewed against every active project's `DECISIONS.md` for conflicts before merging."
+    },
+    {
+      "id": "G-06",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "governance",
+        "process"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "8.4 Exceptions and deviations",
+      "profiles": [
+        "all"
+      ],
+      "text": "Deviation from a SHOULD: allowed by the implementer; record a one-line entry in `DECISIONS.md` with the rule ID and reason (the full Appendix C record is for MUST exceptions only)."
+    },
+    {
+      "id": "G-07",
+      "level": "MUST",
+      "tier": "T1",
+      "topics": [
+        "governance"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "8.4 Exceptions and deviations",
+      "profiles": [
+        "all"
+      ],
+      "text": "Exception to a MUST: requires an explicit decision record (Appendix C) with the rule ID, the constraint that makes compliance impossible or harmful, the mitigation, the scope (which surfaces), and an expiry date. Agents MUST NOT grant themselves MUST exceptions; they draft the record and stop for the approver named in `DLS.md` (§8.1)."
+    },
+    {
+      "id": "G-08",
+      "level": "MUST",
+      "tier": "T2",
+      "topics": [
+        "governance"
+      ],
+      "check": "review",
+      "refines": [
+        "G-07"
+      ],
+      "section": "8.4 Exceptions and deviations",
+      "profiles": [
+        "all"
+      ],
+      "text": "Exceptions expire. On expiry they are re-approved or the deviation is removed."
+    },
+    {
+      "id": "G-09",
+      "level": "SHOULD",
+      "tier": "T2",
+      "topics": [
+        "governance",
+        "process"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "8.4 Exceptions and deviations",
+      "profiles": [
+        "all"
+      ],
+      "text": "Repeated identical exceptions across projects are a signal the standard is wrong; open a change proposal (G-04) instead of a fourth exception."
+    },
+    {
+      "id": "G-10",
+      "level": "SHOULD",
+      "tier": "T2",
+      "topics": [
+        "governance",
+        "process"
+      ],
+      "check": "review",
+      "refines": [],
+      "section": "8.4 Exceptions and deviations",
+      "profiles": [
+        "all"
+      ],
+      "text": "Documentation SHOULD be audited against live components and tokens on a cadence (quarterly for active projects; before any release for others): stale screenshots, removed tokens, obsolete snippets and status lines that no longer match are logged and fixed. Reporting a stale doc is a one-line action (issue template or `DECISIONS.md` note)."
+    }
+  ]
+}

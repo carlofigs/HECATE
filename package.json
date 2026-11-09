@@ -16,6 +16,7 @@
     "mcp": "pnpm --filter @hecate/mcp-v1 start",
     "migrate-v1": "pnpm --filter @hecate/migrate-v1 migrate",
     "package-skills": "pnpm --filter @hecate/plugin package",
+    "tokens": "pnpm --filter @hecate/ui tokens",
     "export-schema": "pnpm --filter @hecate/core export-schema"
   },
   "devDependencies": {
