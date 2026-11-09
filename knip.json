@@ -6,7 +6,14 @@
   ],
   "workspaces": {
     "packages/ui": {
-      "ignoreDependencies": ["tailwindcss"]
+      "ignoreDependencies": [
+        "tailwindcss"
+      ]
+    },
+    "apps/worker": {
+      "ignoreDependencies": [
+        "@hecate/web"
+      ]
     }
   }
 }

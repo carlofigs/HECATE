@@ -59,7 +59,9 @@ async function route(request: Request, env: Env, ctx: ExecutionContext, settings
   if (path === '/auth/login') return login(request, { settings })
   if (path === '/auth/callback') return callback(request, { settings })
   if (path === '/auth/logout') return logout(request, { settings })
-  if (path === '/api' || path.startsWith('/api/')) return handleApi(request, { settings, workspaces: state.workspaces, workspace })
+  if (path === '/api' || path.startsWith('/api/')) {
+    return handleApi(request, { settings, workspaces: state.workspaces, workspace, defaultWorkspace: env.DEFAULT_WORKSPACE || null })
+  }
   if (path === '/hooks/github') {
     return githubHook(request, {
       secret: settings.webhookSecret, owner: env.GITHUB_OWNER, repo: env.GITHUB_REPO, branch: env.GITHUB_BRANCH,

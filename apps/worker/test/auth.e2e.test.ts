@@ -183,7 +183,7 @@ describe('the web app', () => {
     expect(response.status).toBe(200)
     expect(jar.has('__Host-hecate-session')).toBe(true)
     expect(await (await send('/api/me', {}, jar)).json()).toEqual({ userId: '42', login: 'owner' })
-    expect(await (await send('/api/workspaces', {}, jar)).json()).toEqual({ workspaces: [{ dir: DIR, hidden: false, name: 'Work', policy: 'open' }] })
+    expect(await (await send('/api/workspaces', {}, jar)).json()).toEqual({ workspaces: [{ dir: DIR, hidden: false, name: 'Work', policy: 'open' }], default: null })
     expect((await send('/api/workspaces/club', {}, jar)).status).toBe(404)
 
     const ops = (origin?: string) => send(`/api/workspaces/${DIR}/ops`, {

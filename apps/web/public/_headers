@@ -1,0 +1,10 @@
+# Applied by Workers Static Assets to every response the asset side serves,
+# including the SPA fallback (apps/worker/wrangler.jsonc). Responses the Worker
+# builds itself (/api, /auth, /mcp …) set their own headers.
+/*
+  Content-Security-Policy: default-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: same-origin
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

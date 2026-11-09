@@ -15,6 +15,8 @@ export interface ApiDeps {
   settings: AuthSettings
   workspaces: WorkspaceList
   workspace: (dir: string) => WorkspaceRpc
+  /** DEFAULT_WORKSPACE: the one the app opens first. */
+  defaultWorkspace?: string | null
   now?: () => number
 }
 
@@ -39,7 +41,7 @@ export async function handleApi(request: Request, deps: ApiDeps): Promise<Respon
 
   const path = new URL(request.url).pathname.replace(/\/+$/, '')
   if (path === '/api/me' && !write) return json({ userId: session.sub, login: session.login })
-  if (path === '/api/workspaces' && !write) return json({ workspaces: await deps.workspaces.get() })
+  if (path === '/api/workspaces' && !write) return json({ workspaces: await deps.workspaces.get(), default: deps.defaultWorkspace ?? null })
 
   const m = /^\/api\/workspaces\/([^/]+)(\/ops|\/flush)?$/.exec(path)
   if (!m) return json({ error: 'Not found' }, 404)

@@ -15,7 +15,7 @@ activity areas, statuses, people, the sprint cadence) comes from your
 workspace, so nothing personal lives in these files.
 
 They need the HECATE connector: the deployed Worker's `/mcp`
-([`docs/v2/DEPLOY.md`](../docs/v2/DEPLOY.md), step 6).
+([`docs/v2/DEPLOY.md`](../docs/v2/DEPLOY.md), step 7).
 
 ## Claude Code
 

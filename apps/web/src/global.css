@@ -1,0 +1,5 @@
+@import 'tailwindcss';
+@import '@hecate/ui/theme.css';
+
+/* The UI package is TypeScript source, not a build: scan it for classes. */
+@source '../../../packages/ui/src';

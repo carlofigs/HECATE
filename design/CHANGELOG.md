@@ -2,6 +2,26 @@
 
 Semver (G-01). Each entry lists the rule IDs it concerns.
 
+## [0.2.0] — 2026-11-09
+
+### Added
+
+- **Components** in `packages/ui`, each with a spec in `components/` and at `candidate` (C-02, C-05):
+  - `Button`, `ButtonLink`, `IconButton`;
+  - `SelectField`;
+  - `Badge` and `KeyChip`;
+  - `Banner`, `EmptyState`, `Skeleton`, `VisuallyHidden`;
+  - `Markdown` (no raw HTML; task keys as chips; headings demoted, R-13).
+- **App patterns:** the app shell (skip link, navigation with `aria-current`, sync status in words, workspace switcher) and PageShell (loading, error, partial and repository-problem states: R-25, R-26, R-27).
+- **The accessibility gate** (R-29 layer 1) in `apps/worker/e2e`, run in CI:
+  - axe with zero violations, also counting measured contrast filed as "needs review";
+  - target sizes against the adaptive floor (R-07);
+  - reflow at 320 px (R-10);
+  - text-spacing overrides (R-11);
+  - outline and landmarks (R-13);
+  - a keyboard pass through the shell with visible rings (R-05, R-06).
+  - All of it at three widths, in light and dark.
+
 ## [0.1.0] — 2026-11-09
 
 ### Added

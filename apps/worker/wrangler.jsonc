@@ -22,6 +22,27 @@
   "workers_dev": true,
   "preview_urls": false,
   "observability": { "enabled": true },
+  // The web app (apps/web), served from the same origin as /api so its
+  // SameSite=Strict session cookie and Origin check work (ADR 0003). Every
+  // path the Worker answers is listed in run_worker_first; anything else is a
+  // file or, failing that, the app's index.html. Environments inherit this
+  // block: do not repeat it under env.*, where it would replace it whole.
+  "assets": {
+    "directory": "../web/dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": [
+      "/api",
+      "/api/*",
+      "/auth/*",
+      "/mcp",
+      "/mcp/*",
+      "/authorize",
+      "/oauth/*",
+      "/.well-known/*",
+      "/hooks/*",
+      "/health"
+    ]
+  },
   "durable_objects": { "bindings": [{ "name": "WORKSPACE", "class_name": "WorkspaceDO" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["WorkspaceDO"] }],
   // OAuth clients, grants and token hashes. Provisioned on first deploy.
