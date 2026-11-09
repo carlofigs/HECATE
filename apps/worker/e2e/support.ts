@@ -78,9 +78,9 @@ interface StoredTask {
 /**
  * Waits for the app to finish sending (a change shows before the Worker has
  * it), commits the workspace's pending changes now, and reads what reached
- * git: its tasks and the commit messages.
+ * git: its tasks, the commit messages and every file.
  */
-export async function committed(page: Page, dir: string): Promise<{ tasks: StoredTask[]; log: string[] }> {
+export async function committed(page: Page, dir: string): Promise<{ tasks: StoredTask[]; log: string[]; files: Record<string, string> }> {
   await expect(page.getByRole('status').filter({ hasText: /^Saving…$|changes? waiting|Couldn't save/ })).toHaveCount(0)
   const origin = new URL(page.url()).origin
   const path = `/api/workspaces/${encodeURIComponent(dir)}`
@@ -97,7 +97,14 @@ export async function committed(page: Page, dir: string): Promise<{ tasks: Store
     .toBe(0)
   const git = (await (await page.request.get(`/__harness/git?dir=${encodeURIComponent(dir)}`)).json()) as { files: Record<string, string>; log: string[] }
   const tasks = JSON.parse(git.files['tasks.json'] ?? '{"tasks":[]}') as { tasks: StoredTask[] }
-  return { tasks: tasks.tasks, log: git.log }
+  return { tasks: tasks.tasks, log: git.log, files: git.files }
+}
+
+/** A committed JSON file, parsed: `focus/2026-11-09.json`, `focus/keep-in-mind.json`. */
+export function stored<T>(files: Record<string, string>, path: string): T {
+  const text = files[path]
+  expect(text, `${path} was committed`).toBeDefined()
+  return JSON.parse(text ?? 'null') as T
 }
 
 /** The keys a Board column shows, in order (wide layout: the column's region; narrow: the open tab). */

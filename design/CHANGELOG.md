@@ -2,6 +2,20 @@
 
 Semver (G-01). Each entry lists the rule IDs it concerns.
 
+## [0.5.0] — 2026-11-09
+
+### Added
+
+- **Editable Today** (C-02, C-05, at `candidate`):
+  - the **focus item editor and item controls**: today's plan, this week's priorities and callouts, and keep-in-mind, each with visible Edit, Move and Remove controls, Undo where it is exact, and a confirmation where it is not (R-24, M-app-05);
+  - **Close the day**: how each plan item went, what else was done, and a note, recorded against the plan; editable once closed.
+- **`CheckboxField`:** the whole label is the target (R-07).
+
+### Changed
+
+- **Today is no longer read-only,** except for the schedule, which the calendar owns (`focus-item-editor.md`).
+- **Second surface reached** by `IconButton`, `Dialog`, `ConfirmDialog`, `Menu`, `Toast` and the text and radio fields, now on Today and the Board (C-05). They still need the manual passes to become `stable`.
+
 ## [0.4.0] — 2026-11-09
 
 ### Added

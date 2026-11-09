@@ -1,6 +1,8 @@
 import type { WorkspaceState } from '@hecate/core'
 import { Banner, Button, ConfirmDialog, Dialog, RadioGroupField, SelectField, TextAreaField, TextField } from '@hecate/ui'
 import { useRef, useState, type FormEvent } from 'react'
+import { URGENCY_OPTIONS } from '../format.ts'
+import { FormProblems } from '../FormProblems.tsx'
 import type { LocalResult } from '../store.ts'
 import { pushToast } from '../toasts.ts'
 import { emptyForm, formFromTask, opsFor, validate, type TaskForm } from './editor.ts'
@@ -14,13 +16,6 @@ export interface TaskEditorProps {
   onClose: () => void
   save: (ops: unknown[], label: string) => LocalResult
 }
-
-const URGENCY_OPTIONS = [
-  { value: '', label: 'None' },
-  { value: 'low', label: 'Low' },
-  { value: 'med', label: 'Medium' },
-  { value: 'high', label: 'High' },
-] as const
 
 /**
  * A task's every field in one dialog (M-app-03): labels above, checks on
@@ -88,17 +83,7 @@ export function TaskEditor({ state, taskKey, newStatus, onClose, save }: TaskEdi
   return (
     <Dialog open onOpenChange={open => !open && onClose()} title={task ? `Edit ${task.key}` : 'New task'}>
       <form noValidate onSubmit={submit} className="flex flex-col gap-stack-md">
-        {submitted && problems.length > 0 ? (
-          <div ref={summary} tabIndex={-1}>
-            <Banner tone="danger" title={`Fix ${problems.length === 1 ? 'this' : `these ${problems.length} things`} before saving`}>
-              <ul className="flex list-disc flex-col gap-stack-xs ps-inline-lg">
-                {problems.map(p => (
-                  <li key={p}>{p}</li>
-                ))}
-              </ul>
-            </Banner>
-          </div>
-        ) : null}
+        {submitted && problems.length > 0 ? <FormProblems ref={summary} problems={problems} /> : null}
         {saveError ? <Banner tone="danger" title="Not saved">{saveError}</Banner> : null}
 
         <TextField label="Title" required value={form.title} error={errorFor('title')} onChange={e => set('title', e.target.value)} onBlur={blur('title')} />

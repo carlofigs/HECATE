@@ -13,3 +13,11 @@ export const clockTime = (ms: number): string => CLOCK.format(ms)
 
 export const URGENCY_LABEL = { high: 'High', med: 'Medium', low: 'Low' } as const
 export const URGENCY_TONE = { high: 'danger', med: 'warning', low: 'neutral' } as const
+
+/** Urgency as a choice, None first. */
+export const URGENCY_OPTIONS = [
+  { value: '', label: 'None' },
+  { value: 'low', label: 'Low' },
+  { value: 'med', label: 'Medium' },
+  { value: 'high', label: 'High' },
+] as const

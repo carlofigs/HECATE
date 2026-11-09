@@ -7,7 +7,7 @@ import { Home } from './pages/Home.tsx'
 import { NotFound } from './pages/NotFound.tsx'
 import { Problem } from './pages/Problem.tsx'
 import { SignIn } from './pages/SignIn.tsx'
-import { Today } from './pages/Today.tsx'
+import { Today } from './today/Today.tsx'
 import { Shell } from './shell/Shell.tsx'
 
 /** Everything behind sign-in. The session is the Worker's httpOnly cookie; the app only asks who it belongs to. */

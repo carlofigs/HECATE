@@ -2,7 +2,8 @@
  * The task editor's form, its checks, and the ops it saves as. Pure, so the
  * rules are tested without a browser; TaskEditor.tsx only renders them.
  */
-import { findTask, slugify, type Task, type WorkspaceState } from '@hecate/core'
+import { slugify, type Task, type WorkspaceState } from '@hecate/core'
+import { checkKeys, checkLine, keysIn, nullable, sameList } from '../forms.ts'
 
 export interface TaskForm {
   title: string
@@ -47,30 +48,21 @@ export function formFromTask(state: WorkspaceState, task: Task): TaskForm {
   }
 }
 
-const KEY = /^[AB][1-9]\d*$/
-const keysIn = (text: string): string[] => text.split(/[\s,]+/).map(k => k.trim().toUpperCase()).filter(Boolean)
 const tagsIn = (text: string): string[] => [...new Set(text.split(',').map(t => slugify(t)).filter(Boolean))]
 
 /** What is wrong with the form, field by field, in words that say how to fix it (R-27). */
 export function validate(state: WorkspaceState, form: TaskForm, self: string | null): FormErrors {
   const errors: FormErrors = {}
-  const title = form.title.trim()
-  if (!title) errors.title = 'Give the task a title.'
-  else if (title.length > 500) errors.title = `Shorten the title to 500 characters or fewer (it has ${title.length}).`
-  else if (/[\r\n]/.test(form.title)) errors.title = 'Keep the title on one line; put the detail in the note.'
-  const keys = keysIn(form.dependsOn)
-  const bad = keys.filter(k => !KEY.test(k))
-  const missing = keys.filter(k => KEY.test(k) && !findTask(state, k))
-  if (bad.length > 0) errors.dependsOn = `${bad.join(', ')} ${bad.length === 1 ? 'is not a task key' : 'are not task keys'}: use keys such as A12 or B3.`
-  else if (missing.length > 0) errors.dependsOn = `There is no ${missing.join(' or ')} in this workspace.`
-  else if (self && keys.includes(self)) errors.dependsOn = 'A task cannot depend on itself.'
+  const title = checkLine(form.title, { name: 'the title', missing: 'Give the task a title.', oneLine: 'Keep the title on one line; put the detail in the note.' })
+  if (title) errors.title = title
+  const keys = checkKeys(state, form.dependsOn)
+  if (keys) errors.dependsOn = keys
+  else if (self && keysIn(form.dependsOn).includes(self)) errors.dependsOn = 'A task cannot depend on itself.'
   if (form.due && !/^\d{4}-\d{2}-\d{2}$/.test(form.due)) errors.due = 'Use a date such as 2026-11-30.'
   if (!state.workspace.statuses.some(s => s.id === form.status)) errors.status = 'Choose a status.'
   return errors
 }
 
-const nullable = (s: string): string | null => (s.trim() === '' ? null : s.trim())
-const sameList = (a: readonly string[], b: readonly string[]): boolean => a.length === b.length && a.every((x, i) => x === b[i])
 
 /** The ops a valid form saves as: one task.add, or a task.update of what changed plus a task.move if the status did. */
 export function opsFor(state: WorkspaceState, form: TaskForm, task: Task | null): unknown[] {

@@ -3,7 +3,9 @@ export { Banner, type BannerProps, type BannerTone } from './Banner.tsx'
 export { Button, ButtonLink, IconButton, buttonStyles, iconButtonStyles, type ButtonProps, type ButtonVariant } from './Button.tsx'
 export { cn } from './cn.ts'
 export { ConfirmDialog, Dialog, type ConfirmDialogProps, type DialogProps } from './Dialog.tsx'
-export { RadioGroupField, TextAreaField, TextField, type RadioGroupFieldProps, type TextAreaFieldProps, type TextFieldProps } from './fields.tsx'
+export {
+  CheckboxField, RadioGroupField, TextAreaField, TextField, type CheckboxFieldProps, type RadioGroupFieldProps, type TextAreaFieldProps, type TextFieldProps,
+} from './fields.tsx'
 export { Menu, type MenuItem, type MenuProps } from './Menu.tsx'
 export { EmptyState, type EmptyStateProps } from './EmptyState.tsx'
 export { Markdown, type MarkdownProps } from './Markdown.tsx'

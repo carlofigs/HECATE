@@ -164,7 +164,7 @@ One unstacked PR per story, squash-merged to `main`.
 | P3 | Skills plugin and import | M | P2 |
 | P4 | Minimal web v2: Board + read-only Today | M | P2 |
 | — | **Cutover** — P2 + P3 + P4 ship together so there is never a second source of truth | S | P3, P4 |
-| P5 | Projects, Sprint review, People & Glossary, Activity UI, editable Today | L | Cutover |
+| P5 | Projects, Sprint review, People & Glossary, Activity UI, editable Today | L | P4 (built on preview; live from cutover) |
 | P6 | Playwright + axe gate, live updates over DO WebSockets, offline polish | M | P5 |
 
 ### P0 — v1 safety hotfixes
@@ -354,7 +354,27 @@ real phone, once the owner's Cloudflare and GitHub App setup is done
 in the browser; no Tier 0 axe violations; usable at 375 px with no hover-only
 controls.
 
-### P5 / P6
+### P5 — the rest of the app
+
+Stories: editable Today; projects; sprint review and close sprint; people and
+glossary; the activity log. Started before cutover, on the preview, while the
+owner's setup and the legacy import wait.
+
+Delivered as sequential PRs:
+
+- [ ] `feat/today-editable` — Today's plan, end of day, the week's priorities
+      and callouts, and keep-in-mind, edited with the hecate-focus skill's ops
+      (the schedule stays the calendar's). Closing the day records each plan
+      item as done, carried or dropped against its id, with what else was done
+      and a note, and can complete the linked tasks in the same change. The
+      store now prepares each batch once, so every id it creates is the same on
+      the page and in the Worker.
+- [ ] Projects.
+- [ ] Sprint review and close sprint.
+- [ ] People and glossary.
+- [ ] Activity.
+
+### P5 / P6 acceptance
 
 **P5:** close sprint is a single commit, revertible with `git revert`; projects
 show linked tasks by `projectId`, including archived ones; the activity unread
