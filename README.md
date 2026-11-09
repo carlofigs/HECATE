@@ -78,7 +78,7 @@ branding/         # source brand assets
 
 ### Data model
 
-Data lives in a companion private repository (`HECATE_Data` by convention). Each top-level directory in that repo is one **workspace**; each file inside it is one data slice:
+Data lives in a companion private repository (the data repo). Each top-level directory in that repo is one **workspace**; each file inside it is one data slice:
 
 ```
 {workspace}/
