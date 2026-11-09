@@ -4,7 +4,7 @@ import { NotFoundError } from './types'
 import type { McpConfig } from '../config'
 
 const config: McpConfig = {
-  token: 'ghp_test', owner: 'carlofigs', repo: 'HECATE_Data', workspace: 'kickball',
+  token: 'ghp_test', owner: 'owner', repo: 'data', workspace: 'work',
 }
 
 /** Minimal stand-in for the bits of Response the adapter touches. */
@@ -33,14 +33,14 @@ function storageReturning(response: Response | ((url: string) => Response)) {
 describe('listWorkspaces', () => {
   it('keeps real workspace directories and drops hidden, archived and infra ones', async () => {
     const { storage } = storageReturning(res(200, [
-      { name: 'kickball', type: 'dir' },
-      { name: 'woolworths', type: 'dir' },
-      { name: '_edg_attribution', type: 'dir' },
+      { name: 'work', type: 'dir' },
+      { name: 'club', type: 'dir' },
+      { name: '_old_client', type: 'dir' },
       { name: '.github', type: 'dir' },
       { name: 'scripts', type: 'dir' },
       { name: 'README.md', type: 'file' },
     ]))
-    expect(await storage.listWorkspaces()).toEqual(['kickball', 'woolworths'])
+    expect(await storage.listWorkspaces()).toEqual(['work', 'club'])
   })
 
   it('surfaces the GitHub error message rather than a bare status', async () => {
@@ -52,8 +52,8 @@ describe('listWorkspaces', () => {
 describe('readFile', () => {
   it('requests the workspace-scoped path', async () => {
     const { storage, calls } = storageReturning(contentsResponse({ columns: [] }))
-    await storage.readFile('kickball', 'tasks')
-    expect(calls[0]).toBe('https://api.github.com/repos/carlofigs/HECATE_Data/contents/kickball/tasks.json')
+    await storage.readFile('work', 'tasks')
+    expect(calls[0]).toBe('https://api.github.com/repos/owner/data/contents/work/tasks.json')
   })
 
   it('decodes non-ASCII content correctly', async () => {
@@ -61,18 +61,18 @@ describe('readFile', () => {
     const { storage } = storageReturning(contentsResponse({
       columns: [{ id: 'c1', name: 'Backlog', tasks: [{ id: 't-a1', title, tags: [] }] }],
     }))
-    const { data } = await storage.readFile('kickball', 'tasks')
+    const { data } = await storage.readFile('work', 'tasks')
     expect(data.columns[0].tasks[0].title).toBe(title)
   })
 
   it('returns the blob sha alongside the data', async () => {
     const { storage } = storageReturning(contentsResponse({ columns: [] }, 'deadbeef'))
-    expect((await storage.readFile('kickball', 'tasks')).sha).toBe('deadbeef')
+    expect((await storage.readFile('work', 'tasks')).sha).toBe('deadbeef')
   })
 
   it('migrates on read, so an unversioned file arrives stamped', async () => {
     const { storage } = storageReturning(contentsResponse({ columns: [] }))
-    const { data } = await storage.readFile('kickball', 'tasks')
+    const { data } = await storage.readFile('work', 'tasks')
     expect((data as { schemaVersion?: number }).schemaVersion).toBe(1)
   })
 
@@ -80,21 +80,21 @@ describe('readFile', () => {
   // writer it was built for, so it must refuse a file a newer build wrote.
   it('refuses a file written by a newer build', async () => {
     const { storage } = storageReturning(contentsResponse({ columns: [], schemaVersion: 99 }))
-    await expect(storage.readFile('kickball', 'tasks')).rejects.toThrow(/newer version of HECATE/)
+    await expect(storage.readFile('work', 'tasks')).rejects.toThrow(/newer version of HECATE/)
   })
 
   it('validates structure, so a malformed file fails on read not at use', async () => {
     const { storage } = storageReturning(contentsResponse({ columns: 'not an array' }))
-    await expect(storage.readFile('kickball', 'tasks')).rejects.toThrow(/malformed/)
+    await expect(storage.readFile('work', 'tasks')).rejects.toThrow(/malformed/)
   })
 
   it('raises NotFoundError for a missing file', async () => {
     const { storage } = storageReturning(res(404, { message: 'Not Found' }))
-    await expect(storage.readFile('kickball', 'archive')).rejects.toThrow(NotFoundError)
+    await expect(storage.readFile('work', 'archive')).rejects.toThrow(NotFoundError)
   })
 
   it('reports undecodable content rather than throwing a raw parse error', async () => {
     const { storage } = storageReturning(res(200, { content: 'not-valid-base64-json!!', sha: 'x' }))
-    await expect(storage.readFile('kickball', 'tasks')).rejects.toThrow(/could not be decoded/)
+    await expect(storage.readFile('work', 'tasks')).rejects.toThrow(/could not be decoded/)
   })
 })

@@ -196,7 +196,7 @@ export function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
             <Label htmlFor="owner">Owner</Label>
             <Input
               id="owner"
-              placeholder="carlofigs"
+              placeholder="your-github-user"
               value={owner}
               onChange={e => handleOwnerChange(e.target.value)}
               autoComplete="off"
@@ -208,7 +208,7 @@ export function CredentialsSection({ isFirstRun }: { isFirstRun: boolean }) {
             <Label htmlFor="repo">Repository</Label>
             <Input
               id="repo"
-              placeholder="HECATE_Data"
+              placeholder="your-data-repo"
               value={repo}
               onChange={e => handleRepoChange(e.target.value)}
               autoComplete="off"

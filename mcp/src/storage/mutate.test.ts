@@ -5,7 +5,7 @@ import type { McpConfig } from '../config'
 import type { TasksData } from '../../../apps/web-v1/src/lib/schemas'
 
 const config: McpConfig = {
-  token: 'ghp_test', owner: 'carlofigs', repo: 'HECATE_Data', workspace: 'kickball',
+  token: 'ghp_test', owner: 'owner', repo: 'data', workspace: 'work',
 }
 
 function col(id: string, name: string, tasks: { id: string }[] = []) {
@@ -58,7 +58,7 @@ function fakeRemote(initial: unknown, opts: { conflicts?: number; onConflict?: (
 describe('mutateFile', () => {
   it('reads, applies the mutation, and writes it back', async () => {
     const remote = fakeRemote({ columns: [col('c1', 'Backlog')] })
-    await remote.storage.mutateFile('kickball', 'tasks', data => {
+    await remote.storage.mutateFile('work', 'tasks', data => {
       data.columns[0].tasks.push({ id: 't-a1' } as never)
     }, 'test')
 
@@ -68,13 +68,13 @@ describe('mutateFile', () => {
 
   it('sends the sha it read, so a stale write is rejected rather than silently winning', async () => {
     const remote = fakeRemote({ columns: [col('c1', 'Backlog')] })
-    await remote.storage.mutateFile('kickball', 'tasks', () => {}, 'test')
+    await remote.storage.mutateFile('work', 'tasks', () => {}, 'test')
     expect(remote.puts[0].sha).toBe('sha-0')
   })
 
   it('stamps schemaVersion on the way through, since the read migrates', async () => {
     const remote = fakeRemote({ columns: [col('c1', 'Backlog')] })
-    await remote.storage.mutateFile('kickball', 'tasks', () => {}, 'test')
+    await remote.storage.mutateFile('work', 'tasks', () => {}, 'test')
     expect((remote.doc as { schemaVersion?: number }).schemaVersion).toBe(1)
   })
 
@@ -90,7 +90,7 @@ describe('mutateFile', () => {
       },
     )
 
-    await remote.storage.mutateFile('kickball', 'tasks', data => {
+    await remote.storage.mutateFile('work', 'tasks', data => {
       data.columns[0].tasks.push({ id: 't-mine' } as never)
     }, 'test')
 
@@ -105,7 +105,7 @@ describe('mutateFile', () => {
   it('gives up after one retry rather than looping', async () => {
     const remote = fakeRemote({ columns: [col('c1', 'Backlog')] }, { conflicts: 5 })
     await expect(
-      remote.storage.mutateFile('kickball', 'tasks', () => {}, 'test'),
+      remote.storage.mutateFile('work', 'tasks', () => {}, 'test'),
     ).rejects.toThrow(ConflictError)
     expect(remote.gets).toBe(2)
     expect(remote.puts).toHaveLength(0)
@@ -114,7 +114,7 @@ describe('mutateFile', () => {
   it('refuses to write a shape the app could not load', async () => {
     const remote = fakeRemote({ columns: [col('c1', 'Backlog')] })
     await expect(
-      remote.storage.mutateFile('kickball', 'tasks', data => {
+      remote.storage.mutateFile('work', 'tasks', data => {
         ;(data as { columns: unknown }).columns = 'not an array'
       }, 'test'),
     ).rejects.toThrow(/malformed/)
@@ -132,7 +132,7 @@ describe('mutateFile', () => {
       }) } as Response
     }
     const storage = new GitHubStorage(config, fetchImpl)
-    await expect(storage.mutateFile('kickball', 'tasks', () => {}, 'test'))
+    await expect(storage.mutateFile('work', 'tasks', () => {}, 'test'))
       .rejects.toThrow(/not accessible by personal access token/)
   })
 })

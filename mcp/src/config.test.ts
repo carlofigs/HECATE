@@ -3,21 +3,21 @@ import { loadConfig, ConfigError } from './config'
 
 const full = {
   HECATE_GITHUB_TOKEN: 'ghp_test',
-  HECATE_OWNER: 'carlofigs',
-  HECATE_REPO: 'HECATE_Data',
-  HECATE_WORKSPACE: 'kickball',
+  HECATE_OWNER: 'owner',
+  HECATE_REPO: 'data',
+  HECATE_WORKSPACE: 'work',
 }
 
 describe('loadConfig', () => {
   it('reads a complete environment', () => {
     expect(loadConfig(full)).toEqual({
-      token: 'ghp_test', owner: 'carlofigs', repo: 'HECATE_Data', workspace: 'kickball',
+      token: 'ghp_test', owner: 'owner', repo: 'data', workspace: 'work',
     })
   })
 
   it('trims surrounding whitespace', () => {
-    const cfg = loadConfig({ ...full, HECATE_WORKSPACE: '  kickball  ' })
-    expect(cfg.workspace).toBe('kickball')
+    const cfg = loadConfig({ ...full, HECATE_WORKSPACE: '  work  ' })
+    expect(cfg.workspace).toBe('work')
   })
 
   it.each(Object.keys(full))('throws when %s is absent', key => {
@@ -34,7 +34,7 @@ describe('loadConfig', () => {
   // each time; naming them all at once is the difference between one fix and four.
   it('names every missing variable at once, not just the first', () => {
     try {
-      loadConfig({ HECATE_OWNER: 'carlofigs' })
+      loadConfig({ HECATE_OWNER: 'owner' })
       expect.unreachable('should have thrown')
     } catch (err) {
       const msg = (err as ConfigError).message
