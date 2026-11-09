@@ -3,5 +3,10 @@
   "ignoreWorkspaces": [
     "apps/web-v1",
     "mcp"
-  ]
+  ],
+  "workspaces": {
+    "packages/ui": {
+      "ignoreDependencies": ["tailwindcss"]
+    }
+  }
 }

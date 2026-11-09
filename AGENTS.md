@@ -23,10 +23,12 @@ frozen and still live; v2 is being built alongside it. Read
 | `packages/core/` | v2 data contract (`@hecate/core`): file schemas, versioning, dates, keys | Active |
 | `packages/migrate-v1/` | One-off v1 → v2 conversion with a dry-run report (`@hecate/migrate-v1`) | Until cutover, then deleted |
 | `packages/github-store/` | v2 storage (`@hecate/github-store`): Git Data API, App tokens, webhook signatures | Active |
+| `packages/ui/` | v2 design tokens (`@hecate/ui`): the Tailwind v4 `@theme` source, base styles, token checks; UI primitives from P4 PR 2 | Active |
 | `packages/*` (other) | further v2 shared packages | From P1 |
 | `apps/worker/` | v2 Cloudflare Worker (`@hecate/worker`): `WorkspaceDO`, later `/api`, `/mcp`, `/hooks` | Active |
 | `apps/*` (other) | v2 web app | From P4 |
 | `plugin/` | v2 Claude skills (`hecate-*`) as a Claude Code plugin, and zips for claude.ai | Active |
+| `design/` | The owner's design standard (vendored) and HECATE's design language: `DLS.md`, `foundations.md`, `DECISIONS.md`, generated `tokens/tokens.json` | Living |
 | `docs/` | Roadmap and ADRs | Living |
 | `branding/` | Source brand assets (SVG/PNG) | Stable |
 
@@ -61,6 +63,8 @@ pnpm migrate-v1 --data <checkout> --config <file>         # v1 → v2 dry run of
 pnpm --filter @hecate/worker build                        # bundle the Worker (wrangler --dry-run; no Cloudflare account needed)
 pnpm --filter @hecate/worker smoke <url>                  # anonymous, read-only checks of a deployed Worker
 pnpm package-skills                                       # plugin/dist/<skill>.zip for claude.ai uploads
+pnpm tokens                                               # regenerate design/tokens/tokens.json after editing packages/ui/src/theme.css
+python design/rules.py --tier T0                          # the design standard's blocking rules (also --topic, --id, --profile)
 ```
 
 CI (`.github/workflows/ci.yml`) gates pull requests; `deploy.yml` runs the same
@@ -179,15 +183,37 @@ secret is not enough — rotate it too.
 
 ## Design
 
-v2 UI follows the owner's `DESIGN-STANDARD.md` (v1.4), with HECATE's own layer
-in `design/` (added in P4): read `DLS.md`, `foundations.md` and
-`DECISIONS.md` before UI work, build from tokens only, implement every state,
-and record SHOULD deviations in `DECISIONS.md`. Never self-approve a MUST
-exception — draft the record and stop for the owner.
+v2 UI follows the owner's `DESIGN-STANDARD.md` (v1.4, vendored in `design/`),
+with HECATE's own layer beside it. Before UI work read `design/DLS.md`,
+`foundations.md` and `DECISIONS.md`, and the Tier 0 register
+(`python design/rules.py --tier T0`).
+
+- **Tokens only.** `packages/ui/src/theme.css` is the source (T-08 option B).
+  Its `@theme` resets Tailwind's defaults, so only HECATE's semantic tokens
+  make utilities (`bg-bg-surface`, `p-inset-md`, `text-body-md`,
+  `rounded-control`). Scales without a utility are read as
+  `min-h-(--size-control-default)`, `z-(--z-modal)` and similar. Never write
+  arbitrary values, raw colours, `z-10`/`duration-200`-style numbers or `dark:`
+  in components: `packages/ui/test/literals.test.ts` fails on them.
+- **Changing a token** means editing `theme.css`, running `pnpm tokens` and
+  committing `design/tokens/tokens.json` (CI fails on drift). A new name
+  segment goes in `packages/ui/scripts/vocabulary.ts` and the vocabulary table
+  in `foundations.md` first. Contrast in both themes is a test: a colour change
+  that fails it does not merge.
+- **Every component** gets a spec in `design/components/` with its code
+  (Appendix B), implements every §6.2 state, and every data view has empty,
+  loading, error and partial states.
+- **Touch-first is adaptive.** Size controls from `size.control.default` and
+  `size.target.default`, which become 48/44 px on coarse pointers and narrow
+  screens. Never add pointer logic to a component.
+- Record SHOULD deviations in `DECISIONS.md` as they happen. Never
+  self-approve a MUST exception: draft the record and stop for the owner.
 
 ## Do not touch without a reason
 
 - `apps/web-v1/` and `mcp/` beyond fixes (frozen; see above).
 - Numbered ADRs: supersede with a new one instead of rewriting history.
+- `design/DESIGN-STANDARD.md` and `design/rules.*`, `design/build_rules.py`:
+  vendored from the owner's upstream kit. Edits go upstream first.
 - `apps/web-v1/public/` icons: regenerate with
   `pnpm --filter web-v1 generate-pwa-assets` from `public/icon.svg`.

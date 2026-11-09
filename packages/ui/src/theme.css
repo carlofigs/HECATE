@@ -1,0 +1,391 @@
+/*
+ * HECATE design tokens: the source of truth (DESIGN-STANDARD T-08, option B).
+ *
+ * Decisions and their reasons are in design/foundations.md; this file holds the
+ * values. design/tokens/tokens.json is generated from it (`pnpm tokens`), and
+ * test/tokens.test.ts checks contrast, vocabulary and drift.
+ *
+ * Tiers (T-01 to T-05):
+ * - Tier 1, primitives, are plain custom properties in `@layer theme`, outside
+ *   `@theme`. No utility class can reach them, so components cannot either (T-04).
+ * - Tier 2, semantic roles and the scales the standard consumes directly
+ *   (size, motion, z, opacity, breakpoint), are `@theme static`. They are the
+ *   only vocabulary utilities can use: `--*: initial` removes Tailwind's own.
+ * - Themes re-map Tier 2 only (T-05): dark under prefers-color-scheme, and the
+ *   touch-first density under coarse pointers or narrow viewports (R-07).
+ *
+ * Primitive ramps share the standard's OKLCH lightness steps (Appendix A), so a
+ * semantic role keeps its contrast whichever hue it draws from. neutral is
+ * tinted toward the brand's indigo (950 is indigo black, 300 moonlight silver);
+ * amber is the torch accent (400 is torch amber).
+ */
+
+@import './base.css';
+
+@theme {
+  --*: initial;
+}
+
+@layer theme {
+  :root {
+    /* Colour ramps (Tier 1) */
+    --color-white: oklch(1 0 0);
+    --color-neutral-50: oklch(0.985 0.006 268.0);
+    --color-neutral-100: oklch(0.960 0.012 268.0);
+    --color-neutral-200: oklch(0.919 0.018 270.0);
+    --color-neutral-300: oklch(0.860 0.026 270.0);
+    --color-neutral-400: oklch(0.750 0.024 272.0);
+    --color-neutral-500: oklch(0.620 0.022 275.0);
+    --color-neutral-600: oklch(0.530 0.022 278.0);
+    --color-neutral-700: oklch(0.450 0.024 281.0);
+    --color-neutral-800: oklch(0.370 0.028 284.0);
+    --color-neutral-900: oklch(0.280 0.030 286.0);
+    --color-neutral-950: oklch(0.198 0.021 288.4);
+    --color-amber-50: oklch(0.985 0.011 72.0);
+    --color-amber-100: oklch(0.960 0.030 72.0);
+    --color-amber-200: oklch(0.919 0.055 72.0);
+    --color-amber-300: oklch(0.860 0.080 72.0);
+    --color-amber-400: oklch(0.759 0.128 71.7);
+    --color-amber-500: oklch(0.620 0.128 72.0);
+    --color-amber-600: oklch(0.530 0.112 72.0);
+    --color-amber-700: oklch(0.450 0.096 72.0);
+    --color-amber-800: oklch(0.370 0.072 72.0);
+    --color-amber-900: oklch(0.280 0.046 72.0);
+    --color-amber-950: oklch(0.199 0.034 72.0);
+    --color-orange-50: oklch(0.985 0.008 50.0);
+    --color-orange-100: oklch(0.960 0.022 50.0);
+    --color-orange-200: oklch(0.919 0.046 50.0);
+    --color-orange-300: oklch(0.860 0.080 50.0);
+    --color-orange-400: oklch(0.750 0.125 50.0);
+    --color-orange-500: oklch(0.620 0.150 50.0);
+    --color-orange-600: oklch(0.530 0.135 50.0);
+    --color-orange-700: oklch(0.450 0.110 50.0);
+    --color-orange-800: oklch(0.370 0.080 50.0);
+    --color-orange-900: oklch(0.280 0.050 50.0);
+    --color-orange-950: oklch(0.199 0.040 50.0);
+    --color-green-50: oklch(0.985 0.023 150.0);
+    --color-green-100: oklch(0.960 0.040 150.0);
+    --color-green-200: oklch(0.919 0.040 150.0);
+    --color-green-300: oklch(0.860 0.056 150.0);
+    --color-green-400: oklch(0.750 0.100 150.0);
+    --color-green-500: oklch(0.620 0.152 150.0);
+    --color-green-600: oklch(0.530 0.131 150.0);
+    --color-green-700: oklch(0.450 0.099 150.0);
+    --color-green-800: oklch(0.370 0.069 150.0);
+    --color-green-900: oklch(0.280 0.039 150.0);
+    --color-green-950: oklch(0.199 0.040 150.0);
+    --color-red-50: oklch(0.985 0.007 25.0);
+    --color-red-100: oklch(0.960 0.019 25.0);
+    --color-red-200: oklch(0.919 0.041 25.0);
+    --color-red-300: oklch(0.860 0.066 25.0);
+    --color-red-400: oklch(0.750 0.119 25.0);
+    --color-red-500: oklch(0.620 0.180 25.0);
+    --color-red-600: oklch(0.530 0.157 25.0);
+    --color-red-700: oklch(0.450 0.118 25.0);
+    --color-red-800: oklch(0.370 0.082 25.0);
+    --color-red-900: oklch(0.280 0.047 25.0);
+    --color-red-950: oklch(0.199 0.047 25.0);
+    --color-blue-50: oklch(0.985 0.007 255.0);
+    --color-blue-100: oklch(0.960 0.019 255.0);
+    --color-blue-200: oklch(0.919 0.039 255.0);
+    --color-blue-300: oklch(0.860 0.067 255.0);
+    --color-blue-400: oklch(0.750 0.119 255.0);
+    --color-blue-500: oklch(0.620 0.180 255.0);
+    --color-blue-600: oklch(0.530 0.156 255.0);
+    --color-blue-700: oklch(0.450 0.119 255.0);
+    --color-blue-800: oklch(0.370 0.081 255.0);
+    --color-blue-900: oklch(0.280 0.047 255.0);
+    --color-blue-950: oklch(0.199 0.048 255.0);
+
+    /* Space: the 4 px scale (Tier 1). space.0 is Tier 2 below. */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-10: 2.5rem;
+    --space-12: 3rem;
+    --space-16: 4rem;
+    --space-20: 5rem;
+    --space-24: 6rem;
+
+    /* Type (Tier 1): the 1.25 major-third scale on a 16 px base (T-16) */
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-md: 1rem;
+    --font-size-lg: 1.25rem;
+    --font-size-xl: 1.5625rem;
+    --font-size-2xl: 1.9375rem;
+    --font-size-3xl: 2.4375rem;
+    --font-size-4xl: 3.0625rem;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-line-height-tight: 1.2;
+    --font-line-height-snug: 1.3;
+    --font-line-height-normal: 1.5;
+    --font-letter-spacing-tight: -0.01em;
+    --font-letter-spacing-normal: 0em;
+
+    /* Radius, borders, elevation (Tier 1) */
+    --radius-none: 0px;
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-full: 9999px;
+    --border-width-sm: 1px;
+    --border-width-md: 2px;
+    --shadow-1: 0 1px 2px 0 color-mix(in oklch, var(--color-neutral-950) 8%, transparent);
+    --shadow-2: 0 4px 12px -2px color-mix(in oklch, var(--color-neutral-950) 12%, transparent);
+    --shadow-3: 0 12px 32px -4px color-mix(in oklch, var(--color-neutral-950) 16%, transparent);
+    --shadow-4: 0 24px 48px -8px color-mix(in oklch, var(--color-neutral-950) 18%, transparent);
+  }
+}
+
+@theme static {
+  /* Colour roles (Tier 2, R-21): light values; the dark theme re-maps them below */
+  --color-bg-canvas: var(--color-neutral-50);
+  --color-bg-surface: var(--color-white);
+  --color-bg-surface-hover: var(--color-neutral-100);
+  --color-bg-raised: var(--color-white);
+  --color-bg-subtle: var(--color-neutral-100);
+  --color-bg-overlay: color-mix(in oklch, var(--color-neutral-950) 60%, transparent);
+
+  --color-text-primary: var(--color-neutral-950);
+  --color-text-secondary: var(--color-neutral-700);
+  --color-text-muted: var(--color-neutral-600);
+  --color-text-inverse: var(--color-neutral-50);
+  --color-text-link: var(--color-amber-800);
+  --color-text-on-accent: var(--color-neutral-950);
+
+  --color-border-default: var(--color-neutral-500);
+  --color-border-strong: var(--color-neutral-700);
+  --color-border-subtle: var(--color-neutral-200);
+  --color-border-focus: var(--color-amber-700);
+
+  --color-accent-default: var(--color-amber-400);
+  --color-accent-hover: var(--color-amber-300);
+  --color-accent-active: var(--color-amber-500);
+  --color-accent-text: var(--color-amber-800);
+  --color-accent-bg-subtle: var(--color-amber-50);
+
+  --color-status-success-bg: var(--color-green-50);
+  --color-status-success-text: var(--color-green-800);
+  --color-status-success-border: var(--color-green-600);
+  --color-status-success-icon: var(--color-green-600);
+  --color-status-warning-bg: var(--color-orange-50);
+  --color-status-warning-text: var(--color-orange-800);
+  --color-status-warning-border: var(--color-orange-600);
+  --color-status-warning-icon: var(--color-orange-600);
+  --color-status-danger-bg: var(--color-red-50);
+  --color-status-danger-text: var(--color-red-800);
+  --color-status-danger-border: var(--color-red-600);
+  --color-status-danger-icon: var(--color-red-600);
+  --color-status-info-bg: var(--color-blue-50);
+  --color-status-info-text: var(--color-blue-800);
+  --color-status-info-border: var(--color-blue-600);
+  --color-status-info-icon: var(--color-blue-600);
+
+  /* Space (Tier 2): what layout code uses (§4.6) */
+  --spacing-0: 0px;
+  --spacing-inset-xs: var(--space-1);
+  --spacing-inset-sm: var(--space-2);
+  --spacing-inset-md: var(--space-3);
+  --spacing-inset-lg: var(--space-4);
+  --spacing-inset-xl: var(--space-6);
+  --spacing-stack-xs: var(--space-1);
+  --spacing-stack-sm: var(--space-2);
+  --spacing-stack-md: var(--space-4);
+  --spacing-stack-lg: var(--space-6);
+  --spacing-stack-xl: var(--space-8);
+  --spacing-inline-xs: var(--space-1);
+  --spacing-inline-sm: var(--space-2);
+  --spacing-inline-md: var(--space-3);
+  --spacing-inline-lg: var(--space-4);
+  --spacing-inline-xl: var(--space-6);
+
+  /* Type (Tier 2): families and the composite text styles (T-17) */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  --text-display: var(--font-size-3xl);
+  --text-display--line-height: var(--font-line-height-tight);
+  --text-display--font-weight: var(--font-weight-semibold);
+  --text-display--letter-spacing: var(--font-letter-spacing-tight);
+  --text-heading-1: var(--font-size-2xl);
+  --text-heading-1--line-height: var(--font-line-height-tight);
+  --text-heading-1--font-weight: var(--font-weight-semibold);
+  --text-heading-1--letter-spacing: var(--font-letter-spacing-tight);
+  --text-heading-2: var(--font-size-xl);
+  --text-heading-2--line-height: var(--font-line-height-snug);
+  --text-heading-2--font-weight: var(--font-weight-semibold);
+  --text-heading-2--letter-spacing: var(--font-letter-spacing-normal);
+  --text-heading-3: var(--font-size-lg);
+  --text-heading-3--line-height: var(--font-line-height-snug);
+  --text-heading-3--font-weight: var(--font-weight-semibold);
+  --text-heading-3--letter-spacing: var(--font-letter-spacing-normal);
+  --text-heading-4: var(--font-size-md);
+  --text-heading-4--line-height: var(--font-line-height-snug);
+  --text-heading-4--font-weight: var(--font-weight-semibold);
+  --text-heading-4--letter-spacing: var(--font-letter-spacing-normal);
+  --text-body-lg: var(--font-size-lg);
+  --text-body-lg--line-height: var(--font-line-height-normal);
+  --text-body-lg--font-weight: var(--font-weight-regular);
+  --text-body-lg--letter-spacing: var(--font-letter-spacing-normal);
+  --text-body-md: var(--font-size-md);
+  --text-body-md--line-height: var(--font-line-height-normal);
+  --text-body-md--font-weight: var(--font-weight-regular);
+  --text-body-md--letter-spacing: var(--font-letter-spacing-normal);
+  --text-body-sm: var(--font-size-sm);
+  --text-body-sm--line-height: var(--font-line-height-normal);
+  --text-body-sm--font-weight: var(--font-weight-regular);
+  --text-body-sm--letter-spacing: var(--font-letter-spacing-normal);
+  --text-label: var(--font-size-sm);
+  --text-label--line-height: var(--font-line-height-snug);
+  --text-label--font-weight: var(--font-weight-medium);
+  --text-label--letter-spacing: var(--font-letter-spacing-normal);
+  --text-caption: var(--font-size-xs);
+  --text-caption--line-height: var(--font-line-height-normal);
+  --text-caption--font-weight: var(--font-weight-regular);
+  --text-caption--letter-spacing: var(--font-letter-spacing-normal);
+  --text-code: var(--font-size-sm);
+  --text-code--line-height: var(--font-line-height-normal);
+  --text-code--font-weight: var(--font-weight-regular);
+  --text-code--letter-spacing: var(--font-letter-spacing-normal);
+  /* Recorded for tokens.json. Tailwind's text-* utilities set size, leading,
+     weight and tracking only, so code takes its family from <code> (base.css)
+     or font-mono. */
+  --text-code--font-family: var(--font-mono);
+  --text-data: var(--font-size-md);
+  --text-data--line-height: var(--font-line-height-normal);
+  --text-data--font-weight: var(--font-weight-regular);
+  --text-data--letter-spacing: var(--font-letter-spacing-normal);
+
+  /* Radius and elevation (Tier 2, T-19) */
+  --radius-control: var(--radius-md);
+  --radius-container: var(--radius-lg);
+  --radius-pill: var(--radius-full);
+  --shadow-raised: var(--shadow-1);
+  --shadow-overlay: var(--shadow-3);
+  --shadow-modal: var(--shadow-4);
+
+  /* Size: controls, targets, icons, containers. `default` is the density the
+     current device gets: comfortable with a fine pointer, touch-first otherwise
+     (DLS.md; R-07, M-app-01). */
+  --size-control-sm: 2rem;
+  --size-control-md: 2.5rem;
+  --size-control-lg: 3rem;
+  --size-control-default: var(--size-control-md);
+  --size-target-min: 1.5rem;
+  --size-target-touch: 2.75rem;
+  --size-target-default: var(--size-target-min);
+  --size-icon-sm: 1rem;
+  --size-icon-md: 1.25rem;
+  --size-icon-lg: 1.5rem;
+  --container-prose: 72ch;
+  --container-app: 90rem;
+
+  /* Layout */
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+  --breakpoint-2xl: 96rem;
+  --grid-columns-sm: 4;
+  --grid-columns-md: 8;
+  --grid-columns-lg: 12;
+  --grid-gutter-sm: var(--spacing-inline-lg);
+  --grid-gutter-lg: var(--spacing-inline-xl);
+  --z-base: 0;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-popover: 500;
+  --z-toast: 600;
+
+  /* Motion: deliberate is never used for state changes; linear only for
+     continuous indicators. */
+  --motion-duration-instant: 0ms;
+  --motion-duration-fast: 120ms;
+  --motion-duration-base: 220ms;
+  --motion-duration-slow: 350ms;
+  --motion-duration-deliberate: 500ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0, 0, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-linear: linear;
+
+  /* Opacity */
+  --opacity-disabled: 0.5;
+  --opacity-overlay: 0.6;
+  --opacity-muted: 0.7;
+
+  /* Tailwind's own defaults, pointed at the tokens above (not tokens themselves) */
+  --default-font-family: var(--font-sans);
+  --default-mono-font-family: var(--font-mono);
+  --default-transition-duration: var(--motion-duration-fast);
+  --default-transition-timing-function: var(--ease-standard);
+}
+
+@layer base {
+  /* Dark theme (T-05, T-15): accent and status from ramp steps 200–400. */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-bg-canvas: var(--color-neutral-950);
+      --color-bg-surface: var(--color-neutral-900);
+      --color-bg-surface-hover: var(--color-neutral-800);
+      --color-bg-raised: var(--color-neutral-800);
+      --color-bg-subtle: var(--color-neutral-800);
+      --color-bg-overlay: color-mix(in oklch, var(--color-neutral-950) 70%, transparent);
+
+      --color-text-primary: var(--color-neutral-50);
+      --color-text-secondary: var(--color-neutral-300);
+      --color-text-muted: var(--color-neutral-400);
+      --color-text-inverse: var(--color-neutral-950);
+      --color-text-link: var(--color-amber-300);
+      --color-text-on-accent: var(--color-neutral-950);
+
+      --color-border-default: var(--color-neutral-400);
+      --color-border-strong: var(--color-neutral-300);
+      --color-border-subtle: var(--color-neutral-800);
+      --color-border-focus: var(--color-amber-400);
+
+      --color-accent-default: var(--color-amber-400);
+      --color-accent-hover: var(--color-amber-300);
+      --color-accent-active: var(--color-amber-200);
+      --color-accent-text: var(--color-amber-300);
+      --color-accent-bg-subtle: var(--color-amber-950);
+
+      --color-status-success-bg: var(--color-green-950);
+      --color-status-success-text: var(--color-green-200);
+      --color-status-success-border: var(--color-green-400);
+      --color-status-success-icon: var(--color-green-400);
+      --color-status-warning-bg: var(--color-orange-950);
+      --color-status-warning-text: var(--color-orange-200);
+      --color-status-warning-border: var(--color-orange-400);
+      --color-status-warning-icon: var(--color-orange-400);
+      --color-status-danger-bg: var(--color-red-950);
+      --color-status-danger-text: var(--color-red-200);
+      --color-status-danger-border: var(--color-red-400);
+      --color-status-danger-icon: var(--color-red-400);
+      --color-status-info-bg: var(--color-blue-950);
+      --color-status-info-text: var(--color-blue-200);
+      --color-status-info-border: var(--color-blue-400);
+      --color-status-info-icon: var(--color-blue-400);
+    }
+  }
+
+  /* Touch-first density (R-07, M-app-01): 44 px targets and large controls
+     wherever a coarse pointer exists or the viewport is phone-sized. */
+  @media (any-pointer: coarse), (width < theme(--breakpoint-md)) {
+    :root {
+      --size-control-default: var(--size-control-lg);
+      --size-target-default: var(--size-target-touch);
+    }
+  }
+}
