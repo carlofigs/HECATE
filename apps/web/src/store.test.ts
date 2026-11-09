@@ -154,6 +154,29 @@ describe('writing', () => {
     expect(store.getState().open?.view?.tasks.tasks.find(t => t.key === 'A2')?.id).toBe(id)
   })
 
+  it('fixes every generated id before sending, so a later change can refer to it', async () => {
+    const { api, sent } = writeApi()
+    const store = createAppStore(api)
+    await store.getState().openWorkspace('w')
+    store.getState().apply([{ type: 'focus.setPlan', date: '2026-11-09', items: [{ lead: 'Write the draft' }, { lead: 'Tidy up' }] }], 'Set the plan')
+    await settle()
+    const planned = (sent[0]?.ops[0] as { items: { id?: string }[] }).items.map(i => i.id)
+    const view = store.getState().open?.view?.focusWeeks['2026-11-09']?.days[0]?.plan.map(p => p.id)
+    expect(planned).toHaveLength(2)
+    expect(planned.every(Boolean)).toBe(true)
+    expect(view).toEqual(planned)
+
+    // The Worker kept the same ids, so outcomes that point at them apply there as they did here.
+    const outcomes = planned.map(id => ({ planItemId: id, result: 'done', lead: 'Done' }))
+    const result = store.getState().apply([{ type: 'focus.closeDay', date: '2026-11-09', outcomes }], 'Close Mon 9 Nov')
+    expect(result).toMatchObject({ ok: true })
+    await settle()
+    const worker = applyBatch(workspace(), prepareBatch({ ops: sent[0]?.ops }, { opId: 'a', at: '2026-11-09T01:00:00.000Z', actor: 'app' }))
+    if (!worker.ok) throw new Error('first batch')
+    const closed = applyBatch(worker.state, prepareBatch({ ops: sent[1]?.ops }, { opId: 'b', at: '2026-11-09T02:00:00.000Z', actor: 'app' }))
+    expect(closed.ok).toBe(true)
+  })
+
   it('refetches when someone else wrote in between', async () => {
     const { api, snapshots } = writeApi([{ kind: 'applied', version: 7, keyMap: {}, duplicate: false }])
     const store = createAppStore(api)

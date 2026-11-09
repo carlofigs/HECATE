@@ -118,3 +118,26 @@ export function RadioGroupField({ legend, name, value, options, onChange, classN
     </fieldset>
   )
 }
+
+export interface CheckboxFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'id' | 'type'> {
+  label: string
+  hint?: string
+  className?: string
+}
+
+/** A yes-or-no choice with its label beside the box; the whole label is the target (R-07). */
+export function CheckboxField({ label, hint, className, ...rest }: CheckboxFieldProps) {
+  const id = useId()
+  return (
+    <div className={cn('flex flex-col gap-stack-xs', className)}>
+      <label
+        htmlFor={id}
+        className="inline-flex min-h-(--size-control-default) min-w-(--size-target-default) cursor-pointer items-center gap-inline-sm self-start text-body-md text-text-primary"
+      >
+        <input id={id} type="checkbox" aria-describedby={hint ? `${id}-hint` : undefined} className="size-(--size-icon-sm) accent-(--color-accent-text)" {...rest} />
+        {label}
+      </label>
+      {hint ? <p id={`${id}-hint`} className="text-body-sm text-text-secondary">{hint}</p> : null}
+    </div>
+  )
+}

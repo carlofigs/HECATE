@@ -70,3 +70,32 @@ test('the delete confirmation', async ({ page }) => {
   await expect(page.getByRole('alertdialog')).toBeVisible()
   await scan(page, 'delete confirmation')
 })
+
+test('the Today item editor, showing its errors', async ({ page }) => {
+  await signIn(page)
+  await todayLoaded(page)
+  await page.getByRole('region', { name: 'Plan for today' }).getByRole('button', { name: 'Add to plan' }).click()
+  const dialog = page.getByRole('dialog', { name: "Add to today's plan" })
+  await dialog.getByRole('button', { name: 'Add to plan' }).click()
+  await expect(dialog.getByRole('alert')).toBeVisible()
+  await scan(page, 'Today item editor (errors)')
+})
+
+test('closing the day', async ({ page }) => {
+  await signIn(page)
+  await todayLoaded(page)
+  await page.getByRole('region', { name: 'Plan for today' }).getByRole('button', { name: 'Close the day' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Close Wed 11 Nov' })
+  await dialog.getByRole('group', { name: 'Finish the scorecard draft' }).getByRole('radio', { name: 'Done' }).check()
+  await dialog.getByRole('button', { name: 'Add something else' }).click()
+  await expect(dialog.getByRole('checkbox', { name: 'Also complete A1' })).toBeVisible()
+  await scan(page, 'close the day')
+})
+
+test('Today, with an item menu open', async ({ page }) => {
+  await signIn(page)
+  await todayLoaded(page)
+  await page.getByRole('button', { name: 'More for “Clear the inbox”' }).click()
+  await expect(page.getByRole('menu')).toBeVisible()
+  await scan(page, 'Today (item menu)')
+})

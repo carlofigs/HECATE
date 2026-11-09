@@ -176,9 +176,10 @@ sessions pushing by hand. Treat every write as concurrent with someone else's.
     - the Worker gets one batch at a time with its own `opId`;
     - the local result stands when the Worker answers with the next version; any other answer means a refetch;
     - a refusal is dropped and explained; offline batches retry.
-    - A `task.add` carries a client ULID, so the Worker keeps the same task.
+    - `apply` runs `prepareBatch` once and queues the prepared ops, so every id a batch creates (a task, a plan item, an outcome) is fixed before it is sent: the Worker keeps the same ids the page shows.
     - Never write state any other way.
   - **Moves** are `task.move` with `after` = the new predecessor (`apps/web/src/board/moves.ts`, unit-tested). Drag and drop, the Move menu and Undo all reduce to it.
+  - **Today's edits** (`apps/web/src/today/focus.ts`, unit-tested) are the hecate-focus skill's ops. `focus.setPlan`, `setPriorities` and `setCallouts` replace the whole list, so always send every item back with its id: an item without one gets a new id, and a closed day's outcomes point at plan items by id. The schedule stays read-only (Claude captures it from the calendar).
   - **Offline and install:** a PWA (`vite-plugin-pwa`, `apps/web/vite.config.ts`).
     - Its service worker precaches the shell and answers navigations only
       for the app's routes (`apps/web/src/pwa-routes.ts`; a new top-level

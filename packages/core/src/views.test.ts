@@ -122,7 +122,19 @@ describe('todayView and inProgress', () => {
     expect(t.allDay.map(m => m.title)).toEqual(['Release day'])
     expect(t.plan.map(p => p.lead)).toEqual(['Draft'])
     expect(t.closed).toBe(false)
+    expect(t.note).toBeNull()
     expect(inProgress(s).map(x => x.key)).toEqual(['A1'])
+  })
+
+  it('shows a closed day with its outcomes and note', () => {
+    const { state } = baseState()
+    const planned = ok(run(state, [{ type: 'focus.setPlan', date: '2026-11-05', items: [{ lead: 'Draft' }] }])).state
+    const id = todayView(planned, d('2026-11-05')).plan[0]?.id
+    const s = ok(run(planned, [{ type: 'focus.closeDay', date: '2026-11-05', outcomes: [{ planItemId: id, result: 'done', lead: 'Draft' }], note: 'A good day.' }])).state
+    const t = todayView(s, d('2026-11-05'))
+    expect(t.closed).toBe(true)
+    expect(t.outcomes).toMatchObject([{ planItemId: id, result: 'done' }])
+    expect(t.note).toBe('A good day.')
   })
 })
 

@@ -224,6 +224,8 @@ export interface TodayView {
   plan: PlanItem[]
   closed: boolean
   outcomes: Outcome[]
+  /** The note written when the day was closed. */
+  note: string | null
 }
 
 export function todayView(state: WorkspaceState, today: IsoDate): TodayView {
@@ -238,6 +240,7 @@ export function todayView(state: WorkspaceState, today: IsoDate): TodayView {
     plan: day?.plan ?? [],
     closed: day?.closedAt != null,
     outcomes: day?.outcomes ?? [],
+    note: day?.note ?? null,
   }
 }
 

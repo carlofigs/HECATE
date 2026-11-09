@@ -18,7 +18,7 @@ HECATE is a single-user planning system: focus, tasks, projects, sprints, people
 
 | Surface | What it is | Profile | Touch-first |
 |---|---|---|---|
-| Today (built) | The day at a glance: schedule, plan, the week, in progress, waiting on, blocked, due soon, cutoffs, keep in mind | `app` | Adaptive (below) |
+| Today (built) | The day at a glance: schedule, plan, the week, in progress, waiting on, blocked, due soon, cutoffs, keep in mind. The plan, end of day, the week's priorities and callouts, and keep-in-mind are edited here | `app` | Adaptive (below) |
 | Board (built) | Tasks by status: drag, move, add, edit, complete, delete | `app` | Adaptive (below) |
 | Sign-in and shell (built) | GitHub sign-in, workspace switcher, navigation, sync status | `app` | Adaptive (below) |
 
@@ -39,7 +39,7 @@ Components never branch on this. They size themselves from `size.control.default
 
 **Radix primitives** (the `radix-ui` package), unstyled and themed entirely through tokens: Dialog, AlertDialog, DropdownMenu, Tabs and Toast.
 
-- **Native HTML elements** wherever they are enough: buttons, links, `<select>`, text, date and radio inputs.
+- **Native HTML elements** wherever they are enough: buttons, links, `<select>`, text, date, radio and checkbox inputs.
 - **Icons:** `lucide-react`, always decorative beside a word, or named by their control.
 - **Markdown:** `react-markdown` with no raw HTML.
 - **Drag and drop:** `dnd-kit` on the Board, always alongside a non-drag way to do the same thing (WCAG 2.5.7 under R-01).
@@ -76,7 +76,7 @@ The C-05 ladder runs `draft` → `candidate` → `stable` → `deprecated`. Only
 
 **Stable** needs three more things:
 
-- use on a second surface (`Button`, `Badge`, `Banner`, `SelectField` and `KeyChip` now are, on Today and the Board);
+- use on a second surface (`Button`, `IconButton`, `Badge`, `KeyChip`, `Banner`, `SelectField`, `Dialog`, `ConfirmDialog`, `Menu`, `Toast` and the text and radio fields now are, on Today and the Board);
 - the manual keyboard and screen-reader passes (R-29 layers 2 and 3);
 - tests.
 
@@ -85,18 +85,20 @@ The e2e suite covers part of the keyboard pass (focus order and rings through th
 | Section / component | Status | Next |
 |---|---|---|
 | Token layer (`theme.css`, `tokens.json`) | `draft` | The owner's approval of the foundations |
-| `Button`, `ButtonLink`, `IconButton` | `candidate` | Second surface; manual passes |
-| `SelectField` | `candidate` | Second surface; manual passes |
-| `Badge`, `KeyChip` | `candidate` | Second surface; manual passes |
-| `Banner` | `candidate` | Second surface; manual passes |
+| `Button`, `ButtonLink`, `IconButton` | `candidate` | Manual passes (`ButtonLink` still needs a second surface) |
+| `SelectField` | `candidate` | Manual passes |
+| `Badge`, `KeyChip` | `candidate` | Manual passes |
+| `Banner` | `candidate` | Manual passes |
 | `EmptyState` | `candidate` | Second surface; manual passes |
 | `Skeleton`, `VisuallyHidden` | `candidate` | Second surface; manual passes |
 | `Markdown` | `candidate` | Second surface; manual passes |
-| `Dialog`, `ConfirmDialog` | `candidate` | Second surface; manual passes |
-| `Menu` | `candidate` | Second surface; manual passes |
+| `Dialog`, `ConfirmDialog` | `candidate` | Manual passes |
+| `Menu` | `candidate` | Manual passes |
 | `Toast` (`Toaster`) | `candidate` | Manual passes |
-| `TextField`, `TextAreaField`, `RadioGroupField` | `candidate` | Second surface; manual passes |
+| `TextField`, `TextAreaField`, `RadioGroupField` | `candidate` | Manual passes |
+| `CheckboxField` | `candidate` | Second surface; manual passes |
 | Task card, Board column, Task editor (app) | `candidate` | Manual passes |
+| Focus item editor and item controls, Close the day (app) | `candidate` | Manual passes |
 | App shell (pattern), with the offline and update banners | `candidate` | Manual passes |
 | PageShell (pattern) | `candidate` | Manual passes; it now serves Today and the Board |
 

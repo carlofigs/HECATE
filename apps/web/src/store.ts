@@ -7,6 +7,7 @@
  * Writes: ops only (ADR 0004). A change is applied locally at once, with the
  * same engine the Worker runs, and queued. The queue goes to the Worker one
  * batch at a time, each with its own opId, so a retry is never applied twice.
+ * Each batch is prepared once, before it is queued, so the ids it creates are the same everywhere it is applied.
  * The page shows the server's state with the unsent batches on top.
  *
  * - Applied, and nothing else landed in between (version + 1): the local
@@ -242,11 +243,18 @@ export function createAppStore(api: Api, options: StoreOptions = {}): AppStore {
       apply(ops, label) {
         const open = get().open
         if (!open?.view) return { ok: false, message: 'The workspace has not loaded yet' }
-        const withIds = ops.map(op => {
-          const o = op as Record<string, unknown>
-          return o.type === 'task.add' && o.id === undefined ? { ...o, id: ulid() } : op
-        })
-        const batch: PendingBatch = { opId: ulid(), ops: withIds, at: new Date(now()).toISOString(), label }
+        const opId = ulid()
+        const at = new Date(now()).toISOString()
+        // Prepared once, here: every id the batch needs (a new task, a plan item, an outcome) is fixed before it is
+        // queued, so the local apply, the Worker and any re-apply all use the same ids. Prepared ops prepare to themselves.
+        let prepared: unknown[]
+        try {
+          prepared = prepareBatch({ ops }, { opId, at, actor: 'app' }).ops
+        } catch (error) {
+          if (error instanceof BatchInputError) return { ok: false, message: error.message }
+          throw error
+        }
+        const batch: PendingBatch = { opId, ops: prepared, at, label }
         const result = applyLocal(open.view, batch)
         if (!result.ok) return { ok: false, message: failureMessage(result) }
         update(open.dir, o => ({ queue: [...o.queue, batch], view: result.state }))

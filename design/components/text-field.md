@@ -1,6 +1,6 @@
-# TextField, TextAreaField and RadioGroupField
+# TextField, TextAreaField, RadioGroupField and CheckboxField
 
-**Status:** candidate   **Since:** 0.3.0   **Profile(s):** app   **Base:** native `<input>`, `<textarea>`, `<fieldset>` + radios
+**Status:** candidate   **Since:** 0.3.0   **Profile(s):** app   **Base:** native `<input>`, `<textarea>`, `<fieldset>` + radios, checkbox
 
 `packages/ui/src/fields.tsx`
 
@@ -13,6 +13,7 @@ A form field with its label above, an optional hint, and its error beside it (M-
 - **`TextField`:** one line of text, a date (`type="date"`), or a list typed as text (task keys, tags).
 - **`TextAreaField`:** a note in Markdown.
 - **`RadioGroupField`:** one choice from two to five, all visible (kind, urgency).
+- **`CheckboxField`:** one yes-or-no choice that is not a setting toggled at once ("Also complete A1" when closing the day).
 
 ## When not to use → use instead
 
@@ -27,6 +28,7 @@ A form field with its label above, an optional hint, and its error beside it (M-
 | control | `size.control.default`, `radius.control`, `color.border.default`, `color.bg.surface`, `space.inline.md`, `text.body.md` | |
 | error | `text.body.sm`, `color.status.danger.text` | Linked by `aria-describedby`; the control's border turns `color.status.danger.border` |
 | radio option | `size.control.default`, `radius.control`; selected: `color.accent.bg.subtle` + `color.accent.text` border | The whole option is the target |
+| checkbox | `size.icon.sm` box in `color.accent.text`; the label is `size.control.default` high and at least `size.target.default` wide | The whole label is the target |
 
 ## Variants
 
@@ -55,7 +57,7 @@ A form field with its label above, an optional hint, and its error beside it (M-
 
 ## Accessibility (C-08)
 
-- **Element:** `label[for]` + `input`. A fieldset with a legend for radios.
+- **Element:** `label[for]` + `input`. A fieldset with a legend for radios. A checkbox sits inside its `label`.
 - **Accessible name:** the label. The description is the hint, then the error.
 - **Keyboard:** native.
 
@@ -90,3 +92,4 @@ A form field with its label above, an optional hint, and its error beside it (M-
 ## Changelog
 
 - 0.3.0: created.
+- 0.5.0: `CheckboxField`.
