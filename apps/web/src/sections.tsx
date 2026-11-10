@@ -23,6 +23,8 @@ export interface SectionProps {
   /** Shown when there are no items; leave out for a section that is not a list. */
   empty?: string
   children: ReactNode[]
+  /** Shown before the list: a filter. */
+  lead?: ReactNode
   /** Shown after the list, before the actions: a closed day's note. */
   aside?: ReactNode
   /** The section's actions, always visible: Add, Close the day. */
@@ -30,12 +32,13 @@ export interface SectionProps {
   className?: string
 }
 
-export function Section({ id, title, empty, children, aside, footer, className }: SectionProps) {
+export function Section({ id, title, empty, children, lead, aside, footer, className }: SectionProps) {
   return (
     <section aria-labelledby={id} className={cn('flex flex-col gap-stack-sm rounded-container border border-border-subtle bg-bg-surface p-inset-lg', className)}>
       <h2 id={id} className="text-heading-3 text-text-primary">
         {title}
       </h2>
+      {lead}
       {children.length > 0 ? <ul className="flex flex-col gap-stack-sm">{children}</ul> : empty ? <p className="text-body-sm text-text-muted">{empty}</p> : null}
       {aside}
       {footer ? <div className="flex flex-wrap items-center gap-inline-sm">{footer}</div> : null}

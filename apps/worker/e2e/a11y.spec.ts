@@ -155,3 +155,32 @@ test('More', async ({ page }) => {
   await expect(page.getByRole('navigation', { name: 'More pages' }).getByRole('link', { name: /^Sprint/ })).toBeVisible()
   await scan(page, 'More')
 })
+
+test('People, with the glossary', async ({ page }) => {
+  await signIn(page, '/w/studio/people')
+  await expect(page.getByRole('heading', { level: 2, name: 'Glossary' })).toBeVisible()
+  await scan(page, 'People')
+})
+
+test('a person', async ({ page }) => {
+  await signIn(page, '/w/studio/people')
+  await page.getByRole('link', { name: 'Robin' }).click()
+  await expect(page.getByRole('heading', { level: 2, name: 'Waiting on them' })).toBeVisible()
+  await scan(page, 'a person')
+})
+
+test('the person editor, showing its errors', async ({ page }) => {
+  await signIn(page, '/w/studio/people')
+  await page.getByRole('button', { name: 'Add person' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Add a person' })
+  await dialog.getByRole('button', { name: 'Add person' }).click()
+  await expect(dialog.getByRole('alert')).toBeVisible()
+  await scan(page, 'person editor (errors)')
+})
+
+test('the term editor', async ({ page }) => {
+  await signIn(page, '/w/studio/people')
+  await page.getByRole('button', { name: 'Edit “CMS”' }).click()
+  await expect(page.getByRole('dialog', { name: 'Edit CMS' })).toBeVisible()
+  await scan(page, 'term editor')
+})

@@ -111,6 +111,11 @@ describe('next actions, deadlines, cutoffs and questions', () => {
     const after = projectOf(applies(withPerson, saveItemOps(p, 'cutoff', { ...form, what: 'Final photos' }, id)))
     expect(after.cutoffs).toMatchObject([{ id, personId: samId, what: 'Final photos' }])
     expect(itemName(after, 'cutoff', id)).toBe('Sam: Final photos')
+
+    // Choosing no one unlinks the person and keeps the words.
+    const unlinked = projectOf(applies(withPerson, saveItemOps(p, 'cutoff', { ...form, person: '' }, id)))
+    expect(unlinked.cutoffs).toMatchObject([{ id, personId: null, who: 'Sam' }])
+    expect(validateItem(withPerson, 'cutoff', { ...form, person: '01KQ0000000000000000000000' }).person).toBe('Choose a person from the list.')
   })
 
   it('numbers a new question after the others, and keeps every number when one is resolved or reopened', () => {

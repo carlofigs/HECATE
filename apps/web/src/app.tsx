@@ -6,6 +6,8 @@ import { Board } from './board/Board.tsx'
 import { Home } from './pages/Home.tsx'
 import { NotFound } from './pages/NotFound.tsx'
 import { More } from './pages/More.tsx'
+import { PeopleList } from './people/PeopleList.tsx'
+import { PersonPage } from './people/PersonPage.tsx'
 import { Problem } from './pages/Problem.tsx'
 import { ProjectList } from './projects/ProjectList.tsx'
 import { ProjectPage } from './projects/ProjectPage.tsx'
@@ -51,6 +53,8 @@ export function App() {
             <Route path="projects/:slug" element={<ProjectPage />} />
             <Route path="sprint" element={<SprintPage />} />
             <Route path="sprint/:n" element={<SprintPage />} />
+            <Route path="people" element={<PeopleList />} />
+            <Route path="people/:id" element={<PersonPage />} />
             <Route path="more" element={<More />} />
             <Route path="*" element={<Navigate to="today" replace />} />
           </Route>

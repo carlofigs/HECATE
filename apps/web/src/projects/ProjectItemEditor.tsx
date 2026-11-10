@@ -1,7 +1,8 @@
-import type { WorkspaceState } from '@hecate/core'
-import { Banner, Button, CheckboxField, Dialog, RadioGroupField, TextAreaField, TextField } from '@hecate/ui'
+import { personLabel, type WorkspaceState } from '@hecate/core'
+import { Banner, Button, CheckboxField, Dialog, RadioGroupField, SelectField, TextAreaField, TextField } from '@hecate/ui'
 import { useRef, useState, type FormEvent } from 'react'
 import { FormProblems } from '../FormProblems.tsx'
+import { personOptions } from '../people/people.ts'
 import type { LocalResult } from '../store.ts'
 import { pushToast } from '../toasts.ts'
 import { emptyItemForm, itemFormFor, itemName, saveItemOps, validateItem, type ItemForm, type ItemKind, type Project } from './project.ts'
@@ -112,6 +113,16 @@ export function ProjectItemEditor({ kind, state, project, id, onClose, save }: P
         {kind === 'cutoff' ? (
           <>
             {date}
+            <SelectField
+              label="Person"
+              value={form.person}
+              options={personOptions(state)}
+              onChange={e => {
+                const person = e.target.value
+                // Who is what the cutoff says; a chosen person fills it when it is empty.
+                setForm(f => ({ ...f, person, ...(person && !f.who.trim() ? { who: personLabel(state, person) ?? '' } : {}) }))
+              }}
+            />
             {text('who', 'Who', true, 'A person, role or team')}
             {text('what', 'What closes', true)}
           </>

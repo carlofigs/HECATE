@@ -8,7 +8,9 @@ import { checkKeys, checkLine, keysIn, nullable, sameList } from '../forms.ts'
 export interface TaskForm {
   title: string
   kind: 'action' | 'waiting'
-  /** Who a B task waits on, as free text. */
+  /** Who a B task waits on: a person from People (their id), or none. */
+  waitingPerson: string
+  /** Who or what a B task waits on, as free text: a team, or a note beside the person. */
   waitingOn: string
   status: string
   urgency: '' | 'low' | 'med' | 'high'
@@ -28,13 +30,14 @@ export function emptyForm(state: WorkspaceState, status?: string, project?: stri
   const first = state.workspace.statuses.find(s => s.category === 'todo') ?? state.workspace.statuses[0]
   const valid = status && state.workspace.statuses.some(s => s.id === status) ? status : (first?.id ?? '')
   const inProject = project && state.projects[project] ? project : ''
-  return { title: '', kind: 'action', waitingOn: '', status: valid, urgency: '', due: '', project: inProject, dependsOn: '', tags: '', note: '' }
+  return { title: '', kind: 'action', waitingPerson: '', waitingOn: '', status: valid, urgency: '', due: '', project: inProject, dependsOn: '', tags: '', note: '' }
 }
 
 export function formFromTask(state: WorkspaceState, task: Task): TaskForm {
   return {
     title: task.title,
     kind: task.kind,
+    waitingPerson: task.waitingOn?.personId ?? '',
     waitingOn: task.waitingOn?.text ?? '',
     status: task.status,
     urgency: task.urgency ?? '',
@@ -58,9 +61,17 @@ export function validate(state: WorkspaceState, form: TaskForm, self: string | n
   else if (self && keysIn(form.dependsOn).includes(self)) errors.dependsOn = 'A task cannot depend on itself.'
   if (form.due && !/^\d{4}-\d{2}-\d{2}$/.test(form.due)) errors.due = 'Use a date such as 2026-11-30.'
   if (!state.workspace.statuses.some(s => s.id === form.status)) errors.status = 'Choose a status.'
+  if (form.waitingPerson && !state.people.people.some(p => p.id === form.waitingPerson)) errors.waitingPerson = 'Choose a person from the list.'
   return errors
 }
 
+
+/** Who a B task waits on: a person, text, both, or nobody (null). */
+function waitingOf(form: TaskForm): { personId: string | null; text: string | null } | null {
+  const personId = form.waitingPerson || null
+  const text = nullable(form.waitingOn)
+  return personId === null && text === null ? null : { personId, text }
+}
 
 /** The ops a valid form saves as: one task.add, or a task.update of what changed plus a task.move if the status did. */
 export function opsFor(state: WorkspaceState, form: TaskForm, task: Task | null): unknown[] {
@@ -74,8 +85,7 @@ export function opsFor(state: WorkspaceState, form: TaskForm, task: Task | null)
     due: nullable(form.due),
   }
   if (!task) {
-    const waitingOn = form.kind === 'waiting' && nullable(form.waitingOn) ? { text: nullable(form.waitingOn) } : null
-    return [{ type: 'task.add', ref: '$1', kind: form.kind, status: form.status, ...fields, waitingOn }]
+    return [{ type: 'task.add', ref: '$1', kind: form.kind, status: form.status, ...fields, waitingOn: form.kind === 'waiting' ? waitingOf(form) : null }]
   }
   const patch: Record<string, unknown> = {}
   if (fields.title !== task.title) patch.title = fields.title
@@ -85,10 +95,10 @@ export function opsFor(state: WorkspaceState, form: TaskForm, task: Task | null)
   if (fields.project !== projectSlug(state, task.projectId)) patch.project = fields.project
   if (!sameList(fields.dependsOn, task.dependsOn)) patch.dependsOn = fields.dependsOn
   if (fields.due !== task.due) patch.due = fields.due
-  if (task.kind === 'waiting' && nullable(form.waitingOn) !== (task.waitingOn?.text ?? null)) {
-    const personId = task.waitingOn?.personId ?? null
-    const text = nullable(form.waitingOn)
-    patch.waitingOn = personId === null && text === null ? null : { personId, text }
+  if (task.kind === 'waiting') {
+    const next = waitingOf(form)
+    const before = task.waitingOn
+    if ((next?.personId ?? null) !== (before?.personId ?? null) || (next?.text ?? null) !== (before?.text ?? null)) patch.waitingOn = next
   }
   const ops: unknown[] = []
   if (Object.keys(patch).length > 0) ops.push({ type: 'task.update', task: task.key, patch })

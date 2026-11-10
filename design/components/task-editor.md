@@ -22,7 +22,7 @@ Every field of one task, new or existing, in a dialog. It saves as ops, and a st
 | Part | Notes |
 |---|---|
 | summary | `Banner` danger, on submit with errors; takes focus |
-| fields | Title (required), Kind and Waiting on (new tasks), Status, Due date, Project, Depends on, Urgency, Tags, Note |
+| fields | Title (required), Kind (new tasks), Person and Waiting on (B tasks), Status, Due date, Project, Depends on, Urgency, Tags, Note |
 | actions | Save / Add task (primary, end), Cancel, and Delete task (`tone="danger"`, start, behind `ConfirmDialog`) |
 
 ## Variants
@@ -81,8 +81,9 @@ Those of `Dialog`, `TextField`, `SelectField`, `RadioGroupField`, `Button`, `Ban
 
 ## Open questions
 
-- Choosing a person (not only text) for "Waiting on" when People gets its own UI (P5).
+- None.
 
 ## Changelog
 
 - 0.3.0: created.
+- 0.8.0: a B task's **Person** (from People) beside the free text; either may be empty.

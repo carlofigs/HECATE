@@ -102,6 +102,8 @@ export interface ItemForm {
   date: string
   hard: boolean
   note: string
+  /** Cutoff: the person it names (an id), or none. */
+  person: string
   who: string
   what: string
   keys: string
@@ -112,7 +114,7 @@ export interface ItemForm {
 
 export type ItemErrors = Partial<Record<keyof ItemForm, string>>
 
-export const emptyItemForm = (): ItemForm => ({ text: '', date: '', hard: false, note: '', who: '', what: '', keys: '', blocker: false, status: 'open', resolution: '' })
+export const emptyItemForm = (): ItemForm => ({ text: '', date: '', hard: false, note: '', person: '', who: '', what: '', keys: '', blocker: false, status: 'open', resolution: '' })
 
 /** Each stored item as the op takes it back: every field, its id, and a question's number. */
 function inputs(project: Project, kind: ItemKind): Record<string, unknown>[] {
@@ -138,7 +140,7 @@ export function itemFormFor(project: Project, kind: ItemKind, id: string): ItemF
   }
   if (kind === 'cutoff') {
     const c = project.cutoffs.find(x => x.id === id)
-    return c ? { ...base, date: c.date, who: c.who, what: c.what, keys: c.keys.join(', ') } : null
+    return c ? { ...base, date: c.date, person: c.personId ?? '', who: c.who, what: c.what, keys: c.keys.join(', ') } : null
   }
   const q = project.openQuestions.find(x => x.id === id)
   return q ? { ...base, text: q.question, blocker: q.blocker, status: q.status, resolution: q.resolution ?? '', keys: q.keys.join(', ') } : null
@@ -162,6 +164,7 @@ export function validateItem(state: WorkspaceState, kind: ItemKind, form: ItemFo
   if (kind === 'cutoff') {
     line('who', 'who', 'Say whose cutoff it is: a person, role or team.')
     line('what', 'what closes', 'Say what closes.')
+    if (form.person && !state.people.people.some(p => p.id === form.person)) errors.person = 'Choose a person from the list.'
   }
   if (kind === 'question') {
     if (!form.text.trim()) errors.text = 'Write the question.'
@@ -178,7 +181,7 @@ function inputFrom(kind: ItemKind, form: ItemForm, before: Record<string, unknow
   const kept = before ? { id: before.id } : {}
   if (kind === 'action') return { ...kept, text: form.text.trim(), keys }
   if (kind === 'deadline') return { ...kept, date: form.date, title: form.text.trim(), hard: form.hard, note: nullable(form.note), keys }
-  if (kind === 'cutoff') return { ...kept, date: form.date, personId: before?.personId ?? null, who: form.who.trim(), what: form.what.trim(), keys }
+  if (kind === 'cutoff') return { ...kept, date: form.date, personId: form.person || null, who: form.who.trim(), what: form.what.trim(), keys }
   const resolution = form.status === 'open' ? null : nullable(form.resolution)
   return { ...kept, ...(before ? { n: before.n } : {}), question: form.text.trim(), blocker: form.blocker, status: form.status, resolution, keys }
 }

@@ -96,7 +96,6 @@ Those of `PageShell`, `Section`, `Item`, `TaskLine`, `Badge`, `KeyChip`, `Markdo
 ## Open questions
 
 - Editing the timeline, refs and sections.
-- Choosing a person for a cutoff (with People).
 
 ## Changelog
 

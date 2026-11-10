@@ -26,7 +26,7 @@ Two dialogs:
 | Project | Name (required); Address (new projects only, suggested from the name until edited, permanent); Status; Owner; Phase; Subtitle; Summary; Current focus |
 | Next action | Action (required), Tasks |
 | Deadline | Title (required), Date (required), Hard deadline, Note, Tasks |
-| Cutoff | Date (required), Who (required: a person, role or team), What closes (required), Tasks |
+| Cutoff | Date (required), Person (from People; fills Who when it is empty), Who (required: a person, role or team), What closes (required), Tasks |
 | Question | Question (required), Blocks the project, Tasks; when editing, Status (Open, Resolved, Deferred) and Resolution (required when Resolved) |
 
 Each dialog also has a summary (`Banner` danger, focused on submit) and the actions: Add … / Save (primary, end), and Cancel.
@@ -52,7 +52,7 @@ Each dialog also has a summary (`Banner` danger, focused on submit) and the acti
   - an edit is a `project.update` of only the fields that changed;
   - nothing changed just closes;
   - a new project opens its page.
-- **Saving an item:** `project.update` replaces the list whole. Every save therefore sends the full list with each item's id, and each question's number, so "OQ-02" stays OQ-02. A cutoff keeps its `personId` when its text is edited. Reopening a question clears its resolution.
+- **Saving an item:** `project.update` replaces the list whole. Every save therefore sends the full list with each item's id, and each question's number, so "OQ-02" stays OQ-02. A cutoff's Person is its `personId`: choosing None unlinks it and keeps the words in Who. Reopening a question clears its resolution.
 - **Checks:**
   - lines are one line of at most 500 characters;
   - the address uses lower-case letters, numbers and single hyphens, and is not already used;
@@ -97,3 +97,4 @@ Those of `Dialog`, `TextField`, `TextAreaField`, `SelectField`, `RadioGroupField
 ## Changelog
 
 - 0.6.0: created.
+- 0.8.0: a cutoff's **Person**.

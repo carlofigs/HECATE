@@ -20,6 +20,7 @@ HECATE is a single-user planning system: focus, tasks, projects, sprints, people
 |---|---|---|---|
 | Today (built) | The day at a glance: schedule, plan, the week, in progress, waiting on, blocked, due soon, cutoffs, keep in mind. The plan, end of day, the week's priorities and callouts, and keep-in-mind are edited here | `app` | Adaptive (below) |
 | Board (built) | Tasks by status: drag, move, add, edit, complete, delete | `app` | Adaptive (below) |
+| People (built) | Everyone, by role (and name where allowed), with their leave and what links to them, and the glossary; edited here | `app` | Adaptive (below) |
 | Sprint (built) | One sprint: goal, retro, what closing it archives and carries (a preview of the op), and every sprint with its counts; the current one is closed here | `app` | Adaptive (below) |
 | Projects (built) | Every project, and each project with its tasks (archived ones by sprint), next actions, open questions, deadlines and cutoffs, edited here | `app` | Adaptive (below) |
 | Sign-in and shell (built) | GitHub sign-in, workspace switcher, navigation, sync status | `app` | Adaptive (below) |
@@ -103,8 +104,9 @@ The e2e suite covers part of the keyboard pass (focus order and rings through th
 | Focus item editor and item controls, Close the day (app) | `candidate` | Manual passes |
 | Project list and project page, project editor and item editor (app) | `candidate` | Manual passes |
 | Sprint page, Close sprint, More (app) | `candidate` | Manual passes |
+| People pages, person, leave and term editors (app) | `candidate` | Manual passes |
 | App shell (pattern), with the offline and update banners | `candidate` | Manual passes |
-| PageShell (pattern) | `candidate` | Manual passes; it now serves Today, the Board, Projects, Sprint and More |
+| PageShell (pattern) | `candidate` | Manual passes; it now serves Today, the Board, Projects, Sprint, People and More |
 
 ## 5. Brand inputs
 
