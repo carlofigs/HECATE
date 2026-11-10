@@ -152,6 +152,6 @@ test('reviewing a sprint before closing it', async ({ page }) => {
 
 test('More', async ({ page }) => {
   await signIn(page, '/w/planning/more')
-  await expect(page.getByRole('link', { name: /^Sprint/ })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'More pages' }).getByRole('link', { name: /^Sprint/ })).toBeVisible()
   await scan(page, 'More')
 })
