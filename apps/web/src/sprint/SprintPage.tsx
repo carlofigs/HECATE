@@ -167,7 +167,7 @@ function AllSprints({ rows, viewing, base }: { rows: SprintSummary[]; viewing: n
             {r.n === viewing ? (
               <span className="inline-flex min-h-(--size-target-default) items-center text-body-md text-text-primary">Sprint {r.n} (this page)</span>
             ) : (
-              <Link to={r.current ? `${base}/sprint` : `${base}/sprint/${r.n}`} className="inline-flex min-h-(--size-target-default) items-center text-body-md text-text-link underline">
+              <Link to={r.current ? `${base}/sprint` : `${base}/sprint/${r.n}`} className="inline-flex min-h-(--size-target-default) min-w-(--size-target-default) items-center text-body-md text-text-link underline">
                 Sprint {r.n}
               </Link>
             )}

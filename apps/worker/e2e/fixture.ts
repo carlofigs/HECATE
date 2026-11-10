@@ -155,7 +155,7 @@ const under = (dir: string, files: Record<string, string>): Record<string, strin
   Object.fromEntries(Object.entries(files).map(([path, content]) => [`${dir}/${path}`, content]))
 
 /** How many private copies of Planning the harness holds for tests that write (one each, never shared). */
-export const SCRATCH_COPIES = 150
+export const SCRATCH_COPIES = 300
 
 /** A scratch copy's directory: hidden (a leading underscore), so the switcher leaves it out. */
 export const scratchDir = (n: number): string => `_scratch-${String(n).padStart(3, '0')}`

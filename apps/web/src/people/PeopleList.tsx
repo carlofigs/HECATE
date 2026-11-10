@@ -69,7 +69,7 @@ function Body({ state, rows }: { state: WorkspaceState; rows: PersonRow[] }) {
           {rows.map(r => (
             <li key={r.id} className="flex flex-col gap-stack-xs">
               <span className="flex flex-wrap items-baseline gap-inline-sm">
-                <Link to={r.id} className="inline-flex min-h-(--size-target-default) items-center text-body-md text-text-link underline">
+                <Link to={r.id} className="inline-flex min-h-(--size-target-default) min-w-(--size-target-default) items-center text-body-md text-text-link underline">
                   {r.label}
                 </Link>
                 {r.name ? <span className="text-body-sm text-text-secondary">{r.role}</span> : null}

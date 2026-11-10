@@ -88,7 +88,7 @@ export function TaskLine({ task, children, showProject = true }: { task: TaskSum
     <li className="flex flex-col gap-stack-xs">
       <span className="flex flex-wrap items-baseline gap-inline-sm">
         <KeyChip taskKey={task.key} />
-        <Link to={use(TaskLink)(task.key)} className="inline-flex min-h-(--size-target-default) items-center text-body-md text-text-link underline">
+        <Link to={use(TaskLink)(task.key)} className="inline-flex min-h-(--size-target-default) min-w-(--size-target-default) items-center text-body-md text-text-link underline">
           {task.title}
         </Link>
         <Urgency urgency={task.urgency} />
