@@ -5,10 +5,12 @@ import { appStore, useApp } from './appStore.ts'
 import { Board } from './board/Board.tsx'
 import { Home } from './pages/Home.tsx'
 import { NotFound } from './pages/NotFound.tsx'
+import { More } from './pages/More.tsx'
 import { Problem } from './pages/Problem.tsx'
 import { ProjectList } from './projects/ProjectList.tsx'
 import { ProjectPage } from './projects/ProjectPage.tsx'
 import { SignIn } from './pages/SignIn.tsx'
+import { SprintPage } from './sprint/SprintPage.tsx'
 import { Today } from './today/Today.tsx'
 import { Shell } from './shell/Shell.tsx'
 
@@ -47,6 +49,9 @@ export function App() {
             <Route path="board" element={<Board />} />
             <Route path="projects" element={<ProjectList />} />
             <Route path="projects/:slug" element={<ProjectPage />} />
+            <Route path="sprint" element={<SprintPage />} />
+            <Route path="sprint/:n" element={<SprintPage />} />
+            <Route path="more" element={<More />} />
             <Route path="*" element={<Navigate to="today" replace />} />
           </Route>
           <Route path="*" element={<NotFound />} />

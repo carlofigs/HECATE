@@ -109,6 +109,22 @@ describe('applying', () => {
     expect(stateFromFiles(workFiles(h.fake) as Record<string, string>).tasks.tasks).toHaveLength(23)
   })
 
+  it('commits a sprint close on its own, after what was pending, so git revert undoes exactly it', async () => {
+    const h = await harness()
+    const cadence = { type: 'workspace.update', patch: { sprint: { anchor: '2026-10-28', anchorNumber: 7, lengthWeeks: 2, external: null } } }
+    applied(await h.engine.apply({ ops: [cadence, addTask('Draw the target view')], actor: 'app', opId: 'op-cadence' }))
+    // A dry run of the close commits nothing.
+    expect(await h.engine.apply({ ops: [{ type: 'sprint.close', n: 7 }], actor: 'app', dryRun: true })).toMatchObject({ status: 'dry-run' })
+    expect(commits(h.fake)).toBe(0)
+
+    applied(await h.engine.apply({ ops: [{ type: 'sprint.close', n: 7 }], actor: 'app', opId: 'op-close' }))
+    expect(commits(h.fake)).toBe(2)
+    const [close, before] = h.fake.log()
+    expect(close).toMatch(/^work: Close sprint 7 .+\n\n- Close sprint 7 [^\n]+\n\nActor: app\nOp-Id: op-close$/)
+    expect(before).toContain('Op-Id: op-cadence')
+    expect(ok(await h.engine.snapshot())).toMatchObject({ pending: 0 })
+  })
+
   it('keeps everything pending across a restart', async () => {
     const h = await harness()
     applied(await h.engine.apply({ ops: [addTask('Survives eviction')], actor: 'claude' }))

@@ -32,9 +32,11 @@ test('every pointer target meets the floor for this device (R-07)', async ({ pag
   await expect(page.getByRole('article').first()).toBeVisible()
   expect(await undersizedTargets(page, floor), `controls under ${floor} px on the Board`).toEqual([])
   expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth), 'the Board scrolls sideways').toBe(false)
-  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Projects' }).click()
-  await expect(page.getByRole('heading', { level: 1, name: 'Projects' })).toBeVisible()
-  expect(await undersizedTargets(page, floor), `controls under ${floor} px on Projects`).toEqual([])
+  for (const [path, heading] of [['/w/planning/projects', 'Projects'], ['/w/planning/sprint', 'Sprint 7'], ['/w/planning/more', 'More']]) {
+    await page.goto(path as string)
+    await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible()
+    expect(await undersizedTargets(page, floor), `controls under ${floor} px on ${heading}`).toEqual([])
+  }
   await page.goto('/w/studio/projects/website')
   await expect(page.getByRole('heading', { level: 2, name: 'Tasks' })).toBeVisible()
   expect(await undersizedTargets(page, floor), `controls under ${floor} px on a project`).toEqual([])
@@ -43,11 +45,11 @@ test('every pointer target meets the floor for this device (R-07)', async ({ pag
 
 test('the bottom bar holds every page and the page’s action without scrolling sideways (M-app-07)', async ({ page }) => {
   test.skip(!isTouch(), 'The bottom bar is for narrow screens')
-  for (const path of ['/w/planning/board', '/w/planning/projects', '/w/studio/projects/website']) {
+  for (const path of ['/w/planning/board', '/w/planning/projects', '/w/studio/projects/website', '/w/planning/sprint', '/w/planning/more']) {
     await page.goto(path)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     const bar = page.getByRole('navigation', { name: 'Main' })
-    await expect(bar.getByRole('link')).toHaveText(['Today', 'Board', 'Projects'])
+    await expect(bar.getByRole('link')).toHaveText(['Today', 'Board', 'More'])
     expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth), `${path} scrolls sideways`).toBe(false)
     const overflow = await bar.evaluate(nav => {
       const row = nav.parentElement as HTMLElement
@@ -102,7 +104,7 @@ test('the keyboard reaches the skip link first, then every control, each with a 
   await expect(skip).toBeFocused()
   await expect(skip).toBeVisible()
   const order: string[] = []
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 7; i++) {
     await page.keyboard.press('Tab')
     const focused = await page.evaluate(() => {
       const el = document.activeElement as HTMLElement
@@ -114,7 +116,7 @@ test('the keyboard reaches the skip link first, then every control, each with a 
     expect(focused.outline, `focus ring on ${focused.name}`).toBe('solid')
     expect(focused.width, `focus ring on ${focused.name}`).toBe('2px')
   }
-  expect(order).toEqual(['HECATE', 'Today', 'Board', 'Projects', 'Workspace', 'Sign out'])
+  expect(order).toEqual(['HECATE', 'Today', 'Board', 'Projects', 'Sprint', 'Workspace', 'Sign out'])
 })
 
 test('the skip link moves focus to the page', async ({ page }) => {

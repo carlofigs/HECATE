@@ -2,6 +2,18 @@
 
 Semver (G-01). Each entry lists the rule IDs it concerns.
 
+## [0.7.0] — 2026-11-10
+
+### Added
+
+- **The Sprint page** (C-02, C-05, at `candidate`): the goal and retro, editable at any time; a closed sprint's archived and carried tasks; every sprint with its counts.
+- **Close sprint:** a review that previews exactly what the close will archive and carry (core applies the op to a copy), warns on an early close, and takes a retro. It closes with one op and makes one commit.
+- **More:** a page of the pages the phone's bottom bar has no room for.
+
+### Changed
+
+- **Navigation:** Sprint joins the header. The phone's bar shows Today, Board and More, so it still fits beside a page's action at 320 px (R-07, M-app-07).
+
 ## [0.6.0] — 2026-11-09
 
 ### Added

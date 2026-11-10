@@ -1,5 +1,5 @@
 import { Banner, IconButton, SelectField, Toaster, cn } from '@hecate/ui'
-import { CalendarDays, FolderOpen, KanbanSquare, LogOut, type LucideIcon } from 'lucide-react'
+import { LogOut, MoreHorizontal } from 'lucide-react'
 import { useEffect, type MouseEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { appStore, useApp } from '../appStore.ts'
@@ -7,6 +7,7 @@ import { dismissToast, useToasts } from '../toasts.ts'
 import { useOnline } from '../useOnline.ts'
 import { workspaceLabel } from '../workspace.ts'
 import { Mark } from './Mark.tsx'
+import { IN_BAR, PAGES } from './pages.ts'
 import { setBottomActionSlot } from './slots.ts'
 import { SyncStatus } from './SyncStatus.tsx'
 import { UpdateBanner } from './UpdateBanner.tsx'
@@ -16,13 +17,6 @@ import { reloadToUpdate, useNeedRefresh } from './updates.ts'
 const REFRESH_MS = 60_000
 /** Focus, visibility and reconnecting each ask for a refresh; one is enough within this window. */
 const MIN_AGE_MS = 5_000
-
-/** The pages, in order. Three fit the phone's bottom bar beside a page's action; a fourth makes the last slot "More" (app-shell.md). */
-const PAGES: readonly { path: string; label: string; icon: LucideIcon }[] = [
-  { path: 'today', label: 'Today', icon: CalendarDays },
-  { path: 'board', label: 'Board', icon: KanbanSquare },
-  { path: 'projects', label: 'Projects', icon: FolderOpen },
-]
 
 const navClass = (compact: boolean) => ({ isActive }: { isActive: boolean }): string =>
   cn(
@@ -35,10 +29,14 @@ const navClass = (compact: boolean) => ({ isActive }: { isActive: boolean }): st
 /** The pages. One list for both placements: the header from `md`, the bottom bar below it (M-app-02, M-app-07). */
 function MainNav({ workspace, compact = false, className }: { workspace: string; compact?: boolean; className?: string }) {
   const base = `/w/${encodeURIComponent(workspace)}`
+  const { pathname } = useLocation()
+  const shown = compact ? PAGES.slice(0, IN_BAR) : PAGES
+  // "More" stands for every page it lists: it shows as current on them too (aria-current stays on More's own page).
+  const inMore = [{ path: 'more' }, ...PAGES.slice(IN_BAR)].some(p => pathname === `${base}/${p.path}` || pathname.startsWith(`${base}/${p.path}/`))
   return (
     <nav aria-label="Main" className={className}>
       <ul className="flex items-center gap-inline-xs">
-        {PAGES.map(({ path, label, icon: Icon }) => (
+        {shown.map(({ path, label, icon: Icon }) => (
           <li key={path}>
             <NavLink to={`${base}/${path}`} className={navClass(compact)}>
               <Icon aria-hidden="true" className="size-(--size-icon-md)" />
@@ -46,6 +44,14 @@ function MainNav({ workspace, compact = false, className }: { workspace: string;
             </NavLink>
           </li>
         ))}
+        {compact ? (
+          <li>
+            <NavLink to={`${base}/more`} className={() => navClass(true)({ isActive: inMore })}>
+              <MoreHorizontal aria-hidden="true" className="size-(--size-icon-md)" />
+              More
+            </NavLink>
+          </li>
+        ) : null}
       </ul>
     </nav>
   )

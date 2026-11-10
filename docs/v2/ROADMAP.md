@@ -369,7 +369,7 @@ Delivered as sequential PRs:
       and a note, and can complete the linked tasks in the same change. The
       store now prepares each batch once, so every id it creates is the same on
       the page and in the Worker.
-- [ ] `feat/web-projects` — the project list (live first, with open tasks,
+- [x] `feat/web-projects` — the project list (live first, with open tasks,
       questions and the next deadline) and a page per project: every linked
       task, archived ones under the sprint that closed them (core's new
       `projectList` and `projectView`, over `findTasks`); the overview, next
@@ -377,7 +377,13 @@ Delivered as sequential PRs:
       project ops. Projects joins the navigation; the phone's bottom bar
       shows each page as an icon over its label so three pages and the page's
       action fit at 320 px.
-- [ ] Sprint review and close sprint.
+- [ ] `feat/web-sprint` — a Sprint page: the goal and retro (editable any
+      time), what closing would archive and carry (core's `sprintView` applies
+      `sprint.close` to a copy, so the preview is the engine's answer), every
+      sprint with its counts, and a review-and-close dialog. The Worker now
+      commits a close on its own, after anything pending, so `git revert`
+      undoes exactly it (ADR 0002 amendment). Sprint joins the navigation; the
+      phone's bar becomes Today, Board and More.
 - [ ] People and glossary.
 - [ ] Activity.
 

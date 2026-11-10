@@ -93,7 +93,8 @@ function club(): Record<string, string> {
 }
 
 /**
- * "Studio": projects as they look after a sprint has closed. "Website refresh"
+ * "Studio": projects and sprints as they look after sprint 6 has closed (with
+ * a goal and a retro). "Website refresh"
  * has every field filled, two tasks archived by sprint 6 (A1 done, A2
  * dropped), A3 in progress, A4 to do and A5 done on the board. "Newsletter"
  * is a closed project.
@@ -115,6 +116,7 @@ function studio(): Record<string, string> {
           sections: [{ id: 'notes', title: 'Notes', content: 'Keep every page **light**.' }],
         },
         { type: 'project.create', slug: 'newsletter', name: 'Newsletter', status: 'done', subtitle: 'A monthly email' },
+        { type: 'sprint.start', n: 6, goal: 'Audit the old site.' },
         { type: 'task.add', kind: 'action', title: 'Audit the old pages', project: 'website' },
         { type: 'task.add', kind: 'action', title: 'Migrate the blog', project: 'website' },
         { type: 'task.complete', task: 'A1' },
@@ -124,7 +126,7 @@ function studio(): Record<string, string> {
     {
       at: AT,
       ops: [
-        { type: 'sprint.close', n: 6 },
+        { type: 'sprint.close', n: 6, retro: 'The audit went well; the blog was not worth moving.' },
         { type: 'task.add', kind: 'action', title: 'Write the copy', status: 'in-progress', project: 'website' },
         { type: 'task.add', kind: 'action', title: 'Choose a theme', status: 'to-do', project: 'website' },
         { type: 'task.add', kind: 'action', title: 'Collect photos', status: 'done', project: 'website' },
