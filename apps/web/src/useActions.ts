@@ -1,11 +1,11 @@
 /**
- * What Today does, as ops through the store, with the feedback each change
- * needs (M-app-05): a toast, with Undo where the change can be undone
- * exactly, and the reason when something cannot apply.
+ * Changes made on a page, as ops through the store, with the feedback each
+ * change needs (M-app-05): a toast, with Undo where it can be undone
+ * exactly, and the reason when something cannot apply. Today and Projects use it.
  */
-import { useApp } from '../appStore.ts'
-import type { LocalResult } from '../store.ts'
-import { pushToast } from '../toasts.ts'
+import { useApp } from './appStore.ts'
+import type { LocalResult } from './store.ts'
+import { pushToast } from './toasts.ts'
 
 const lower = (s: string): string => s.charAt(0).toLowerCase() + s.slice(1)
 
@@ -16,7 +16,7 @@ export interface Done {
   undo?: unknown[]
 }
 
-export function useTodayActions() {
+export function useActions() {
   const apply = useApp(s => s.apply)
 
   /** Applies ops; on refusal says why. `label` is imperative ("Remove from today's plan"), as the store reuses it. */

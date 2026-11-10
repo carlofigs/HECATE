@@ -62,7 +62,10 @@ None.
 - **Updates:** the service worker is registered at start-up (`shell/updates.ts`) and checks for a new version on focus and hourly. A waiting version is offered with the update banner, never forced.
 - **Switching workspace** keeps the current page (Today stays Today).
 - **Responsive (C-10):** the header wraps. The controls group moves under the brand and navigation on narrow screens, and the sticky header stays one tap from every control.
-- **Navigation:** Today and Board, in the header from `md`, and in a sticky bottom bar below it (M-app-07). Only one copy is ever displayed, so there is one `nav` landmark at a time.
+- **Navigation:** Today, Board and Projects, in the header from `md`, and in a sticky bottom bar below it (M-app-07). Only one copy is ever displayed, so there is one `nav` landmark at a time.
+  - **In the bottom bar** each page is an icon over a `text.caption` label, at least `size.target.default` wide, so three pages and the page's action fit at 320 px (the e2e suite checks the bar never overflows).
+  - **A fourth page** (Sprint, next) turns the third slot into **More**, a menu of the remaining pages; the bar never scrolls.
+  - **The workspace switcher** keeps the section: switching on a project page opens the other workspace's Projects.
 - **Bottom bar:** below `md`, it also holds the page's primary action (the Board's **New task**) in a slot the page fills.
 - **In-app links:** same-origin links to `/w/…` inside the page navigate without reloading (`useInAppLinks`).
 - **Toasts:** the shell renders the Toaster.
@@ -109,3 +112,4 @@ None.
 - 0.2.0: created.
 - 0.3.0: the Board in the navigation; the bottom bar with an action slot; toasts; in-app links.
 - 0.4.0: the app layout (only the page scrolls); the offline and update banners; an unload warning while changes wait; sending on reconnect.
+- 0.6.0: Projects in the navigation; the compact bottom bar; the switcher keeps the section.

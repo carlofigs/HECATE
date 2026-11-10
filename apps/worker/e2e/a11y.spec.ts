@@ -99,3 +99,34 @@ test('Today, with an item menu open', async ({ page }) => {
   await expect(page.getByRole('menu')).toBeVisible()
   await scan(page, 'Today (item menu)')
 })
+
+test('Projects', async ({ page }) => {
+  await signIn(page, '/w/studio/projects')
+  await expect(page.getByRole('heading', { level: 2, name: 'Closed' })).toBeVisible()
+  await scan(page, 'Projects')
+})
+
+test('a project, with archived tasks', async ({ page }) => {
+  await signIn(page, '/w/studio/projects/website')
+  await expect(page.getByRole('heading', { level: 3, name: 'Archived in sprint 6' })).toBeVisible()
+  await scan(page, 'a project')
+})
+
+test('the project editor, showing its errors', async ({ page }) => {
+  await signIn(page, '/w/planning/projects')
+  await page.getByRole('button', { name: 'New project' }).click()
+  const dialog = page.getByRole('dialog', { name: 'New project' })
+  await dialog.getByRole('button', { name: 'Create project' }).click()
+  await expect(dialog.getByRole('alert')).toBeVisible()
+  await scan(page, 'project editor (errors)')
+})
+
+test('a project’s item editor, resolving a question', async ({ page }) => {
+  await signIn(page, '/w/studio/projects/website')
+  await page.getByRole('button', { name: 'Edit “OQ-01”' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Edit OQ-01' })
+  await dialog.getByRole('radio', { name: 'Resolved' }).check()
+  await dialog.getByRole('button', { name: 'Save' }).click()
+  await expect(dialog.getByRole('alert')).toBeVisible()
+  await scan(page, 'project item editor (errors)')
+})

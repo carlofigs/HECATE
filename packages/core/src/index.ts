@@ -59,9 +59,10 @@ export { checkWorkspace, findPossibleNames, type Issue } from './check.ts'
 // ─── Reading: derived views and markdown ────────────────────────────────────
 export {
   findTask, blockers, isBlocked, summarise, inProgress, blockedTasks, waitingOn, sprintPosition, todayView,
-  dueSoon, cutoffs, completedSince, briefing, focusWeekFor, personLabel, boardColumns, BRIEFING_ACTIVITY_LIMIT,
+  dueSoon, cutoffs, completedSince, briefing, focusWeekFor, personLabel, boardColumns, projectSlug, projectIsLive, BRIEFING_ACTIVITY_LIMIT,
   type BoardCard, type BoardColumn, type TaskSummary, type TaskLocation, type WaitingItem, type SprintPosition, type TodayView, type DueItem,
   type CutoffItem, type CompletedItem, type Briefing,
 } from './views/selectors.ts'
 export { renderFocusWeek, renderPreview, renderErrors, renderBriefing, renderTasks, renderSearch, renderActivity } from './views/render.ts'
 export { findTasks, searchWorkspace, getEntity, type TaskFilter, type FoundTask, type SearchHit, type Entity, type EntityKind } from './views/query.ts'
+export { projectList, projectView, type ProjectRow, type ProjectView, type ProjectDeadline } from './views/projects.ts'

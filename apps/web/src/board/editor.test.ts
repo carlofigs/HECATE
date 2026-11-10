@@ -40,6 +40,8 @@ describe('the task editor', () => {
     expect(emptyForm(state).status).toBe('to-do')
     expect(emptyForm(state, 'doing').status).toBe('doing')
     expect(emptyForm(state, 'nope').status).toBe('to-do')
+    expect(emptyForm(state, undefined, 'scorecard').project).toBe('scorecard')
+    expect(emptyForm(state, undefined, 'nope').project).toBe('')
   })
 
   it('saves a new task as one task.add the engine accepts', () => {

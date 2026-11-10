@@ -13,6 +13,8 @@ export interface TaskEditorProps {
   taskKey: string | null
   /** For a new task: the column it was started from. */
   newStatus?: string | undefined
+  /** For a new task: the project it was started from. */
+  newProject?: string | undefined
   onClose: () => void
   save: (ops: unknown[], label: string) => LocalResult
 }
@@ -22,9 +24,9 @@ export interface TaskEditorProps {
  * blur, a summary on submit, one primary action. Delete is confirmed and never
  * the primary action (R-24). design/components/task-editor.md
  */
-export function TaskEditor({ state, taskKey, newStatus, onClose, save }: TaskEditorProps) {
+export function TaskEditor({ state, taskKey, newStatus, newProject, onClose, save }: TaskEditorProps) {
   const task = taskKey ? (state.tasks.tasks.find(t => t.key === taskKey) ?? null) : null
-  const [form, setForm] = useState<TaskForm>(() => (task ? formFromTask(state, task) : emptyForm(state, newStatus)))
+  const [form, setForm] = useState<TaskForm>(() => (task ? formFromTask(state, task) : emptyForm(state, newStatus, newProject)))
   const [touched, setTouched] = useState<ReadonlySet<keyof TaskForm>>(new Set())
   const [submitted, setSubmitted] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)

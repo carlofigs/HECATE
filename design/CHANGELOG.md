@@ -2,6 +2,22 @@
 
 Semver (G-01). Each entry lists the rule IDs it concerns.
 
+## [0.6.0] — 2026-11-09
+
+### Added
+
+- **Projects** (C-02, C-05, at `candidate`):
+  - the **project list**, live projects first, each with its open tasks, open questions and next deadline;
+  - the **project page**: every linked task, archived ones under the sprint that closed them; next actions, open questions, deadlines and cutoffs, each editable with an exact Undo on removal; the timeline, refs and sections read-only;
+  - the **project editor** (overview, new or existing) and the **item editor**.
+- **PageShell `back`:** a link to the page this one belongs to.
+
+### Changed
+
+- **Navigation:** Projects joins Today and Board. Below `md` the bottom bar shows each page as an icon over its label, so three pages and the page's action fit at 320 px (R-07, M-app-07); a fourth page will turn the last slot into More.
+- **The workspace switcher** keeps the section.
+- **Second surface reached** by `CheckboxField` and `EmptyState`.
+
 ## [0.5.0] — 2026-11-09
 
 ### Added

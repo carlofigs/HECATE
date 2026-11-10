@@ -1,17 +1,18 @@
 import {
-  briefing, formatDay, PERSONAL_BLOCKED, type Briefing, type SprintPosition, type TaskSummary, type WorkspaceState,
+  briefing, formatDay, PERSONAL_BLOCKED, type Briefing, type SprintPosition, type WorkspaceState,
 } from '@hecate/core'
-import { Badge, Button, ConfirmDialog, IconButton, KeyChip, Markdown, Menu, cn, type MenuItem } from '@hecate/ui'
-import { CheckCheck, MoreVertical, Pencil, Plus, Trash2 } from 'lucide-react'
-import { createContext, use, useState, type ReactNode } from 'react'
-import { Link, useParams } from 'react-router'
-import { timeRange, URGENCY_LABEL, URGENCY_TONE } from '../format.ts'
+import { Badge, Button, ConfirmDialog, KeyChip, Markdown, type MenuItem } from '@hecate/ui'
+import { CheckCheck, Pencil, Plus } from 'lucide-react'
+import { useState } from 'react'
+import { useParams } from 'react-router'
+import { timeRange } from '../format.ts'
+import { ICON, Item, Keys, Section, TaskLine, TaskLink, Urgency } from '../sections.tsx'
 import { PageShell } from '../shell/PageShell.tsx'
 import { useNow } from '../useNow.ts'
 import { CloseDay } from './CloseDay.tsx'
 import { canMove, itemName, listsOf, moveOps, removeOps, restoreOps, type ItemKind, type KeepItem, type ListKind, type Lists } from './focus.ts'
 import { ItemEditor } from './ItemEditor.tsx'
-import { useTodayActions } from './useTodayActions.ts'
+import { useActions } from '../useActions.ts'
 
 /**
  * Today: the same briefing Claude's get_briefing reads (@hecate/core
@@ -20,13 +21,6 @@ import { useTodayActions } from './useTodayActions.ts'
  * are edited here with the ops the hecate-focus skill sends (focus.ts); the
  * schedule stays Claude's, captured from the calendar.
  */
-/**
- * Where a task opens: the Board's editor for it. A task's title is the link;
- * key chips stay labels, being too small a target (R-07).
- */
-const TaskLink = createContext<(key: string) => string>(key => `?task=${key}`)
-
-
 export function Today() {
   const now = useNow()
   const { workspace = '' } = useParams()
@@ -53,88 +47,6 @@ function Subtitle({ b }: { b: Briefing }) {
   return <p>{[b.todayLabel, ...(b.sprint ? [sprintText(b.sprint)] : [])].join(' · ')}</p>
 }
 
-interface SectionProps {
-  id: string
-  title: string
-  empty: string
-  children: ReactNode[]
-  /** Shown after the list, before the actions: a closed day's note. */
-  aside?: ReactNode
-  /** The section's actions, always visible: Add, Close the day. */
-  footer?: ReactNode
-  className?: string
-}
-
-function Section({ id, title, empty, children, aside, footer, className }: SectionProps) {
-  return (
-    <section aria-labelledby={id} className={cn('flex flex-col gap-stack-sm rounded-container border border-border-subtle bg-bg-surface p-inset-lg', className)}>
-      <h2 id={id} className="text-heading-3 text-text-primary">
-        {title}
-      </h2>
-      {children.length > 0 ? <ul className="flex flex-col gap-stack-sm">{children}</ul> : <p className="text-body-sm text-text-muted">{empty}</p>}
-      {aside}
-      {footer ? <div className="flex flex-wrap items-center gap-inline-sm">{footer}</div> : null}
-    </section>
-  )
-}
-
-const ICON = 'size-(--size-icon-md)'
-
-/** An item and its controls: Edit, and either a menu (move, remove) or Remove. Nothing waits for hover. */
-function Item({ children, name, onEdit, menu, onRemove, className }: {
-  children: ReactNode
-  name: string
-  onEdit: () => void
-  menu?: MenuItem[]
-  onRemove?: () => void
-  className?: string
-}) {
-  return (
-    <li className="flex items-start gap-inline-sm">
-      <div className={cn('flex min-w-0 flex-1 flex-col gap-stack-xs', className)}>{children}</div>
-      <div className="flex shrink-0 items-center">
-        <IconButton label={`Edit “${name}”`} icon={<Pencil aria-hidden="true" className={ICON} />} onClick={onEdit} />
-        {menu ? <Menu label={`More for “${name}”`} icon={<MoreVertical aria-hidden="true" className={ICON} />} items={menu} /> : null}
-        {onRemove ? <IconButton label={`Remove “${name}”`} icon={<Trash2 aria-hidden="true" className={ICON} />} onClick={onRemove} /> : null}
-      </div>
-    </li>
-  )
-}
-
-const Keys = ({ keys }: { keys: readonly string[] }) =>
-  keys.length > 0 ? (
-    <span className="inline-flex flex-wrap gap-inline-xs">
-      {keys.map(k => (
-        <KeyChip key={k} taskKey={k} />
-      ))}
-    </span>
-  ) : null
-
-function Urgency({ urgency }: { urgency: TaskSummary['urgency'] }) {
-  return urgency ? <Badge tone={URGENCY_TONE[urgency]}>{URGENCY_LABEL[urgency]}</Badge> : null
-}
-
-/** A task line: key, title, then the facts that decide what to do with it. */
-function TaskLine({ task, children }: { task: TaskSummary; children?: ReactNode }) {
-  return (
-    <li className="flex flex-col gap-stack-xs">
-      <span className="flex flex-wrap items-baseline gap-inline-sm">
-        <KeyChip taskKey={task.key} />
-        <Link to={use(TaskLink)(task.key)} className="inline-flex min-h-(--size-target-default) items-center text-body-md text-text-link underline">
-          {task.title}
-        </Link>
-        <Urgency urgency={task.urgency} />
-      </span>
-      <span className="flex flex-wrap gap-x-inline-md text-body-sm text-text-secondary">
-        {task.blockedBy.length > 0 ? <span>Blocked by {task.blockedBy.join(', ')}</span> : null}
-        {task.due ? <span>Due {formatDay(task.due)}</span> : null}
-        {task.projectSlug ? <span>Project {task.projectSlug}</span> : null}
-        {children}
-      </span>
-    </li>
-  )
-}
-
 const OUTCOME = { done: { tone: 'success', label: 'Done' }, carried: { tone: 'info', label: 'Carried' }, dropped: { tone: 'neutral', label: 'Dropped' } } as const
 const TIERS = [['focus', 'Focus'], ['next', 'Next'], ['ongoing', 'Ongoing']] as const
 
@@ -149,7 +61,7 @@ function TodayBody({ state, b }: { state: WorkspaceState; b: Briefing }) {
   const t = b.todayView
   const schedule = [...t.allDay, ...t.meetings]
   const lists: Lists = listsOf(b)
-  const actions = useTodayActions()
+  const actions = useActions()
   const [editing, setEditing] = useState<{ kind: ItemKind; id: string | null } | null>(null)
   const [closing, setClosing] = useState(false)
   const [removing, setRemoving] = useState<KeepItem | null>(null)

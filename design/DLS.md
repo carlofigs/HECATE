@@ -20,6 +20,7 @@ HECATE is a single-user planning system: focus, tasks, projects, sprints, people
 |---|---|---|---|
 | Today (built) | The day at a glance: schedule, plan, the week, in progress, waiting on, blocked, due soon, cutoffs, keep in mind. The plan, end of day, the week's priorities and callouts, and keep-in-mind are edited here | `app` | Adaptive (below) |
 | Board (built) | Tasks by status: drag, move, add, edit, complete, delete | `app` | Adaptive (below) |
+| Projects (built) | Every project, and each project with its tasks (archived ones by sprint), next actions, open questions, deadlines and cutoffs, edited here | `app` | Adaptive (below) |
 | Sign-in and shell (built) | GitHub sign-in, workspace switcher, navigation, sync status | `app` | Adaptive (below) |
 
 **Profile:** `app` only. Nothing in P4 is a chart, so `viz` is not declared (M-viz-11 allows one surface to take it later).
@@ -89,18 +90,19 @@ The e2e suite covers part of the keyboard pass (focus order and rings through th
 | `SelectField` | `candidate` | Manual passes |
 | `Badge`, `KeyChip` | `candidate` | Manual passes |
 | `Banner` | `candidate` | Manual passes |
-| `EmptyState` | `candidate` | Second surface; manual passes |
+| `EmptyState` | `candidate` | Manual passes |
 | `Skeleton`, `VisuallyHidden` | `candidate` | Second surface; manual passes |
 | `Markdown` | `candidate` | Second surface; manual passes |
 | `Dialog`, `ConfirmDialog` | `candidate` | Manual passes |
 | `Menu` | `candidate` | Manual passes |
 | `Toast` (`Toaster`) | `candidate` | Manual passes |
 | `TextField`, `TextAreaField`, `RadioGroupField` | `candidate` | Manual passes |
-| `CheckboxField` | `candidate` | Second surface; manual passes |
+| `CheckboxField` | `candidate` | Manual passes |
 | Task card, Board column, Task editor (app) | `candidate` | Manual passes |
 | Focus item editor and item controls, Close the day (app) | `candidate` | Manual passes |
+| Project list and project page, project editor and item editor (app) | `candidate` | Manual passes |
 | App shell (pattern), with the offline and update banners | `candidate` | Manual passes |
-| PageShell (pattern) | `candidate` | Manual passes; it now serves Today and the Board |
+| PageShell (pattern) | `candidate` | Manual passes; it now serves Today, the Board and Projects |
 
 ## 5. Brand inputs
 

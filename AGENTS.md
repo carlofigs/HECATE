@@ -179,6 +179,8 @@ sessions pushing by hand. Treat every write as concurrent with someone else's.
     - `apply` runs `prepareBatch` once and queues the prepared ops, so every id a batch creates (a task, a plan item, an outcome) is fixed before it is sent: the Worker keeps the same ids the page shows.
     - Never write state any other way.
   - **Moves** are `task.move` with `after` = the new predecessor (`apps/web/src/board/moves.ts`, unit-tested). Drag and drop, the Move menu and Undo all reduce to it.
+  - **Projects** (`apps/web/src/projects/`, rules in `project.ts`, unit-tested) read core's `projectList` and `projectView` (`packages/core/src/views/projects.ts`; a project's tasks are `findTasks` with `scope: 'all'`, archived ones included). `project.update` replaces each list it is given (next actions, deadlines, cutoffs, open questions), so send every item back with its id, and each question with its `n`. The slug is permanent.
+  - **Navigation** lists the pages once (`PAGES` in `apps/web/src/shell/Shell.tsx`). The phone's bottom bar fits three pages beside a page's action; the fourth page makes the last slot "More" (`design/components/app-shell.md`).
   - **Today's edits** (`apps/web/src/today/focus.ts`, unit-tested) are the hecate-focus skill's ops. `focus.setPlan`, `setPriorities` and `setCallouts` replace the whole list, so always send every item back with its id: an item without one gets a new id, and a closed day's outcomes point at plan items by id. The schedule stays read-only (Claude captures it from the calendar).
   - **Offline and install:** a PWA (`vite-plugin-pwa`, `apps/web/vite.config.ts`).
     - Its service worker precaches the shell and answers navigations only

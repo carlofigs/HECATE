@@ -20,6 +20,7 @@ A page over the open workspace's snapshot: its `h1` and every data-view state (R
 
 | Part | Token(s) | Notes |
 |---|---|---|
+| back | `text.label`, `color.text.link`, `size.icon.sm` | Optional, above the heading: the page this one belongs to ("‹ Projects" on a project), at least `size.target.default` high |
 | heading | `text.heading.1` | The page's only `h1`; focused after a navigation |
 | subtitle | `text.body.md`, `color.text.secondary` | From the snapshot, e.g. the date and sprint |
 | loading | `Skeleton` in an `aria-busy` region | Shown at once |
@@ -85,3 +86,4 @@ None.
 ## Changelog
 
 - 0.2.0: created.
+- 0.6.0: the optional `back` link.

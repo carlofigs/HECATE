@@ -6,6 +6,8 @@ import { Board } from './board/Board.tsx'
 import { Home } from './pages/Home.tsx'
 import { NotFound } from './pages/NotFound.tsx'
 import { Problem } from './pages/Problem.tsx'
+import { ProjectList } from './projects/ProjectList.tsx'
+import { ProjectPage } from './projects/ProjectPage.tsx'
 import { SignIn } from './pages/SignIn.tsx'
 import { Today } from './today/Today.tsx'
 import { Shell } from './shell/Shell.tsx'
@@ -43,6 +45,8 @@ export function App() {
             <Route index element={<Navigate to="today" replace />} />
             <Route path="today" element={<Today />} />
             <Route path="board" element={<Board />} />
+            <Route path="projects" element={<ProjectList />} />
+            <Route path="projects/:slug" element={<ProjectPage />} />
             <Route path="*" element={<Navigate to="today" replace />} />
           </Route>
           <Route path="*" element={<NotFound />} />

@@ -362,14 +362,21 @@ owner's setup and the legacy import wait.
 
 Delivered as sequential PRs:
 
-- [ ] `feat/today-editable` — Today's plan, end of day, the week's priorities
+- [x] `feat/today-editable` — Today's plan, end of day, the week's priorities
       and callouts, and keep-in-mind, edited with the hecate-focus skill's ops
       (the schedule stays the calendar's). Closing the day records each plan
       item as done, carried or dropped against its id, with what else was done
       and a note, and can complete the linked tasks in the same change. The
       store now prepares each batch once, so every id it creates is the same on
       the page and in the Worker.
-- [ ] Projects.
+- [ ] `feat/web-projects` — the project list (live first, with open tasks,
+      questions and the next deadline) and a page per project: every linked
+      task, archived ones under the sprint that closed them (core's new
+      `projectList` and `projectView`, over `findTasks`); the overview, next
+      actions, open questions, deadlines and cutoffs edited with core's
+      project ops. Projects joins the navigation; the phone's bottom bar
+      shows each page as an icon over its label so three pages and the page's
+      action fit at 320 px.
 - [ ] Sprint review and close sprint.
 - [ ] People and glossary.
 - [ ] Activity.
