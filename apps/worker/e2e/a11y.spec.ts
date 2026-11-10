@@ -130,3 +130,28 @@ test('a project’s item editor, resolving a question', async ({ page }) => {
   await expect(dialog.getByRole('alert')).toBeVisible()
   await scan(page, 'project item editor (errors)')
 })
+
+test('the sprint, before closing', async ({ page }) => {
+  await signIn(page, '/w/planning/sprint')
+  await expect(page.getByRole('heading', { level: 2, name: 'Tasks' })).toBeVisible()
+  await scan(page, 'Sprint (open)')
+})
+
+test('a closed sprint', async ({ page }) => {
+  await signIn(page, '/w/studio/sprint/6')
+  await expect(page.getByRole('heading', { level: 3, name: 'Done (1)' })).toBeVisible()
+  await scan(page, 'Sprint (closed)')
+})
+
+test('reviewing a sprint before closing it', async ({ page }) => {
+  await signIn(page, '/w/planning/sprint')
+  await page.getByRole('button', { name: 'Review and close' }).click()
+  await expect(page.getByRole('dialog', { name: 'Close sprint 7' })).toBeVisible()
+  await scan(page, 'close sprint')
+})
+
+test('More', async ({ page }) => {
+  await signIn(page, '/w/planning/more')
+  await expect(page.getByRole('navigation', { name: 'More pages' }).getByRole('link', { name: /^Sprint/ })).toBeVisible()
+  await scan(page, 'More')
+})

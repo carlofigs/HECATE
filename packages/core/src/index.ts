@@ -66,3 +66,4 @@ export {
 export { renderFocusWeek, renderPreview, renderErrors, renderBriefing, renderTasks, renderSearch, renderActivity } from './views/render.ts'
 export { findTasks, searchWorkspace, getEntity, type TaskFilter, type FoundTask, type SearchHit, type Entity, type EntityKind } from './views/query.ts'
 export { projectList, projectView, type ProjectRow, type ProjectView, type ProjectDeadline } from './views/projects.ts'
+export { sprintList, sprintView, type SprintSummary, type SprintView } from './views/sprints.ts'

@@ -272,6 +272,16 @@ export class WorkspaceEngine {
   async apply(request: ApplyRequest): Promise<ApplyOutcome> {
     const m = await this.ready()
     if (!m) return { status: 'unavailable', message: this.unavailable?.message ?? 'Unavailable' }
+    // A sprint close is its own commit, so `git revert` undoes exactly it (ADR 0002): what is pending is committed
+    // first, and the close is committed at once rather than with whatever the alarm would gather.
+    const closesSprint = !request.dryRun && request.ops.some(op => (op as { type?: unknown } | null)?.type === 'sprint.close')
+    if (closesSprint) await this.flush()
+    const outcome = await this.applyNow(m, request)
+    if (closesSprint && outcome.status === 'applied' && !outcome.duplicate) await this.flush()
+    return outcome
+  }
+
+  private applyNow(m: Loaded, request: ApplyRequest): Promise<ApplyOutcome> {
     return this.exclusive(async (): Promise<ApplyOutcome> => {
       const version = m.meta.version
       if (request.opId) {

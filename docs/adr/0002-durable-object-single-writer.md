@@ -85,3 +85,20 @@ Recorded when the Durable Object was built (`apps/worker/src/engine.ts`).
   are injected. It is tested in Node against the fake GitHub, and the Worker
   runs end to end in workerd through Miniflare. Cloudflare's Vitest pool is
   not used because it does not support Vitest 5 yet.
+
+## Amendment — a sprint close is its own commit (Nov 2026, with `feat/web-sprint`)
+
+P5's acceptance asks that closing a sprint be one commit that `git revert`
+undoes. Coalescing would otherwise fold a close into whatever else the 30 s
+window gathered, and reverting that commit would undo unrelated edits too.
+
+- **The rule.** When a batch that is not a dry run contains `sprint.close`,
+  the engine commits everything pending first. It then applies the batch and
+  commits it at once instead of waiting for the alarm. The commit's message is
+  the close's own summary.
+- **Why only the close.** It is the one op that moves many tasks between files
+  (`tasks.json` to `sprints/<n>.json`) and that no other op undoes. Everything
+  else stays coalesced.
+- **The limit.** Commits still go through `flush()`. If GitHub is unavailable,
+  the close waits with the usual retries, and a change applied in the meantime
+  joins its commit. The close itself is never lost or split.
