@@ -122,7 +122,7 @@ test('the retro can be written after the sprint has closed', async ({ page }) =>
 test('More lists the pages the phone bar has no room for', async ({ page }) => {
   await signIn(page, '/w/planning/more')
   const more = page.getByRole('navigation', { name: 'More pages' })
-  await expect(more.getByRole('link')).toHaveText([/^Projects/, /^Sprint/])
+  await expect(more.getByRole('link')).toHaveText([/^Projects/, /^Sprint/, /^People/])
   if (isTouch()) {
     await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'More' })).toHaveAttribute('aria-current', 'page')
   } else {

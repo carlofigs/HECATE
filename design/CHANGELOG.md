@@ -2,6 +2,20 @@
 
 Semver (G-01). Each entry lists the rule IDs it concerns.
 
+## [0.8.0] — 2026-11-10
+
+### Added
+
+- **People** (C-02, C-05, at `candidate`):
+  - the **People page**, with the **glossary** (add, edit, remove with Undo, and a filter);
+  - a **page per person** showing what links to them: tasks waiting on them, cutoffs, meetings and their leave. Removal is confirmed, or explained when core would refuse it.
+- **The person, leave and term editors.** A sanitised workspace never offers a name or aliases (ADR 0005).
+- **Person pickers:** a B task's **Person** in the task editor, and a cutoff's **Person** in the project editor.
+
+### Changed
+
+- **Navigation:** People is the fifth page: in the header, and under More on phones. The header wraps below about 1,000 px.
+
 ## [0.7.0] — 2026-11-10
 
 ### Added

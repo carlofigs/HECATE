@@ -58,7 +58,7 @@ function Row({ row }: { row: ProjectRow }) {
   return (
     <li className="flex flex-col gap-stack-xs">
       <span className="flex flex-wrap items-baseline gap-inline-sm">
-        <Link to={row.slug} className="inline-flex min-h-(--size-target-default) items-center text-body-md text-text-link underline">
+        <Link to={row.slug} className="inline-flex min-h-(--size-target-default) min-w-(--size-target-default) items-center text-body-md text-text-link underline">
           {row.name}
         </Link>
         <Badge tone={STATUS_TONE[row.status]}>{STATUS_LABEL[row.status]}</Badge>

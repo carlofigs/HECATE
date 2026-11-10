@@ -1,5 +1,5 @@
 /**
- * The e2e data: three workspaces built through @hecate/core's own ops, so they
+ * The e2e data: four workspaces built through @hecate/core's own ops, so they
  * are exactly what the app and Claude would write. Generic names only — this
  * repository is public.
  *
@@ -14,6 +14,9 @@ const AT = '2026-11-09T21:00:00.000Z'
 const WEEK = '2026-11-09'
 const TODAY = '2026-11-11'
 
+/** Studio's designer, by a fixed id so a task can wait on them in the same batch. */
+const ROBIN = '01KQRBN0000000000000000000'
+
 /** Two-week sprints: sprint 7 runs Wednesday 4 to Tuesday 17 November, sprint 6 ended Tuesday 3 November. */
 const SPRINTS = { anchor: '2026-11-04', anchorNumber: 7, lengthWeeks: 2, external: null }
 
@@ -26,9 +29,9 @@ const STATUSES = [
 ]
 
 /** A workspace built from batches of ops, each applied at its own time (a sprint can then be closed on what came before). */
-function build(settings: { name: string; sprint: unknown }, batches: { at: string; ops: unknown[] }[]): Record<string, string> {
+function build(settings: { name: string; sprint: unknown; policy?: 'open' | 'sanitised' }, batches: { at: string; ops: unknown[] }[]): Record<string, string> {
   const workspace = parseFile('workspace', {
-    schemaVersion: CURRENT_VERSION.workspace, name: settings.name, timezone: 'Australia/Sydney', policy: 'open',
+    schemaVersion: CURRENT_VERSION.workspace, name: settings.name, timezone: 'Australia/Sydney', policy: settings.policy ?? 'open',
     workdays: [1, 2, 3, 4, 5], sprint: settings.sprint, statuses: STATUSES, tags: [], areas: [],
   })
   let state = emptyState(workspace, batches[0]?.at ?? AT)
@@ -94,7 +97,8 @@ function club(): Record<string, string> {
 
 /**
  * "Studio": projects and sprints as they look after sprint 6 has closed (with
- * a goal and a retro). "Website refresh"
+ * a goal and a retro), and people: Robin, a designer away 12–13 November,
+ * whom B1 waits on, and a glossary of CMS and Hero. "Website refresh"
  * has every field filled, two tasks archived by sprint 6 (A1 done, A2
  * dropped), A3 in progress, A4 to do and A5 done on the board. "Newsletter"
  * is a closed project.
@@ -130,23 +134,35 @@ function studio(): Record<string, string> {
         { type: 'task.add', kind: 'action', title: 'Write the copy', status: 'in-progress', project: 'website' },
         { type: 'task.add', kind: 'action', title: 'Choose a theme', status: 'to-do', project: 'website' },
         { type: 'task.add', kind: 'action', title: 'Collect photos', status: 'done', project: 'website' },
+        { type: 'person.upsert', id: ROBIN, name: 'Robin', role: 'Designer', aliases: ['Rob'], notes: 'Owns the **logo** and the colour palette.', ooo: [{ start: '2026-11-12', end: '2026-11-13', note: 'Workshop' }] },
+        { type: 'task.add', kind: 'waiting', title: 'Final logo files', status: 'to-do', waitingOn: { personId: ROBIN } },
+        { type: 'term.upsert', term: 'CMS', aliases: ['content system'], meaning: 'Where the pages are written and published.' },
+        { type: 'term.upsert', term: 'Hero', meaning: 'The banner at the top of a page.', project: 'website' },
       ],
     },
   ])
+}
+
+/** "Office": a sanitised workspace (ADR 0005). People by role only, never by name. */
+function office(): Record<string, string> {
+  return build({ name: 'Office', sprint: null, policy: 'sanitised' }, [{ at: AT, ops: [
+    { type: 'person.upsert', role: 'Team lead', notes: 'Approves the roadmap.' },
+    { type: 'term.upsert', term: 'BAU', meaning: 'Business as usual: the recurring work.' },
+  ] }])
 }
 
 const under = (dir: string, files: Record<string, string>): Record<string, string> =>
   Object.fromEntries(Object.entries(files).map(([path, content]) => [`${dir}/${path}`, content]))
 
 /** How many private copies of Planning the harness holds for tests that write (one each, never shared). */
-export const SCRATCH_COPIES = 150
+export const SCRATCH_COPIES = 300
 
 /** A scratch copy's directory: hidden (a leading underscore), so the switcher leaves it out. */
 export const scratchDir = (n: number): string => `_scratch-${String(n).padStart(3, '0')}`
 
-/** The data repository's files: README, the three workspaces, and the scratch copies of Planning. */
+/** The data repository's files: README, the four workspaces, and the scratch copies of Planning. */
 export function fixtureFiles(): Record<string, string> {
   const copy = planning()
   const scratch = Array.from({ length: SCRATCH_COPIES }, (_, i) => under(scratchDir(i + 1), copy))
-  return Object.assign({ 'README.md': '# Data\n' }, under('planning', copy), under('club', club()), under('studio', studio()), ...scratch) as Record<string, string>
+  return Object.assign({ 'README.md': '# Data\n' }, under('planning', copy), under('club', club()), under('studio', studio()), under('office', office()), ...scratch) as Record<string, string>
 }

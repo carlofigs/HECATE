@@ -3,6 +3,7 @@ import { Banner, Button, ConfirmDialog, Dialog, RadioGroupField, SelectField, Te
 import { useRef, useState, type FormEvent } from 'react'
 import { URGENCY_OPTIONS } from '../format.ts'
 import { FormProblems } from '../FormProblems.tsx'
+import { personOptions } from '../people/people.ts'
 import type { LocalResult } from '../store.ts'
 import { pushToast } from '../toasts.ts'
 import { emptyForm, formFromTask, opsFor, validate, type TaskForm } from './editor.ts'
@@ -100,7 +101,15 @@ export function TaskEditor({ state, taskKey, newStatus, newProject, onClose, sav
           />
         ) : null}
         {form.kind === 'waiting' ? (
-          <TextField label="Waiting on" hint="A person, a role or a team" value={form.waitingOn} onChange={e => set('waitingOn', e.target.value)} />
+          <div className="grid gap-stack-md md:grid-cols-2 md:gap-inline-lg">
+            <SelectField label="Person" value={form.waitingPerson} options={personOptions(state)} onChange={e => set('waitingPerson', e.target.value)} />
+            <TextField
+              label="Waiting on"
+              hint={form.waitingPerson ? 'Optional: a note beside the person' : 'A team or a role, or choose a person'}
+              value={form.waitingOn}
+              onChange={e => set('waitingOn', e.target.value)}
+            />
+          </div>
         ) : null}
 
         <div className="grid gap-stack-md md:grid-cols-2 md:gap-inline-lg">

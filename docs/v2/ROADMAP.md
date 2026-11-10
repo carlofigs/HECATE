@@ -377,14 +377,19 @@ Delivered as sequential PRs:
       project ops. Projects joins the navigation; the phone's bottom bar
       shows each page as an icon over its label so three pages and the page's
       action fit at 320 px.
-- [ ] `feat/web-sprint` — a Sprint page: the goal and retro (editable any
+- [x] `feat/web-sprint` — a Sprint page: the goal and retro (editable any
       time), what closing would archive and carry (core's `sprintView` applies
       `sprint.close` to a copy, so the preview is the engine's answer), every
       sprint with its counts, and a review-and-close dialog. The Worker now
       commits a close on its own, after anything pending, so `git revert`
       undoes exactly it (ADR 0002 amendment). Sprint joins the navigation; the
       phone's bar becomes Today, Board and More.
-- [ ] People and glossary.
+- [ ] `feat/web-people` — a People page with the glossary, and a page per
+      person: their leave (saved whole, with Undo), the tasks waiting on them,
+      the cutoffs and meetings that name them. Removal is `person.remove`
+      applied to a copy, so the page explains what the engine would refuse.
+      B tasks and cutoffs gain a Person picker. A sanitised workspace never
+      offers a name. People joins the navigation.
 - [ ] Activity.
 
 ### P5 / P6 acceptance

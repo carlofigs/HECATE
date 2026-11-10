@@ -76,6 +76,16 @@ describe('the task editor', () => {
     const b1 = taskOf(state, 'B1')
     const ops = opsFor(state, { ...formFromTask(state, b1), waitingOn: 'Finance lead' }, b1)
     expect(taskOf(applies(state, ops), 'B1').waitingOn).toEqual({ personId: null, text: 'Finance lead' })
+
+    // Linking the person keeps the text beside them; unlinking keeps the text alone.
+    const withSam = applies(state, [{ type: 'person.upsert', name: 'Sam', role: 'Finance lead' }])
+    const sam = withSam.people.people[0]?.id ?? ''
+    const linked = applies(withSam, opsFor(withSam, { ...formFromTask(withSam, b1), waitingPerson: sam }, b1))
+    expect(taskOf(linked, 'B1').waitingOn).toEqual({ personId: sam, text: 'Finance' })
+    expect(formFromTask(linked, taskOf(linked, 'B1')).waitingPerson).toBe(sam)
+    const unlinked = applies(linked, opsFor(linked, { ...formFromTask(linked, taskOf(linked, 'B1')), waitingPerson: '' }, taskOf(linked, 'B1')))
+    expect(taskOf(unlinked, 'B1').waitingOn).toEqual({ personId: null, text: 'Finance' })
+    expect(validate(withSam, { ...formFromTask(withSam, b1), waitingPerson: '01KQ0000000000000000000000' }, 'B1').waitingPerson).toBe('Choose a person from the list.')
   })
 
   it('says what is wrong, and how to fix it', () => {
