@@ -192,13 +192,17 @@ function fakeRpc(calls: unknown[]): WorkspaceRpc {
       calls.push(['refresh', dir])
       return Promise.resolve({ status: 'unchanged', version: 1, head: 'x' })
     },
-    read: (dir: string) => {
-      calls.push(['read', dir])
-      return Promise.resolve({ status: 'unavailable', message: 'test' })
+    read: (dir: string, query?: unknown) => {
+      calls.push(['read', dir, query])
+      return Promise.resolve(
+        (query as { before?: string } | undefined)?.before === 'nope'
+          ? { status: 'not-found', version: 1, message: 'No activity entry nope' }
+          : { status: 'ok', version: 1, text: '', data: { entries: [], unread: 0, more: false, cursor: null } },
+      )
     },
-    ackActivity: (dir: string) => {
-      calls.push(['ack', dir])
-      return Promise.resolve({ status: 'unavailable', message: 'test' })
+    ackActivity: (dir: string, cursor?: string, upTo?: string) => {
+      calls.push(['ack', dir, cursor, upTo])
+      return Promise.resolve(upTo === 'nope' ? { status: 'not-found', version: 1, message: 'No activity entry nope' } : { status: 'ok', version: 1, acknowledged: 2, cursor: null })
     },
   }
 }
@@ -245,6 +249,32 @@ describe('/api', () => {
     expect((await get('/api/workspaces/..%2Fwork')).status).toBe(404)
     expect((await get('/api/workspaces/work')).status).toBe(503)
     expect(calls).toEqual([['snapshot', 'work']])
+  })
+})
+
+describe('/api activity', () => {
+  const sessionCookie = async () => `${SESSION_COOKIE}=${await signToken({ sub: '42', login: 'owner', exp: NOW / 1000 + 60 }, SECRET, 'session')}`
+
+  it('reads the log with the app’s own cursor, and acks it only from the app’s origin', async () => {
+    const calls: unknown[] = []
+    const deps = { settings: SETTINGS, workspaces: await listFor(await seededFake()), workspace: () => fakeRpc(calls), now: () => NOW }
+    const cookie = await sessionCookie()
+    const feed = await handleApi(new Request('https://hecate.test/api/workspaces/work/activity?limit=20&before=E1', { headers: { cookie } }), deps)
+    expect(feed.status).toBe(200)
+    expect(await feed.json()).toEqual({ version: 1, entries: [], unread: 0, more: false, cursor: null })
+    expect(calls.at(-1)).toEqual(['read', 'work', { kind: 'feed', cursor: 'app', limit: 20, before: 'E1' }])
+    expect((await handleApi(new Request('https://hecate.test/api/workspaces/work/activity?before=nope', { headers: { cookie } }), deps)).status).toBe(404)
+
+    const ack = (origin: string | null, body?: unknown) => handleApi(new Request('https://hecate.test/api/workspaces/work/activity/ack', {
+      method: 'POST', headers: { cookie, ...(origin ? { origin } : {}) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    }), deps)
+    expect((await ack(null)).status).toBe(403)
+    const all = await ack('https://hecate.test')
+    expect(await all.json()).toEqual({ status: 'ok', version: 1, acknowledged: 2, cursor: null })
+    expect(calls.at(-1)).toEqual(['ack', 'work', 'app', undefined])
+    expect((await ack('https://hecate.test', { upTo: 'E2' })).status).toBe(200)
+    expect(calls.at(-1)).toEqual(['ack', 'work', 'app', 'E2'])
+    expect((await ack('https://hecate.test', { upTo: 'nope' })).status).toBe(404)
   })
 })
 

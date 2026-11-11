@@ -384,13 +384,21 @@ Delivered as sequential PRs:
       commits a close on its own, after anything pending, so `git revert`
       undoes exactly it (ADR 0002 amendment). Sprint joins the navigation; the
       phone's bar becomes Today, Board and More.
-- [ ] `feat/web-people` — a People page with the glossary, and a page per
+- [x] `feat/web-people` — a People page with the glossary, and a page per
       person: their leave (saved whole, with Undo), the tasks waiting on them,
       the cutoffs and meetings that name them. Removal is `person.remove`
       applied to a copy, so the page explains what the engine would refuse.
       B tasks and cutoffs gain a Person picker. A sanitised workspace never
       offers a name. People joins the navigation.
-- [ ] Activity.
+- [x] `feat/web-activity` — the activity log by day, marking what is new since
+      you last looked through the app's own read marker (`app`), kept apart
+      from Claude's (`ack_activity`) by the owner's choice (ADR 0002
+      amendment); Mark all as read, Load older, and Add to log (one
+      `activity.log` op, as the hecate-log skill sends). The header shows how
+      many entries are new.
+
+**P5 is complete in code.** Its acceptance is re-checked on preview once the
+owner's setup is done.
 
 ### P5 / P6 acceptance
 

@@ -184,3 +184,18 @@ test('the term editor', async ({ page }) => {
   await expect(page.getByRole('dialog', { name: 'Edit CMS' })).toBeVisible()
   await scan(page, 'term editor')
 })
+
+test('Activity', async ({ page }) => {
+  await signIn(page, '/w/planning/activity')
+  await expect(page.getByText('7 new since you last looked')).toBeVisible()
+  await scan(page, 'Activity')
+})
+
+test('adding to the log, showing its errors', async ({ page }) => {
+  await signIn(page, '/w/planning/activity')
+  await page.getByRole('main').getByRole('button', { name: 'Add to log' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Add to the log' })
+  await dialog.getByRole('button', { name: 'Add to log' }).click()
+  await expect(dialog.getByRole('alert')).toBeVisible()
+  await scan(page, 'add to the log (errors)')
+})

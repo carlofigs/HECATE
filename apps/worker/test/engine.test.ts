@@ -271,6 +271,52 @@ describe('reading', () => {
   })
 })
 
+describe('activity readers', () => {
+  const log = (delta: string) => ({ type: 'activity.log', entry: 'flag', delta })
+  const feed = async (h: Awaited<ReturnType<typeof harness>>, query: { limit?: number; before?: string } = {}) => {
+    const r = await h.engine.read({ kind: 'feed', cursor: 'app', ...query })
+    if (r.status !== 'ok') throw new Error(JSON.stringify(r))
+    return r.data as { entries: { id: string; delta: string; actor: string }[]; unread: number; more: boolean; cursor: unknown }
+  }
+
+  it('pages the whole log newest first, and never counts the app’s own entries as new to it', async () => {
+    const h = await harness()
+    applied(await h.engine.apply({ ops: [log('From Claude 1')], actor: 'claude' }))
+    applied(await h.engine.apply({ ops: [log('Mine')], actor: 'app' }))
+    applied(await h.engine.apply({ ops: [log('From Claude 2')], actor: 'claude' }))
+    const first = await feed(h, { limit: 2 })
+    expect(first.entries.map(e => e.delta)).toEqual(['From Claude 2', 'Mine'])
+    expect(first).toMatchObject({ unread: 2, more: true, cursor: null })
+    const older = await feed(h, { limit: 2, before: first.entries[1]?.id ?? '' })
+    expect(older.entries.map(e => e.delta)).toEqual(['From Claude 1'])
+    expect(older.more).toBe(false)
+    expect(ok(await h.engine.snapshot()).activity).toEqual({ unread: 2 })
+    expect(await h.engine.read({ kind: 'feed', cursor: 'app', before: 'nope' })).toMatchObject({ status: 'not-found' })
+  })
+
+  it('keeps the app’s marker and Claude’s apart: the same ack, neither moves the other', async () => {
+    const h = await harness()
+    applied(await h.engine.apply({ ops: [log('One')], actor: 'claude' }))
+    applied(await h.engine.apply({ ops: [log('Two')], actor: 'claude' }))
+    const claudeUnread = async (): Promise<number> => {
+      const r = await h.engine.read({ kind: 'activity', cursor: 'claude' })
+      if (r.status !== 'ok') throw new Error(JSON.stringify(r))
+      return (r.data as { unread: number }).unread
+    }
+
+    expect(await h.engine.ackActivity('app')).toMatchObject({ status: 'ok', acknowledged: 2 })
+    expect((await feed(h)).unread).toBe(0)
+    expect(ok(await h.engine.snapshot()).activity).toEqual({ unread: 0 })
+    expect(await claudeUnread()).toBe(2)
+
+    applied(await h.engine.apply({ ops: [log('Three')], actor: 'claude' }))
+    expect((await feed(h)).unread).toBe(1)
+    expect(await h.engine.ackActivity('claude')).toMatchObject({ status: 'ok', acknowledged: 3 })
+    expect(await claudeUnread()).toBe(0)
+    expect((await feed(h)).unread).toBe(1)
+  })
+})
+
 describe('GitHub limits', () => {
   it('defers a commit until a spent rate limit resets', async () => {
     const h = await harness()

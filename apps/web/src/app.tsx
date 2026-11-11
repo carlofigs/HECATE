@@ -2,6 +2,7 @@ import { Skeleton, VisuallyHidden } from '@hecate/ui'
 import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router'
 import { appStore, useApp } from './appStore.ts'
+import { ActivityPage } from './activity/ActivityPage.tsx'
 import { Board } from './board/Board.tsx'
 import { Home } from './pages/Home.tsx'
 import { NotFound } from './pages/NotFound.tsx'
@@ -55,6 +56,7 @@ export function App() {
             <Route path="sprint/:n" element={<SprintPage />} />
             <Route path="people" element={<PeopleList />} />
             <Route path="people/:id" element={<PersonPage />} />
+            <Route path="activity" element={<ActivityPage />} />
             <Route path="more" element={<More />} />
             <Route path="*" element={<Navigate to="today" replace />} />
           </Route>

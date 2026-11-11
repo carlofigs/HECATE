@@ -3,7 +3,7 @@
  * httpOnly cookie the browser sends on its own: nothing here ever holds a
  * token (ADR 0003). Every call returns an outcome; none throws.
  */
-import type { WorkspaceState } from '@hecate/core'
+import type { FileData, WorkspaceState } from '@hecate/core'
 
 export interface Me {
   userId: number
@@ -30,6 +30,20 @@ export interface Snapshot {
   pending: number
   /** The last failure to load or commit, if it has not cleared. */
   lastError: { at: number; message: string } | null
+  /** How many activity entries are new to the app's reader (ADR 0002). */
+  activity?: { unread: number }
+}
+
+export type ActivityEntry = FileData<'activityEntry'>
+
+/** A page of the activity log, newest first, with the app's read marker. */
+export interface ActivityPage {
+  entries: ActivityEntry[]
+  /** New to the app: after its marker and not written by the app. */
+  unread: number
+  /** Older entries remain. */
+  more: boolean
+  cursor: { at: string; id: string } | null
 }
 
 export type Outcome<T> =
@@ -108,8 +122,36 @@ export function createApi(fetcher: Fetch = (input, init) => fetch(input, init)) 
               state: b.state as unknown as WorkspaceState,
               pending: typeof b.pending === 'number' ? b.pending : 0,
               lastError: isObject(b.lastError) ? (b.lastError as Snapshot['lastError']) : null,
+              ...(isObject(b.activity) && typeof b.activity.unread === 'number' ? { activity: { unread: b.activity.unread } } : {}),
             }
           : null,
+      ),
+
+    /** One page of the activity log (the app's reader), newest first; `before` an entry id for older ones. */
+    activity: (dir: string, options: { before?: string; limit?: number } = {}) => {
+      const params = new URLSearchParams()
+      if (options.before) params.set('before', options.before)
+      if (options.limit) params.set('limit', String(options.limit))
+      const query = params.size > 0 ? `?${params.toString()}` : ''
+      return call<ActivityPage>(fetcher, `/api/workspaces/${encodeURIComponent(dir)}/activity${query}`, {}, b =>
+        isObject(b) && Array.isArray(b.entries) && typeof b.unread === 'number'
+          ? {
+              entries: b.entries as ActivityEntry[],
+              unread: b.unread,
+              more: b.more === true,
+              cursor: isObject(b.cursor) ? (b.cursor as ActivityPage['cursor']) : null,
+            }
+          : null,
+      )
+    },
+
+    /** Moves the app's read marker to the newest entry, or to `upTo`. */
+    ackActivity: (dir: string, upTo?: string) =>
+      call<{ acknowledged: number }>(
+        fetcher,
+        `/api/workspaces/${encodeURIComponent(dir)}/activity/ack`,
+        { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(upTo ? { upTo } : {}) },
+        b => (isObject(b) && typeof b.acknowledged === 'number' ? { acknowledged: b.acknowledged } : null),
       ),
 
     signOut: () => call<null>(fetcher, '/auth/logout', { method: 'POST' }, () => null),
