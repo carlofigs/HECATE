@@ -52,6 +52,8 @@ Items are `item` (with optional `checked`), `label` or `separator`.
 - **Element:** `button[aria-haspopup=menu]` and `role="menu"` with `menuitem` / `menuitemcheckbox` items.
 - **Accessible name:** `label`, e.g. "Move A12".
 - **Keyboard:** Enter, Space or the arrows open it; the arrows move; Enter chooses; Escape closes and returns focus.
+- **Focus after choosing:** back to the trigger. If the choice re-rendered it elsewhere (Move to another column), focus goes to the visible trigger with the same name; out of sight, it goes to the page's `main`.
+- **Item focus:** the keyboard's item shows the focus ring (R-05); the highlight colour alone is not enough.
 
 ## Content (C-09)
 
@@ -83,3 +85,4 @@ Items are `item` (with optional `checked`), `label` or `separator`.
 ## Changelog
 
 - 0.3.0: created.
+- 0.11.1: the ring on the focused item; focus follows a moved trigger (audit 2026-11, findings 2 and 4).

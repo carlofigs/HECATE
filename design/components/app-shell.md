@@ -119,3 +119,4 @@ None.
 - 0.9.0: Activity, the sixth page. Its header link, and its link on More, show how many entries are new ("Activity 7 new").
 - 0.10.0: Live updates. The sync status drops the time while the live socket is open; the 60 s poll runs only while it is down.
 - 0.11.0: The device copy. An offline reload opens the workspace ("Offline · as of 10:42") with its unsent changes; the unload prompt only where the device cannot keep them; sign-out asks first while changes wait.
+- 0.11.1: Sign out reads "Signing out…" while the Worker answers (R-25).

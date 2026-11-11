@@ -50,7 +50,7 @@
 
 - **Opening:** focus moves into the dialog.
 - **ConfirmDialog:** focus goes to **Cancel**, the default.
-- **Closing:** Escape and Close close it (and the overlay, for `Dialog`); focus returns to the opener.
+- **Closing:** Escape and Close close it (and the overlay, for `Dialog`). Focus returns to the opener, the element that had focus when it opened, since dialogs here have no Radix `Trigger`. If the opener has gone (a deleted task's card), focus goes to the page's `main`, unless a new page's heading already has it.
 - **Page scroll:** locked while open. Radix inserts a `<style>` element for it, allowed by `style-src-elem` in `apps/web/public/_headers`.
 - **Responsive (C-10):** a bottom sheet below `md`, a centred box from `md`.
 
@@ -92,3 +92,4 @@
 ## Changelog
 
 - 0.3.0: created.
+- 0.11.1: focus returns to the opener; it fell to the page body before (audit 2026-11, finding 1).

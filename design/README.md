@@ -15,6 +15,7 @@ HECATE v2's user interface follows the owner's `DESIGN-STANDARD.md`. It is vendo
 | [`DECISIONS.md`](DECISIONS.md) | Deviations and exceptions (Appendix C) | This repo; the owner approves MUST exceptions |
 | [`CHANGELOG.md`](CHANGELOG.md) | Semver history of the design layer | This repo |
 | `components/` | One spec per component (Appendix B), added with its code | This repo |
+| `audits/` | Dated conformance audits (R-29): findings, fixes, and the owner's screen-reader checklist | This repo |
 
 ## Usage
 

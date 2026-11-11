@@ -56,7 +56,7 @@ export function Toaster({ toasts, onDismiss }: { toasts: readonly ToastItem[]; o
           </Toast.Root>
         )
       })}
-      <Toast.Viewport className="fixed inset-x-0 bottom-0 z-(--z-toast) mx-auto flex w-full max-w-prose flex-col gap-stack-sm p-inset-md max-md:bottom-(--size-control-lg) outline-none" />
+      <Toast.Viewport className="fixed inset-x-0 bottom-0 z-(--z-toast) mx-auto flex w-full max-w-prose flex-col gap-stack-sm p-inset-md max-md:bottom-(--size-control-lg)" />
     </Toast.Provider>
   )
 }
