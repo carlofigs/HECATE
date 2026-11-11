@@ -9,15 +9,18 @@ const ICON = 'size-(--size-icon-md) shrink-0'
 function syncState(open: OpenWorkspace | null): { icon: ReactNode; text: string } | null {
   if (!open) return null
   const waiting = open.queue.length
+  // Offline: a send failed for lack of network, or (after a reload from the device copy) the first check did.
+  const offline = open.sendFailure?.kind === 'network' || (open.status === 'stale' && open.failure?.kind === 'network')
   if (waiting > 0) {
-    if (open.sendFailure?.kind === 'network') return { icon: <WifiOff aria-hidden="true" className={ICON} />, text: `Offline · ${waiting} ${waiting === 1 ? 'change' : 'changes'} waiting` }
+    if (offline) return { icon: <WifiOff aria-hidden="true" className={ICON} />, text: `Offline · ${waiting} ${waiting === 1 ? 'change' : 'changes'} waiting` }
     if (open.sendFailure) return { icon: <CloudOff aria-hidden="true" className={ICON} />, text: "Couldn't save · retrying" }
     return { icon: <RefreshCw aria-hidden="true" className={ICON} />, text: 'Saving…' }
   }
   if (open.status === 'loading' || (open.status === 'refreshing' && !open.snapshot)) return { icon: <RefreshCw aria-hidden="true" className={ICON} />, text: 'Checking…' }
   if (open.status === 'stale' || open.status === 'error') {
+    // Offline with a snapshot on show: say how old it is.
     return open.failure?.kind === 'network'
-      ? { icon: <WifiOff aria-hidden="true" className={ICON} />, text: 'Offline' }
+      ? { icon: <WifiOff aria-hidden="true" className={ICON} />, text: open.snapshot && open.fetchedAt ? `Offline · as of ${clockTime(open.fetchedAt)}` : 'Offline' }
       : { icon: <CloudOff aria-hidden="true" className={ICON} />, text: "Couldn't load" }
   }
   const pending = open.snapshot?.pending ?? 0

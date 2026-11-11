@@ -1,6 +1,7 @@
 import { applyBatch, CURRENT_VERSION, emptyState, parseFile, prepareBatch, type WorkspaceState } from '@hecate/core'
 import { describe, expect, it } from 'vitest'
 import type { ApplyAnswer, Outcome, Snapshot } from './api.ts'
+import { deviceStore, memoryBackend } from './offline.ts'
 import { createAppStore, type Notice, type StoreServer as Api } from './store.ts'
 
 const snapshot = (version: number): Snapshot => ({ version, state: {} as Snapshot['state'], pending: 0, lastError: null })
@@ -336,5 +337,155 @@ describe('live changes', () => {
     store.getState().setLive('a', 'ended')
     await settle()
     expect(store.getState().session).toEqual({ status: 'signed-out' })
+  })
+})
+
+describe('the device copy', () => {
+  const me = { userId: 42, login: 'owner' }
+  const list = { workspaces: [{ dir: 'w', hidden: false, name: null, policy: 'open' as const }], default: null }
+
+  /** An API that is online or not, over a real workspace at `version`. */
+  function server() {
+    let online = true
+    let signedIn = true
+    let version = 1
+    let signOuts = 0
+    const sent: string[] = []
+    const api: Api = {
+      me: () => Promise.resolve(!online ? { kind: 'network' } : signedIn ? { kind: 'ok', data: me } : { kind: 'signed-out' }),
+      workspaces: () => Promise.resolve(online ? { kind: 'ok', data: list } : { kind: 'network' }),
+      snapshot: () => Promise.resolve(!online ? { kind: 'network' } : signedIn ? { kind: 'ok', data: { version, state: workspace(), pending: 0, lastError: null } } : { kind: 'signed-out' }),
+      signOut: () => {
+        if (!online) return Promise.resolve({ kind: 'network' })
+        signOuts++
+        signedIn = false
+        return Promise.resolve({ kind: 'ok', data: null })
+      },
+      applyOps: (_dir, body) => {
+        if (!online) return Promise.resolve({ kind: 'network' })
+        sent.push(body.opId)
+        version++
+        return Promise.resolve({ kind: 'applied', version, keyMap: {}, duplicate: false })
+      },
+    }
+    return {
+      api, sent,
+      setOnline: (on: boolean) => void (online = on),
+      setSignedIn: (on: boolean) => void (signedIn = on),
+      setVersion: (v: number) => void (version = v),
+      signOuts: () => signOuts,
+    }
+  }
+
+  function device() {
+    const backend = memoryBackend()
+    let flag = false
+    const flagStore = { get: () => flag, set: (on: boolean) => void (flag = on) }
+    return { backend, offline: deviceStore(Promise.resolve(backend)), flag: flagStore }
+  }
+
+  /** A reload: a new store over the same device. */
+  const tab = (s: ReturnType<typeof server>, d: ReturnType<typeof device>) =>
+    createAppStore(s.api, { offline: d.offline, signOutPending: d.flag, sleep: () => new Promise(() => {}) })
+
+  it('keeps a change made offline through a reload, then sends it once the Worker answers', async () => {
+    const s = server()
+    const d = device()
+    const first = tab(s, d)
+    await first.getState().start()
+    await first.getState().openWorkspace('w')
+    await settle()
+    expect(d.backend.dump().snapshots).toHaveLength(1)
+
+    s.setOnline(false)
+    first.getState().apply([{ type: 'task.move', task: 'A1', status: 'doing' }], 'Move A1')
+    await settle()
+    expect(d.backend.dump().batches).toHaveLength(1)
+    expect(first.getState().keepsChanges()).toBe(true)
+
+    // Reload while offline: signed in from the copy, the workspace and its change on show.
+    const second = tab(s, d)
+    await second.getState().start()
+    expect(second.getState().session).toEqual({ status: 'signed-in', me, offline: true })
+    expect(second.getState().workspaces).toEqual({ status: 'ready', list })
+    await second.getState().openWorkspace('w')
+    expect(second.getState().open).toMatchObject({ status: 'stale', failure: { kind: 'network' }, fromDevice: true, queue: [{ label: 'Move A1' }] })
+    expect(statusOf(second.getState().open?.view, 'A1')).toBe('doing')
+
+    // Back online: confirmed, sent, and let go of.
+    s.setOnline(true)
+    await second.getState().start()
+    expect(second.getState().session).toEqual({ status: 'signed-in', me })
+    await second.getState().refresh()
+    await settle()
+    await settle()
+    expect(s.sent).toHaveLength(1)
+    expect(second.getState().open).toMatchObject({ queue: [], fromDevice: false })
+    expect(d.backend.dump().batches).toEqual([])
+  })
+
+  it('takes the Worker’s answer over a device copy, even at a lower version', async () => {
+    const s = server()
+    const d = device()
+    s.setVersion(57)
+    const first = tab(s, d)
+    await first.getState().start()
+    await first.getState().openWorkspace('w')
+    await settle()
+    s.setVersion(1)
+    const second = tab(s, d)
+    await second.getState().start()
+    await second.getState().openWorkspace('w')
+    expect(second.getState().open).toMatchObject({ status: 'ready', snapshot: { version: 1 }, fromDevice: false })
+  })
+
+  it('forgets the session when it is over, but keeps unsent changes for the next sign-in', async () => {
+    const s = server()
+    const d = device()
+    const first = tab(s, d)
+    await first.getState().start()
+    await first.getState().openWorkspace('w')
+    s.setOnline(false)
+    first.getState().apply([{ type: 'task.move', task: 'A1', status: 'doing' }], 'Move A1')
+    await settle()
+    s.setOnline(true)
+    s.setSignedIn(false)
+    const second = tab(s, d)
+    await second.getState().start()
+    await settle()
+    expect(second.getState().session).toEqual({ status: 'signed-out' })
+    expect(d.backend.dump()).toMatchObject({ session: [], snapshots: [], batches: [{ label: 'Move A1' }] })
+  })
+
+  it('signs out clearing the device, and finishes an offline sign-out at the next start', async () => {
+    const s = server()
+    const d = device()
+    const first = tab(s, d)
+    await first.getState().start()
+    await first.getState().openWorkspace('w')
+    s.setOnline(false)
+    first.getState().apply([{ type: 'task.move', task: 'A1', status: 'doing' }], 'Move A1')
+    await settle()
+    await first.getState().signOut()
+    expect(first.getState().session).toEqual({ status: 'signed-out' })
+    expect(d.backend.dump()).toEqual({ session: [], snapshots: [], batches: [] })
+    expect(d.flag.get()).toBe(true)
+    expect(s.signOuts()).toBe(0)
+
+    s.setOnline(true)
+    const second = tab(s, d)
+    await second.getState().start()
+    expect(second.getState().session).toEqual({ status: 'signed-out' })
+    expect(s.signOuts()).toBe(1)
+    expect(d.flag.get()).toBe(false)
+  })
+
+  it('without a copy, an offline start still says what is wrong', async () => {
+    const s = server()
+    s.setOnline(false)
+    const store = tab(s, device())
+    await store.getState().start()
+    expect(store.getState().session).toEqual({ status: 'error', failure: { kind: 'network' } })
+    expect(createAppStore(s.api).getState().keepsChanges()).toBe(false)
   })
 })

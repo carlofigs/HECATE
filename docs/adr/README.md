@@ -13,5 +13,6 @@ record stays, with its status changed and a link to the record that replaces it.
 | [0006](0006-retire-calendar-sync.md) | Retire the calendar sync; skills read the calendar directly | Accepted |
 | [0007](0007-strict-versioned-schemas-and-ab-keys.md) | Strict, versioned file schemas; A/B task keys everywhere | Accepted |
 | [0008](0008-migrating-v1-data.md) | Migrating v1 data: direct files, kept keys, legacy sprints, names to roles | Accepted |
+| [0009](0009-offline-copy.md) | A copy of HECATE on the device: snapshots and unsent changes in IndexedDB, cleared at sign-out | Accepted |
 
 Template: **Status · Context · Decision · Consequences · Alternatives considered.**

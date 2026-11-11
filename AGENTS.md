@@ -167,8 +167,16 @@ sessions pushing by hand. Treat every write as concurrent with someone else's.
   not exist.
 - **The web app** (`apps/web`) runs on the Worker's origin.
   - **Session:** an httpOnly cookie it never sees. Nothing credential-like goes
-    in JavaScript storage (`localStorage` holds UI preferences only), and
-    `e2e/no-token.spec.ts` checks it.
+    in JavaScript storage, and `e2e/no-token.spec.ts` checks it. `localStorage`
+    holds UI preferences and the `hecate:sign-out` flag; IndexedDB holds the
+    device copy (below).
+  - **Device copy** (`apps/web/src/offline.ts`, ADR 0009): who is signed in,
+    each opened workspace's snapshot, and every unsent batch (one record per
+    `opId`), so an offline reload shows the workspace and keeps its changes.
+    Sign-out clears it (asking first if changes wait); a `signed-out` answer
+    clears all but the unsent batches; a copy older than 14 days or saved
+    under other file versions is not used. Inject it into the store
+    (`createAppStore(api, { offline })`); tests use `memoryBackend`.
   - **Reads:** one snapshot of the workspace (`GET /api/workspaces/:dir`),
     with every view computed from it through core's selectors, as the MCP
     tools do.
@@ -181,7 +189,7 @@ sessions pushing by hand. Treat every write as concurrent with someone else's.
     - it applies them locally with core's engine at once, then queues them;
     - the Worker gets one batch at a time with its own `opId`;
     - the local result stands when the Worker answers with the next version; any other answer means a refetch;
-    - a refusal is dropped and explained; offline batches retry.
+    - a refusal is dropped and explained; offline batches retry, and survive a reload in the device copy.
     - `apply` runs `prepareBatch` once and queues the prepared ops, so every id a batch creates (a task, a plan item, an outcome) is fixed before it is sent: the Worker keeps the same ids the page shows.
     - Never write state any other way.
   - **Moves** are `task.move` with `after` = the new predecessor (`apps/web/src/board/moves.ts`, unit-tested). Drag and drop, the Move menu and Undo all reduce to it.

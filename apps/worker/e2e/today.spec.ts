@@ -84,7 +84,7 @@ test('offline, the page keeps its data and says it is offline', async ({ page, c
   await todayLoaded(page)
   await context.setOffline(true)
   await comeBackLater(page)
-  await expect(page.getByRole('status').filter({ hasText: /^Offline$/ })).toBeVisible()
+  await expect(page.getByRole('status').filter({ hasText: /^Offline · as of / })).toBeVisible()
   await expect(page.getByRole('status').filter({ hasText: "You're offline" })).toBeVisible()
   await expect(section(page, 'In progress').getByText('Draft the scorecard')).toBeVisible()
   await context.setOffline(false)
