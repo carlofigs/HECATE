@@ -68,3 +68,28 @@ Recorded when the engine was built in `packages/core`:
 - **The activity log is append-only.** `applyBatch` returns the entries to
   append; nothing rewrites a weekly log file.
 
+
+## Amendment — removing a person the archive refers to (Nov 2026, with `fix/person-remove-archived`)
+
+`person.remove` refuses while an open task, a project cutoff or a meeting
+refers to the person; each of those can be edited to drop the link first.
+Tasks a closed sprint archived cannot: no op changes them. Before this
+amendment the op did not look at them at all, so removing the person left an
+archived task's `waitingOn.personId` pointing at nobody, and the record lost
+who it had waited on.
+
+- **The rule.** Removing a person turns each archived reference into text: the
+  task's `waitingOn` becomes `{ personId: null, text }`, where `text` is the
+  person's label (name, or role in a sanitised workspace), then ` — ` and any
+  text the task already had, cut to one line. Every view joins label and text
+  the same way, so the record reads exactly as before.
+- **The one exception.** This is the only change the engine makes to an
+  archived task. It happens in the same batch as the removal, so the commit
+  that removes the person also touches the `sprints/<n>.json` files it
+  rewrote, and the summary names the tasks.
+- **The check.** `checkWorkspace` now reports an archived task waiting on a
+  person who does not exist (`unknown-person`), as it already did for open
+  tasks. migrate-v1 writes archived tasks with no person, so its checks are
+  unaffected.
+- **Rejected:** refusing the removal. Since archived tasks never change, anyone
+  who was ever waited on could never be removed.

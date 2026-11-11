@@ -2,6 +2,12 @@
 
 Semver (G-01). Each entry lists the rule IDs it concerns.
 
+## [0.9.1] — 2026-11-11
+
+### Fixed
+
+- **Removing a person** (C-09): the confirmation no longer says "Nothing else refers to them" when archived tasks waited on them. It names those tasks and says they keep the person's label as text ("B1, archived in sprint 7, keeps “Sam” as text.").
+
 ## [0.9.0] — 2026-11-11
 
 ### Added

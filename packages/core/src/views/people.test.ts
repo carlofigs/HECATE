@@ -44,6 +44,19 @@ describe('personView', () => {
     expect(personView(state, alexId, isoDate('2026-11-13'))?.leave[0]?.past).toBe(true)
   })
 
+  it('lists archived tasks that waited on them, which do not keep them from being removed', () => {
+    const { state, samId } = people()
+    const freed = ok(run(state, [
+      { type: 'project.update', slug: 'scorecard', patch: { cutoffs: [] } },
+      { type: 'task.drop', task: 'B1' },
+    ], { at: '2026-11-09T22:00:00.000Z' })).state
+    const closed = ok(run(freed, [{ type: 'sprint.close', n: 7 }], { at: '2026-11-10T23:00:00.000Z' })).state
+    const view = personView(closed, samId, TODAY)
+    expect(view?.waitingOn).toEqual([])
+    expect(view?.archived).toEqual([{ key: 'B1', title: 'Layout sign-off', sprint: 7 }])
+    expect(view?.removable).toEqual({ ok: true })
+  })
+
   it('is null for an unknown id', () => {
     expect(personView(people().state, '01KQ0000000000000000000000', TODAY)).toBeNull()
   })

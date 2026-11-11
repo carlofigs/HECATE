@@ -130,6 +130,37 @@ test('a task waiting on a person links them, and keeps them from being removed',
   expect(stored<Tasks>(git.files, 'tasks.json').tasks.find(t => t.key === 'B1')?.waitingOn).toEqual({ personId: sam, text: 'Finance team' })
 })
 
+test('once the task is archived, removing the person keeps them there as text', async ({ page }) => {
+  const dir = await scratch(page)
+  await page.goto(`/w/${dir}/board?task=B1`)
+  const editor = page.getByRole('dialog', { name: 'Edit B1' })
+  await editor.getByLabel('Person').selectOption({ label: 'Sam (Product manager)' })
+  await editor.getByLabel('Status').selectOption({ label: 'Done' })
+  await editor.getByRole('button', { name: 'Save' }).click()
+  await expect(editor).toHaveCount(0)
+  // Let the change reach the Worker before the page reloads, or the sprint closes without it.
+  await committed(page, dir)
+
+  await page.goto(`/w/${dir}/sprint`)
+  await page.getByRole('button', { name: 'Review and close' }).click()
+  await page.getByRole('dialog', { name: 'Close sprint 7' }).getByRole('button', { name: 'Close sprint 7' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Closed sprint 7' })).toBeVisible()
+
+  await page.goto(`/w/${dir}/people`)
+  await region(page, 'People').getByRole('link', { name: 'Sam' }).click()
+  await expect(region(page, 'Waiting on them')).toContainText('No open task waits on them.')
+  await page.getByRole('button', { name: 'Remove Sam' }).click()
+  const confirm = page.getByRole('alertdialog', { name: 'Remove Sam?' })
+  await expect(confirm).toContainText('B1, archived in sprint 7, keeps “Sam” as text.')
+  await confirm.getByRole('button', { name: 'Remove Sam' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'People' })).toBeVisible()
+
+  const git = await committed(page, dir)
+  expect(stored<People>(git.files, 'people.json').people.map(p => p.name)).toEqual(['Alex'])
+  const sprint = stored<{ done: Tasks['tasks'] }>(git.files, 'sprints/7.json')
+  expect(sprint.done.find(t => t.key === 'B1')?.waitingOn).toEqual({ personId: null, text: 'Sam — Finance team' })
+})
+
 test('removing someone nothing refers to, after confirming', async ({ page }) => {
   const dir = await scratch(page)
   await region(page, 'People').getByRole('link', { name: 'Alex' }).click()

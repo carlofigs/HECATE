@@ -46,6 +46,8 @@ export interface PersonView {
   meetings: { path: string; title: string; date: IsoDate }[]
   /** Leave and travel, in date order. */
   leave: PersonLeave[]
+  /** Tasks a closed sprint archived that waited on them; removing them keeps their label there as text. */
+  archived: { key: string; title: string; sprint: number }[]
   /** Whether person.remove would accept it now, and if not, why. */
   removable: { ok: true } | { ok: false; reason: string }
 }
@@ -87,6 +89,9 @@ export function personView(state: WorkspaceState, id: string, today: IsoDate): P
       .map(([path, m]) => ({ path, title: m.frontmatter.title, date: m.frontmatter.date }))
       .sort((a, b) => b.date.localeCompare(a.date)),
     leave: [...person.ooo].sort(byStart).map(r => ({ ...r, current: r.start <= today && r.end >= today, past: r.end < today })),
+    archived: Object.values(state.sprints)
+      .sort((a, b) => a.n - b.n)
+      .flatMap(s => [...s.done, ...s.dropped].filter(t => t.waitingOn?.personId === id).map(t => ({ key: t.key, title: t.title, sprint: s.n }))),
     removable: check.ok ? { ok: true } : { ok: false, reason: check.errors[0]?.message ?? 'It cannot be removed now' },
   }
 }
