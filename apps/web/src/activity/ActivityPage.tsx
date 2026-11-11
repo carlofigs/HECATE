@@ -24,20 +24,23 @@ interface Feed {
   moreOlder: boolean | null
 }
 
-/** The activity log through the app's own reader (ADR 0002): its pages, and marking them read. */
-function useActivity(dir: string, version: number | null) {
+/**
+ * The activity log through the app's own reader (ADR 0002): its pages, and marking them read. It reloads when the
+ * workspace changes, or when the count of new entries does (Mark all as read in another tab).
+ */
+function useActivity(dir: string, version: number | null, unread: number | null) {
   const [feed, setFeed] = useState<Feed>({ first: null, older: [], moreOlder: null })
   const [tick, setTick] = useState(0)
   useEffect(() => {
     if (version === null) return
-    let live = true
+    let current = true
     void api.activity(dir).then(first => {
-      if (live) setFeed(f => ({ ...f, first }))
+      if (current) setFeed(f => ({ ...f, first }))
     })
     return () => {
-      live = false
+      current = false
     }
-  }, [dir, version, tick])
+  }, [dir, version, unread, tick])
 
   const page = feed.first?.kind === 'ok' ? feed.first.data : null
   const entries = page ? merged(page.entries, feed.older) : []
@@ -74,7 +77,8 @@ function useActivity(dir: string, version: number | null) {
 export function ActivityPage() {
   const { workspace = '' } = useParams()
   const version = useApp(s => s.open?.snapshot?.version ?? null)
-  const activity = useActivity(workspace, version)
+  const unreadNow = useApp(s => s.open?.snapshot?.activity?.unread ?? null)
+  const activity = useActivity(workspace, version, unreadNow)
   const actions = useActions()
   const slot = useBottomActionSlot()
   const [adding, setAdding] = useState(false)

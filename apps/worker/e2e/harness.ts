@@ -13,6 +13,7 @@
  * /auth here.
  */
 import { createServer, type IncomingMessage } from 'node:http'
+import { connect } from 'node:net'
 import { existsSync } from 'node:fs'
 import { createFakeGitHub } from '@hecate/github-store/testing'
 import { startWorker } from '../test/runtime.ts'
@@ -105,6 +106,28 @@ const server = createServer((request, response) => {
     if (!response.headersSent) response.writeHead(502)
     response.end()
   })
+})
+
+// A tab's live socket. dispatchFetch cannot carry an upgrade, so the raw connection is piped to workerd's own
+// listener, which runs the same Worker; ordinary requests keep going through dispatchFetch above.
+const direct = await worker.ready
+server.on('upgrade', (request: IncomingMessage, client, head: Buffer) => {
+  const upstream = connect(Number(direct.port), direct.hostname, () => {
+    const lines = [`${request.method ?? 'GET'} ${request.url ?? '/'} HTTP/1.1`]
+    for (let i = 0; i < request.rawHeaders.length; i += 2) lines.push(`${request.rawHeaders[i] ?? ''}: ${request.rawHeaders[i + 1] ?? ''}`)
+    upstream.write(`${lines.join('\r\n')}\r\n\r\n`)
+    if (head.length > 0) upstream.write(head)
+    upstream.pipe(client)
+    client.pipe(upstream)
+  })
+  const end = (): void => {
+    upstream.destroy()
+    client.destroy()
+  }
+  upstream.on('error', end)
+  client.on('error', end)
+  upstream.on('close', end)
+  client.on('close', end)
 })
 
 server.listen(PORT, () => process.stdout.write(`HECATE harness on ${PUBLIC_URL} (assets: apps/web/dist)\n`))

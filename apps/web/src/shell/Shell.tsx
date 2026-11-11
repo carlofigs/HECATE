@@ -3,6 +3,7 @@ import { LogOut, MoreHorizontal } from 'lucide-react'
 import { useEffect, type MouseEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { appStore, useApp } from '../appStore.ts'
+import { connectLive } from '../live.ts'
 import { dismissToast, useToasts } from '../toasts.ts'
 import { useOnline } from '../useOnline.ts'
 import { workspaceLabel } from '../workspace.ts'
@@ -13,7 +14,7 @@ import { SyncStatus } from './SyncStatus.tsx'
 import { UpdateBanner } from './UpdateBanner.tsx'
 import { reloadToUpdate, useNeedRefresh } from './updates.ts'
 
-/** How often an open, visible page checks for changes made elsewhere (live updates arrive in P6). */
+/** How often an open, visible page checks for changes made elsewhere while its live socket is down (live.ts). */
 const REFRESH_MS = 60_000
 /** Focus, visibility and reconnecting each ask for a refresh; one is enough within this window. */
 const MIN_AGE_MS = 5_000
@@ -111,6 +112,16 @@ export function Shell() {
     void appStore.getState().openWorkspace(workspace)
   }, [workspace])
 
+  // Changes made elsewhere (another tab, Claude, another writer) arrive over the live socket; it closes on switch.
+  useEffect(
+    () =>
+      connectLive(workspace, {
+        onChange: change => appStore.getState().onLive(workspace, change),
+        onState: state => appStore.getState().setLive(workspace, state),
+      }),
+    [workspace],
+  )
+
   useEffect(() => {
     const check = (): void => {
       if (document.visibilityState === 'visible') void appStore.getState().refreshIfStale(MIN_AGE_MS)
@@ -120,7 +131,10 @@ export function Shell() {
       appStore.getState().retryNow()
       check()
     }
-    const timer = setInterval(check, REFRESH_MS)
+    // The poll is the fallback: while the live socket is open it has nothing to add.
+    const timer = setInterval(() => {
+      if (appStore.getState().open?.live !== 'open') check()
+    }, REFRESH_MS)
     document.addEventListener('visibilitychange', check)
     window.addEventListener('focus', check)
     window.addEventListener('online', reconnect)

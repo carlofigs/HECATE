@@ -204,6 +204,11 @@ function fakeRpc(calls: unknown[]): WorkspaceRpc {
       calls.push(['ack', dir, cursor, upTo])
       return Promise.resolve(upTo === 'nope' ? { status: 'not-found', version: 1, message: 'No activity entry nope' } : { status: 'ok', version: 1, acknowledged: 2, cursor: null })
     },
+    fetch: (request: Request) => {
+      calls.push(['fetch', request.method, request.url, request.headers.get('upgrade')])
+      // Node's Response cannot carry a 101; the Durable Object's real answer is covered in worker.test.ts.
+      return Promise.resolve(new Response('socket', { status: 200 }))
+    },
   }
 }
 
@@ -275,6 +280,31 @@ describe('/api activity', () => {
     expect((await ack('https://hecate.test', { upTo: 'E2' })).status).toBe(200)
     expect(calls.at(-1)).toEqual(['ack', 'work', 'app', 'E2'])
     expect((await ack('https://hecate.test', { upTo: 'nope' })).status).toBe(404)
+  })
+})
+
+describe('/api live', () => {
+  const exp = NOW / 1000 + 60
+  const sessionCookie = async () => `${SESSION_COOKIE}=${await signToken({ sub: '42', login: 'owner', exp }, SECRET, 'session')}`
+
+  it('opens a tab’s socket only for a signed-in tab on the app’s own origin, and passes the session’s expiry on', async () => {
+    const calls: unknown[] = []
+    const deps = { settings: SETTINGS, workspaces: await listFor(await seededFake()), workspace: () => fakeRpc(calls), now: () => NOW }
+    const cookie = await sessionCookie()
+    const live = (headers: Record<string, string>, dir = 'work') => handleApi(new Request(`https://hecate.test/api/workspaces/${dir}/live`, { headers }), deps)
+    const upgrade = { upgrade: 'websocket', origin: 'https://hecate.test' }
+
+    expect((await live(upgrade)).status).toBe(401)
+    expect((await live({ cookie, upgrade: 'websocket' })).status).toBe(403)
+    expect((await live({ cookie, ...upgrade, origin: 'https://evil.example' })).status).toBe(403)
+    expect((await live({ cookie, origin: 'https://hecate.test' })).status).toBe(426)
+    expect((await live({ cookie, ...upgrade }, 'nowhere')).status).toBe(404)
+    expect(calls).toEqual([])
+
+    expect(await (await live({ cookie, ...upgrade })).text()).toBe('socket')
+    expect(calls).toEqual([['fetch', 'GET', `https://workspace.internal/live?dir=work&exp=${exp}`, 'websocket']])
+    const post = await handleApi(new Request('https://hecate.test/api/workspaces/work/live', { method: 'POST', headers: { cookie, ...upgrade } }), deps)
+    expect(post.status).toBe(405)
   })
 })
 

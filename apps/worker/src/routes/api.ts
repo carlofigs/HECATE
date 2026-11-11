@@ -2,7 +2,8 @@
  * api.ts — the web app's API (ADR 0003): a session cookie, never a token in
  * JavaScript. Writes must come from the app's own origin (SameSite=Strict
  * plus an Origin check), and every write goes to the workspace's Durable
- * Object as ops with actor `app`.
+ * Object as ops with actor `app`. The live socket is a read, but it is checked
+ * the same way: a cross-site page must never hold one open (ADR 0003).
  */
 
 import { APP_CURSOR, type ApplyOutcome } from '../engine.ts'
@@ -43,8 +44,11 @@ export async function handleApi(request: Request, deps: ApiDeps): Promise<Respon
   if (path === '/api/me' && !write) return json({ userId: session.sub, login: session.login })
   if (path === '/api/workspaces' && !write) return json({ workspaces: await deps.workspaces.get(), default: deps.defaultWorkspace ?? null })
 
-  const m = /^\/api\/workspaces\/([^/]+)(\/ops|\/flush|\/activity|\/activity\/ack)?$/.exec(path)
+  const m = /^\/api\/workspaces\/([^/]+)(\/ops|\/flush|\/activity|\/activity\/ack|\/live)?$/.exec(path)
   if (!m) return json({ error: 'Not found' }, 404)
+  const live = m[2] === '/live' && !write
+  if (live && request.headers.get('origin') !== settings.origin) return json({ error: 'Cross-origin request refused' }, 403)
+  if (live && request.headers.get('upgrade')?.toLowerCase() !== 'websocket') return json({ error: 'Expected a WebSocket upgrade' }, 426)
   const dir = decodeURIComponent(m[1] as string)
   if (!(await deps.workspaces.has(dir))) return json({ error: `No workspace "${dir}"` }, 404)
   const workspace = deps.workspace(dir)
@@ -52,6 +56,11 @@ export async function handleApi(request: Request, deps: ApiDeps): Promise<Respon
   if (!m[2] && !write) {
     const snapshot = await workspace.snapshot(dir)
     return json(snapshot, snapshot.status === 'ok' ? 200 : 503)
+  }
+  if (live) {
+    // The socket carries only { version, pending, unread }; the data still comes through the snapshot above.
+    const target = `https://workspace.internal/live?dir=${encodeURIComponent(dir)}&exp=${session.exp}`
+    return workspace.fetch(new Request(target, { headers: { upgrade: 'websocket' } }))
   }
   if (m[2] === '/flush' && request.method === 'POST') return json(await workspace.flush(dir))
   // The app's own activity reader (ADR 0002): the same cursor mechanics as MCP's ack_activity, under the name `app`.

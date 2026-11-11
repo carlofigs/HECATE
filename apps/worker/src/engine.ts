@@ -117,6 +117,17 @@ export interface EngineDeps {
   /** How old the last head check may be before a read checks again. */
   freshnessMs?: number
   sleep?: (ms: number) => Promise<void>
+  /** Called whenever what an open tab shows may have changed: the Durable Object tells its sockets. */
+  notify?: (change: LiveChange) => void
+}
+
+/** What a live socket is told (ADR 0003): enough to know whether to refetch, never the data itself. */
+export interface LiveChange {
+  version: number
+  /** Batches applied but not yet committed to git. */
+  pending: number
+  /** Activity entries new to the app's reader. */
+  unread: number
 }
 
 // ─── Persisted shapes ───────────────────────────────────────────────────────
@@ -205,6 +216,7 @@ export class WorkspaceEngine {
   private readonly interval: number
   private readonly freshness: number
   private readonly sleep: (ms: number) => Promise<void>
+  private readonly notify: ((change: LiveChange) => void) | null
 
   private loaded: Loaded | null = null
   private loading: Promise<void> | null = null
@@ -223,6 +235,7 @@ export class WorkspaceEngine {
     this.interval = deps.commitIntervalMs ?? 30_000
     this.freshness = deps.freshnessMs ?? 30_000
     this.sleep = deps.sleep ?? (ms => new Promise(resolve => setTimeout(resolve, ms)))
+    this.notify = deps.notify ?? null
   }
 
   // ─── Reading ──────────────────────────────────────────────────────────────
@@ -231,12 +244,17 @@ export class WorkspaceEngine {
     const m = await this.ready()
     if (!m) return { status: 'unavailable', message: this.unavailable?.message ?? 'Unavailable' }
     if (this.now() - m.meta.lastCheckedAt > this.freshness) await this.refresh()
-    const appCursor = (await this.persistence.get<Cursor>(`${CURSOR}${APP_CURSOR}`)) ?? null
     return {
       status: 'ok', version: m.meta.version, state: m.state, head: m.meta.base.commit, pending: m.pending.batches.length,
       lastError: m.meta.lastError, lastReplay: m.meta.lastReplay,
-      activity: { unread: newFor(APP_CURSOR, activityEntries(m.files), appCursor).length },
+      activity: { unread: await this.appUnread(m) },
     }
+  }
+
+  /** What a live socket is told when it opens, so a tab that reconnects catches up; null while unavailable. */
+  async live(): Promise<LiveChange | null> {
+    const m = await this.ready()
+    return m ? this.changeOf(m) : null
   }
 
   /** A view of the workspace for a reader (MCP): markdown plus data. */
@@ -269,6 +287,7 @@ export class WorkspaceEngine {
       const acknowledged = unread(entries, current).filter(e => !unread([e], position).length).length
       if (acknowledged === 0) return { status: 'ok', version, acknowledged: 0, cursor: current }
       await this.persistence.write({ [`${CURSOR}${cursorName}`]: position })
+      if (cursorName === APP_CURSOR) await this.announce(m)
       return { status: 'ok', version, acknowledged, cursor: position }
     })
   }
@@ -339,6 +358,7 @@ export class WorkspaceEngine {
         [...deletes, ...forgotten.map(id => `${OP}${id}`)],
       )
       await this.scheduleCommit(m)
+      await this.announce(m)
       return { status: 'applied', opId: batch.opId, duplicate: false, ...record }
     })
   }
@@ -532,6 +552,7 @@ export class WorkspaceEngine {
           await this.persistence.write({ meta: m.meta, pending: m.pending })
         })
         await this.scheduleCommit(m)
+        await this.announce(m)
         return { status: 'committed', version: m.meta.version, commit: committed.commit, batches: snap.count, rebased, replayed }
       }
 
@@ -638,6 +659,26 @@ export class WorkspaceEngine {
       { ...Object.fromEntries([...m.files].map(([p, c]) => [`${FILE}${p}`, c])), meta: m.meta, pending: m.pending, ...extra },
       deletes,
     )
+    await this.announce(m)
+  }
+
+  private async appUnread(m: Loaded): Promise<number> {
+    const cursor = (await this.persistence.get<Cursor>(`${CURSOR}${APP_CURSOR}`)) ?? null
+    return newFor(APP_CURSOR, activityEntries(m.files), cursor).length
+  }
+
+  private async changeOf(m: Loaded): Promise<LiveChange> {
+    return { version: m.meta.version, pending: m.pending.batches.length, unread: await this.appUnread(m) }
+  }
+
+  /** Tell open tabs something changed. Never fails a write: a socket that cannot be told refetches on its own. */
+  private async announce(m: Loaded): Promise<void> {
+    if (!this.notify) return
+    try {
+      this.notify(await this.changeOf(m))
+    } catch {
+      // A socket error is the socket's problem, not the write's.
+    }
   }
 
   private async defer(m: Loaded, error: unknown): Promise<FlushOutcome> {

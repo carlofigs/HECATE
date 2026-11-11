@@ -11,7 +11,7 @@ import { Miniflare, type Request as MiniflareRequest } from 'miniflare'
 import type { FakeGitHub } from '@hecate/github-store/testing'
 
 export const ORIGIN = 'https://hecate.test'
-const AUTH_SECRET = 'test-secret-that-is-long-enough-1234567890'
+export const AUTH_SECRET = 'test-secret-that-is-long-enough-1234567890'
 export const WEBHOOK_SECRET = 'hook-secret'
 
 let bundled: Promise<string> | null = null
