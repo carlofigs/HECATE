@@ -2,6 +2,26 @@
 
 Semver (G-01). Each entry lists the rule IDs it concerns.
 
+## [0.11.1] — 2026-11-11
+
+The pre-cutover audit ([`audits/2026-11-pre-cutover.md`](audits/2026-11-pre-cutover.md)): R-29's keyboard pass, done for every surface.
+
+### Fixed
+
+- **Focus returns to what opened a dialog** (R-06): `Dialog` and `ConfirmDialog` dropped it on the page body before.
+- **Focus returns from a menu** to its trigger, or to the moved card's own Move button after a move (R-06).
+- **The keyboard ring shows on menu items and the toast list** (R-05).
+- **The narrow Board's tab panels** are no longer an invisible tab stop (R-05, R-06).
+- **Try again, Mark all as read and Sign out** say they are working ("Trying…", "Marking as read…", "Signing out…") (R-25).
+- **Offline, one banner** says so, not two.
+
+### Added
+
+- **CI checks:**
+  - reflow, text spacing and outline on every page, and reflow at 640 px (200% zoom), in `layout.spec.ts`;
+  - every dialog and menu by keyboard, in `keyboard.spec.ts`;
+  - reduced motion, in `motion.spec.ts`.
+
 ## [0.11.0] — 2026-11-11
 
 ### Added
