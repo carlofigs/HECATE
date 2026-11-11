@@ -25,4 +25,32 @@ test('no credential reaches JavaScript or a request header', async ({ page, cont
   expect(visible.session).toEqual([])
   expect(visible.local).toEqual([['hecate:workspace', 'planning']])
   expect(authorised).toEqual([])
+
+  // The device copy (ADR 0009) holds the workspace, never the session's token.
+  const stored = async () => page.evaluate(
+    () =>
+      new Promise<Record<string, string>>((resolve, reject) => {
+        const open = indexedDB.open('hecate')
+        open.onerror = () => reject(open.error ?? new Error('no database'))
+        open.onsuccess = () => {
+          const db = open.result
+          const names = [...db.objectStoreNames]
+          const out: Record<string, string> = {}
+          const tx = db.transaction(names)
+          for (const name of names) {
+            const all = tx.objectStore(name).getAll()
+            all.onsuccess = () => void (out[name] = JSON.stringify(all.result))
+          }
+          tx.oncomplete = () => {
+            db.close()
+            resolve(out)
+          }
+        }
+      }),
+  )
+  await expect.poll(async () => Object.keys(await stored()).sort()).toEqual(['batches', 'session', 'snapshots'])
+  await expect.poll(async () => (await stored()).snapshots).toContain('"version"')
+  const token = cookies[0]?.value ?? ''
+  expect(token.length).toBeGreaterThan(20)
+  for (const [name, json] of Object.entries(await stored())) expect(json.includes(token), name).toBe(false)
 })

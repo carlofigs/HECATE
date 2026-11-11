@@ -16,6 +16,11 @@
  * - Refused: drop the batch, refetch, and say why.
  * - Offline or failing: keep it and retry with backoff.
  *
+ * The device copy (offline.ts, ADR 0009): each batch is kept on the device
+ * from the moment it is queued until the Worker answers, and each snapshot
+ * the Worker sends is kept too, so a reload offline shows the workspace with
+ * its unsent changes and sends them when the connection is back.
+ *
  * Live: the Worker tells an open tab `{ version, pending, unread }` on every
  * change (live.ts). A newer version means refetch; the same version updates
  * the counts in place. A newer version heard while a batch is in flight is
@@ -25,6 +30,7 @@ import { applyBatch, BatchInputError, prepareBatch, ulid, type WorkspaceState } 
 import { createStore, type StoreApi } from 'zustand/vanilla'
 import type { Api, ApplyAnswer, Failure, Me, Snapshot, WorkspaceList } from './api.ts'
 import type { LiveChange, LiveState } from './live.ts'
+import { noDeviceCopy, type OfflineStore } from './offline.ts'
 
 /** What the store needs from the Worker: the snapshot and the write path. Pages call the rest of the API themselves. */
 export type StoreServer = Pick<Api, 'me' | 'workspaces' | 'snapshot' | 'signOut' | 'applyOps'>
@@ -33,7 +39,8 @@ import { rememberWorkspace } from './workspace.ts'
 type Session =
   | { status: 'checking' }
   | { status: 'signed-out' }
-  | { status: 'signed-in'; me: Me }
+  /** `offline`: started from the device copy because the Worker could not be reached; confirmed on reconnect. */
+  | { status: 'signed-in'; me: Me; offline?: boolean }
   | { status: 'error'; failure: Failure }
 
 type Workspaces = { status: 'loading' } | { status: 'ready'; list: WorkspaceList } | { status: 'error'; failure: Failure }
@@ -67,6 +74,8 @@ export interface OpenWorkspace {
   sendFailure: Failure | null
   /** The live socket (live.ts): while it is open, changes made elsewhere arrive within a second or two. */
   live: 'off' | LiveState
+  /** The snapshot is the device copy, not yet confirmed by the Worker: its next answer is taken whatever its version. */
+  fromDevice: boolean
 }
 
 /** A message for the person using the app; the page decides how to show it (a toast). */
@@ -86,7 +95,7 @@ export interface AppState {
   start: () => Promise<void>
   openWorkspace: (dir: string) => Promise<void>
   refresh: () => Promise<void>
-  /** Refresh unless a check or a send is running, or the snapshot is younger than `minAgeMs`. */
+  /** Refresh unless a check or a send is running, or the snapshot is younger than `minAgeMs` and its last check worked. */
   refreshIfStale: (minAgeMs: number) => Promise<void>
   /** Applies ops to the open workspace now and queues them for the Worker. Refused at once if they cannot apply. */
   apply: (ops: unknown[], label: string) => LocalResult
@@ -96,7 +105,10 @@ export interface AppState {
   onLive: (dir: string, change: LiveChange) => void
   /** The live socket for `dir` connected, dropped, or ended with the session. */
   setLive: (dir: string, state: LiveState) => void
+  /** Signs out and clears HECATE from this device, unsent changes included (the page asks first). */
   signOut: () => Promise<void>
+  /** Whether unsent changes would survive closing this tab: false without a working device copy. */
+  keepsChanges: () => boolean
 }
 
 export type AppStore = StoreApi<AppState>
@@ -106,6 +118,10 @@ export interface StoreOptions {
   notify?: (notice: Notice) => void
   /** Waits before a retry; tests replace it. */
   sleep?: (ms: number) => Promise<void>
+  /** The copy kept on this device; by default nothing is kept. */
+  offline?: OfflineStore
+  /** Set when a sign-out could not reach the Worker, so the next start finishes it. */
+  signOutPending?: { get(): boolean; set(pending: boolean): void }
 }
 
 const RETRY_MS = [1_000, 2_000, 5_000, 10_000, 30_000]
@@ -135,9 +151,17 @@ export function createAppStore(api: StoreServer, options: StoreOptions = {}): Ap
   const now = options.now ?? Date.now
   const notify = options.notify ?? (() => {})
   const sleep = options.sleep ?? ((ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms)))
+  const offline = options.offline ?? noDeviceCopy()
+  let pendingFlag = false
+  const signOutPending = options.signOutPending ?? { get: () => pendingFlag, set: (on: boolean) => void (pendingFlag = on) }
 
   return createStore<AppState>()((set, get) => {
-    const signedOut = (): void => set({ session: { status: 'signed-out' }, open: null })
+    /** The session is over: forget who you are and every snapshot, but keep unsent batches for the next sign-in. */
+    const signedOut = (): void => {
+      void offline.forget()
+      set({ session: { status: 'signed-out' }, open: null })
+    }
+    const keep = (dir: string, snapshot: Snapshot): void => void offline.saveSnapshot(dir, snapshot)
     /** Updates the open workspace if it is still `dir`. */
     const update = (dir: string, patch: (open: OpenWorkspace) => Partial<OpenWorkspace>): void => {
       const open = get().open
@@ -175,12 +199,16 @@ export function createAppStore(api: StoreServer, options: StoreOptions = {}): Ap
         if (local?.ok) {
           const snapshot: Snapshot = { ...base, state: local.state, version: answer.version }
           update(dir, () => ({ snapshot, queue: rest, view: fold(local.state, rest), sending: false, sendFailure: null }))
+          // The snapshot that includes it is kept before the batch is let go, so the device copy never lacks it.
+          void offline.saveSnapshot(dir, snapshot).then(() => offline.removeBatch(batch.opId))
           // Another change was announced while this one was on its way: fetch it now.
           if (heard > answer.version) await get().refresh()
         } else {
           // Someone else's change landed first, or this was a retry the Worker had already applied: take its state.
           update(dir, () => ({ queue: rest, sending: false, sendFailure: null }))
           await get().refresh()
+          // If that refresh failed, the batch stays on the device; sent again after a reload, it is a harmless duplicate.
+          if (get().open?.status === 'ready') void offline.removeBatch(batch.opId)
         }
         return send(dir)
       }
@@ -188,6 +216,7 @@ export function createAppStore(api: StoreServer, options: StoreOptions = {}): Ap
       if (answer.kind === 'rejected') {
         attempt = 0
         notify({ tone: 'danger', title: `Couldn't ${batch.label.charAt(0).toLowerCase()}${batch.label.slice(1)}`, description: `${answer.message}. Nothing was changed.` })
+        void offline.removeBatch(batch.opId)
         update(dir, o => ({ queue: o.queue.slice(1), sending: false, sendFailure: null }))
         await get().refresh()
         return send(dir)
@@ -211,12 +240,24 @@ export function createAppStore(api: StoreServer, options: StoreOptions = {}): Ap
       open: null,
 
       async start() {
+        // A sign-out that could not reach the Worker is finished first.
+        if (signOutPending.get()) {
+          const out = await api.signOut()
+          if (out.kind === 'ok' || out.kind === 'signed-out') signOutPending.set(false)
+          return signedOut()
+        }
         const me = await api.me()
         if (me.kind === 'signed-out') return signedOut()
-        if (me.kind !== 'ok') return set({ session: { status: 'error', failure: me } })
+        if (me.kind !== 'ok') {
+          // The Worker cannot be reached: start from the device copy if there is one.
+          const copy = await offline.loadSession()
+          if (copy) return set({ session: { status: 'signed-in', me: copy.me, offline: true }, workspaces: { status: 'ready', list: copy.workspaces } })
+          return set({ session: { status: 'error', failure: me } })
+        }
         set({ session: { status: 'signed-in', me: me.data } })
         const list = await api.workspaces()
         if (list.kind === 'signed-out') return signedOut()
+        if (list.kind === 'ok') void offline.saveSession(me.data, list.data)
         set({ workspaces: list.kind === 'ok' ? { status: 'ready', list: list.data } : { status: 'error', failure: list } })
       },
 
@@ -225,7 +266,18 @@ export function createAppStore(api: StoreServer, options: StoreOptions = {}): Ap
         if (current?.dir === dir && current.snapshot) return get().refresh()
         attempt = 0
         heard = 0
-        set({ open: { dir, snapshot: null, view: null, fetchedAt: null, status: 'loading', failure: null, queue: [], sending: false, sendFailure: null, live: 'off' } })
+        set({ open: { dir, snapshot: null, view: null, fetchedAt: null, status: 'loading', failure: null, queue: [], sending: false, sendFailure: null, live: 'off', fromDevice: false } })
+        // The device copy first, so the page shows at once, offline too; then the Worker's answer.
+        const copy = await offline.loadWorkspace(dir)
+        if (get().open?.dir !== dir) return
+        if (copy.snapshot || copy.batches.length > 0) {
+          const queue: PendingBatch[] = copy.batches.map(b => ({ opId: b.opId, ops: b.ops, at: b.at, label: b.label }))
+          const snapshot = copy.snapshot
+          update(dir, o => ({
+            queue: [...queue, ...o.queue.filter(b => !queue.some(q => q.opId === b.opId))],
+            ...(snapshot ? { snapshot, view: fold(snapshot.state, queue), fetchedAt: copy.savedAt, status: 'refreshing' as const, fromDevice: true } : {}),
+          }))
+        }
         await get().refresh()
       },
 
@@ -241,13 +293,16 @@ export function createAppStore(api: StoreServer, options: StoreOptions = {}): Ap
         if (result.kind === 'ok') {
           rememberWorkspace(open.dir)
           // A refresh that set off before a change was confirmed can answer after it: never go back to an older version.
-          const held = get().open?.snapshot
-          if (held && result.data.version < held.version) {
+          // A device copy is the exception: the Worker's versions start again if its storage is ever reset.
+          const held = get().open
+          if (held?.snapshot && !held.fromDevice && result.data.version < held.snapshot.version) {
             update(open.dir, () => ({ fetchedAt: now(), status: 'ready', failure: null }))
             return
           }
-          update(open.dir, o => ({ snapshot: result.data, view: fold(result.data.state, o.queue), fetchedAt: now(), status: 'ready', failure: null }))
-          if (latest.queue.length > 0 && !latest.sending) void send(open.dir)
+          update(open.dir, o => ({ snapshot: result.data, view: fold(result.data.state, o.queue), fetchedAt: now(), status: 'ready', failure: null, fromDevice: false }))
+          keep(open.dir, result.data)
+          const queued = get().open
+          if (queued && queued.queue.length > 0 && !queued.sending) void send(open.dir)
           return
         }
         update(open.dir, o => ({ status: o.snapshot ? 'stale' : 'error', failure: result }))
@@ -256,7 +311,8 @@ export function createAppStore(api: StoreServer, options: StoreOptions = {}): Ap
       async refreshIfStale(minAgeMs) {
         const open = get().open
         if (!open || open.status === 'loading' || open.status === 'refreshing' || open.sending) return
-        if (open.fetchedAt !== null && now() - open.fetchedAt < minAgeMs) return
+        // A snapshot whose last check failed (offline, or the device copy) is never fresh enough.
+        if (open.status !== 'stale' && open.fetchedAt !== null && now() - open.fetchedAt < minAgeMs) return
         await get().refresh()
       },
 
@@ -278,6 +334,7 @@ export function createAppStore(api: StoreServer, options: StoreOptions = {}): Ap
         const result = applyLocal(open.view, batch)
         if (!result.ok) return { ok: false, message: failureMessage(result) }
         update(open.dir, o => ({ queue: [...o.queue, batch], view: result.state }))
+        void offline.addBatch({ dir: open.dir, ...batch })
         void send(open.dir)
         return { ok: true, keyMap: result.keyMap }
       },
@@ -312,9 +369,14 @@ export function createAppStore(api: StoreServer, options: StoreOptions = {}): Ap
       },
 
       async signOut() {
-        await api.signOut()
+        await offline.clear()
+        const out = await api.signOut()
+        // Offline, the cookie cannot be cleared yet: the next start finishes the sign-out.
+        if (out.kind !== 'ok' && out.kind !== 'signed-out') signOutPending.set(true)
         signedOut()
       },
+
+      keepsChanges: () => offline.persistent(),
     }
   })
 }

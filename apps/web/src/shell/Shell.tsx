@@ -1,6 +1,6 @@
-import { Badge, Banner, IconButton, SelectField, Toaster, VisuallyHidden, cn } from '@hecate/ui'
+import { Badge, Banner, ConfirmDialog, IconButton, SelectField, Toaster, VisuallyHidden, cn } from '@hecate/ui'
 import { LogOut, MoreHorizontal } from 'lucide-react'
-import { useEffect, type MouseEvent } from 'react'
+import { useEffect, useState, type MouseEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { appStore, useApp } from '../appStore.ts'
 import { connectLive } from '../live.ts'
@@ -96,13 +96,16 @@ export function Shell() {
   const inAppLinks = useInAppLinks()
   const online = useOnline()
   const needRefresh = useNeedRefresh()
-  const unsent = useApp(s => (s.open?.queue.length ?? 0) > 0)
+  const waiting = useApp(s => s.open?.queue.length ?? 0)
+  const unsent = waiting > 0
+  const [confirmSignOut, setConfirmSignOut] = useState(false)
 
-  // Never lose input (M-app-06): changes not yet sent live in this tab, so ask before it closes or reloads.
+  // Never lose input (M-app-06): unsent changes are kept on this device (ADR 0009). Only where it cannot keep them
+  // (a private window, blocked site data) do they live in this tab alone, so then ask before it closes or reloads.
   useEffect(() => {
     if (!unsent) return
     const warn = (event: BeforeUnloadEvent): void => {
-      event.preventDefault()
+      if (!appStore.getState().keepsChanges()) event.preventDefault()
     }
     window.addEventListener('beforeunload', warn)
     return () => window.removeEventListener('beforeunload', warn)
@@ -126,9 +129,11 @@ export function Shell() {
     const check = (): void => {
       if (document.visibilityState === 'visible') void appStore.getState().refreshIfStale(MIN_AGE_MS)
     }
-    // Back online: send what is waiting now, not after the backoff, and catch up.
+    // Back online: confirm a session started from the device copy, send what is waiting now, and catch up.
     const reconnect = (): void => {
-      appStore.getState().retryNow()
+      const { session, start, retryNow } = appStore.getState()
+      if (session.status === 'signed-in' && session.offline) void start()
+      retryNow()
       check()
     }
     // The poll is the fallback: while the live socket is open it has nothing to add.
@@ -174,7 +179,11 @@ export function Shell() {
               options={options.map(w => ({ value: w.dir, label: workspaceLabel(w) }))}
               onChange={e => void navigate(`/w/${encodeURIComponent(e.target.value)}/${page}`)}
             />
-            <IconButton label="Sign out" icon={<LogOut aria-hidden="true" className="size-(--size-icon-md)" />} onClick={() => void signOut()} />
+            <IconButton
+              label="Sign out"
+              icon={<LogOut aria-hidden="true" className="size-(--size-icon-md)" />}
+              onClick={() => (unsent ? setConfirmSignOut(true) : void signOut())}
+            />
           </div>
         </div>
       </header>
@@ -184,7 +193,9 @@ export function Shell() {
           {needRefresh ? <UpdateBanner onReload={reloadToUpdate} /> : null}
           {online ? null : (
             <Banner tone="warning" title="You're offline">
-              HECATE shows what it had when the connection dropped. Changes you make are kept and saved when you reconnect; keep this tab open until they are.
+              {appStore.getState().keepsChanges()
+                ? 'HECATE shows what it had when the connection dropped. Changes you make are kept on this device and saved when you reconnect.'
+                : 'HECATE shows what it had when the connection dropped. Changes you make are kept and saved when you reconnect; keep this tab open until they are.'}
             </Banner>
           )}
           <Outlet />
@@ -195,6 +206,16 @@ export function Shell() {
         <div ref={setBottomActionSlot} />
       </div>
       <Toaster toasts={toasts} onDismiss={dismissToast} />
+      <ConfirmDialog
+        open={confirmSignOut && unsent}
+        onOpenChange={setConfirmSignOut}
+        title={`Sign out and lose ${changes(waiting)}?`}
+        description={`${waiting === 1 ? "1 change hasn't" : `${waiting} changes haven't`} been sent: you're offline, or HECATE can't be reached. Signing out clears HECATE from this device, ${waiting === 1 ? 'that change' : 'those changes'} included.`}
+        confirmLabel="Sign out"
+        onConfirm={() => void signOut()}
+      />
     </div>
   )
 }
+
+const changes = (n: number): string => (n === 1 ? '1 change' : `${n} changes`)

@@ -45,7 +45,7 @@ None.
 | sync: checking | "Checking…" with a refresh icon | | |
 | sync: up to date | "Up to date" with a cloud-check icon while the live socket is open; "Up to date · 10:42" (the last check) while it is not | | |
 | sync: saving | "Saving to GitHub (n)", for changes not yet committed | | |
-| sync: offline | "Offline" with a wifi-off icon | | |
+| sync: offline | "Offline · as of 10:42" (the snapshot's time, from the device copy after a reload) with a wifi-off icon; "Offline · 1 change waiting" while changes wait | | |
 | sync: failed | "Couldn't load" with a cloud-off icon, when HECATE answered with an error | | |
 | disabled, loading, error, selected | — | — | Covered by the sync states and PageShell |
 
@@ -56,9 +56,10 @@ None.
 - **Refreshing:** the open workspace also refreshes on window focus and when the page becomes visible, at most once in 5 s. Every 60 s while visible it checks too, but only while the live socket is down.
   - When the connection returns, waiting changes are sent at once (`retryNow`) and the page catches up.
 - **Offline:**
-  - the offline banner shows while the browser is offline;
+  - the offline banner shows while the browser is offline, and says changes are kept on this device;
   - the sync status counts the changes waiting;
-  - while any are waiting, closing or reloading the tab asks first (`beforeunload`; M-app-06).
+  - a reload opens the workspace from the device copy (ADR 0009), its unsent changes included, and sends them on reconnect. Only where the device cannot keep them (a private window, blocked site data) does closing or reloading the tab ask first (`beforeunload`; M-app-06).
+- **Sign out** clears HECATE from the device. With changes still waiting it asks first, with a `ConfirmDialog`: "Sign out and lose 1 change?", focus on Cancel. Offline, the sign-out finishes at the next start.
 - **Updates:** the service worker is registered at start-up (`shell/updates.ts`) and checks for a new version on focus and hourly. A waiting version is offered with the update banner, never forced.
 - **Switching workspace** keeps the current page (Today stays Today).
 - **Responsive (C-10):** the header wraps. The controls group moves under the brand and navigation on narrow screens, and the sticky header stays one tap from every control.
@@ -117,3 +118,4 @@ None.
 - 0.8.0: People. With five pages the header wraps below about 1,000 px: the controls move to a second row.
 - 0.9.0: Activity, the sixth page. Its header link, and its link on More, show how many entries are new ("Activity 7 new").
 - 0.10.0: Live updates. The sync status drops the time while the live socket is open; the 60 s poll runs only while it is down.
+- 0.11.0: The device copy. An offline reload opens the workspace ("Offline · as of 10:42") with its unsent changes; the unload prompt only where the device cannot keep them; sign-out asks first while changes wait.

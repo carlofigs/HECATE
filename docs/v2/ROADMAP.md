@@ -412,8 +412,15 @@ Delivered as sequential PRs:
       is checked like a write (cookie and Origin), carries no workspace data,
       and closes at session expiry (ADR 0003 amendment). The 60 s poll is now
       the fallback.
-- [ ] `feat/offline-snapshot` — the snapshot and the unsent changes survive a
-      reload while offline.
+- [x] `feat/offline-snapshot` — a copy of HECATE on the device (IndexedDB,
+      ADR 0009): who is signed in, each opened workspace's snapshot and every
+      unsent batch, so an offline reload opens the workspace with its unsent
+      changes and sends them on reconnect. Sign-out clears it, asking first
+      while changes wait; an offline sign-out finishes at the next start.
+
+**P6 is complete in code.** Its acceptance (two tabs within 2 s; an offline
+reload keeping the snapshot and unsent changes) is re-checked on preview, on a
+real phone, once the owner's setup is done.
 
 ### P5 / P6 acceptance
 

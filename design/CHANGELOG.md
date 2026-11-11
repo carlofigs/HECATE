@@ -2,6 +2,18 @@
 
 Semver (G-01). Each entry lists the rule IDs it concerns.
 
+## [0.11.0] — 2026-11-11
+
+### Added
+
+- **Offline reload** (M-app-06): the workspace opens from the copy kept on the device, with its unsent changes, which are sent on reconnect. The sync status says "Offline · as of 10:42".
+- **Sign-out confirmation** (C-05): with changes still waiting, "Sign out and lose 1 change?" before the device is cleared.
+
+### Changed
+
+- **Unload prompt:** only where the device cannot keep unsent changes (a private window, blocked site data).
+- **Offline banner:** says changes are kept on this device.
+
 ## [0.10.0] — 2026-11-11
 
 ### Added
