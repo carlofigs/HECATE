@@ -2,6 +2,17 @@
 
 Semver (G-01). Each entry lists the rule IDs it concerns.
 
+## [0.9.0] — 2026-11-11
+
+### Added
+
+- **The Activity page** (C-02, C-05, at `candidate`). It shows the log by day, marks entries **New** since you last looked, and has **Mark all as read**, **Load older** and **Add to log** (a flag or a session).
+- **New counts:** "Activity 7 new" in the header, and on More's Activity link.
+
+### Changed
+
+- **Navigation:** Activity is the sixth page.
+
 ## [0.8.0] — 2026-11-10
 
 ### Added

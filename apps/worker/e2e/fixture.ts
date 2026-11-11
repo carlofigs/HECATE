@@ -6,7 +6,7 @@
  * Pinned to Wednesday 11 November 2026, 09:00 in Sydney: sprint 7 runs from
  * Wednesday 4 November, so this is its day 8 of 14.
  */
-import { applyBatch, createUlid, CURRENT_VERSION, emptyState, filesFromState, parseFile, prepareBatch } from '@hecate/core'
+import { applyBatch, createUlid, CURRENT_VERSION, emptyState, filesFromState, isoWeekKey, parseFile, prepareBatch, serializeActivityEntry } from '@hecate/core'
 
 /** The moment every e2e page is pinned to. */
 export const NOW = new Date('2026-11-10T22:00:00.000Z')
@@ -29,19 +29,25 @@ const STATUSES = [
 ]
 
 /** A workspace built from batches of ops, each applied at its own time (a sprint can then be closed on what came before). */
-function build(settings: { name: string; sprint: unknown; policy?: 'open' | 'sanitised' }, batches: { at: string; ops: unknown[] }[]): Record<string, string> {
+function build(settings: { name: string; sprint: unknown; policy?: 'open' | 'sanitised' }, batches: { at: string; ops: unknown[]; actor?: 'import' | 'claude' }[]): Record<string, string> {
   const workspace = parseFile('workspace', {
     schemaVersion: CURRENT_VERSION.workspace, name: settings.name, timezone: 'Australia/Sydney', policy: settings.policy ?? 'open',
     workdays: [1, 2, 3, 4, 5], sprint: settings.sprint, statuses: STATUSES, tags: [], areas: [],
   })
   let state = emptyState(workspace, batches[0]?.at ?? AT)
-  batches.forEach(({ at, ops }, i) => {
-    const batch = prepareBatch({ ops }, { opId: `seed-${settings.name}-${i}`, at, actor: 'import', newId: createUlid({ now: () => Date.parse(at) }) })
+  const activity: Record<string, string> = {}
+  batches.forEach(({ at, ops, actor = 'import' }, i) => {
+    const batch = prepareBatch({ ops }, { opId: `seed-${settings.name}-${i}`, at, actor, newId: createUlid({ now: () => Date.parse(at) }) })
     const result = applyBatch(state, batch)
     if (!result.ok) throw new Error(JSON.stringify(result.errors, null, 2))
     state = result.state
+    // The activity the seed produced, appended to its weekly log as the Worker does.
+    for (const entry of result.activity) {
+      const path = `activity/${isoWeekKey(entry.date)}.jsonl`
+      activity[path] = `${activity[path] ?? ''}${serializeActivityEntry(entry)}`
+    }
   })
-  return filesFromState(state)
+  return { ...filesFromState(state), ...activity }
 }
 
 /** "Planning": everything Today can show. A1–A6, B1. */
@@ -87,7 +93,11 @@ function planning(): Record<string, string> {
     },
     { type: 'focus.setCallouts', weekOf: WEEK, items: [{ lead: 'Sprint review on Tuesday.', text: 'Bring the scorecard numbers.' }] },
     { type: 'keepInMind.add', lead: 'Leave', text: 'Alex is away 16–18 November: hand over A1 before then.' },
-  ] }])
+  ] }, {
+    // Claude's note from a later session: the log's one flag.
+    at: '2026-11-10T06:00:00.000Z', actor: 'claude',
+    ops: [{ type: 'activity.log', entry: 'flag', delta: 'Scorecard review moved to Friday', keys: ['A1'] }],
+  }])
 }
 
 /** "Club": a workspace with tasks but no plan, schedule or sprint, for Today's empty states. */

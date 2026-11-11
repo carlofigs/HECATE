@@ -33,7 +33,7 @@ import {
 import { RateLimitError, type GitStore, type Head } from '@hecate/github-store'
 import { commitMessage, type CommittedBatch } from './commit-message.ts'
 import type { AlarmClock, Persistence } from './persistence.ts'
-import { activityEntries, CURSOR_PATTERN, runQuery, unread, type Cursor, type ReadQuery } from './queries.ts'
+import { activityEntries, CURSOR_PATTERN, newFor, runQuery, unread, type Cursor, type ReadQuery } from './queries.ts'
 
 // ─── Public types ───────────────────────────────────────────────────────────
 
@@ -87,6 +87,8 @@ export type Snapshot =
     pending: number
     lastError: { at: number; message: string } | null
     lastReplay: ReplayReport | null
+    /** The web app's reader: how many activity entries are new to it (ADR 0002, cursors). */
+    activity: { unread: number }
   }
   | { status: 'unavailable'; message: string }
 
@@ -170,6 +172,8 @@ const RETRY_MS = 60_000
 const FILE = 'file:'
 const OP = 'op:'
 const CURSOR = 'cursor:'
+/** The web app's activity reader; MCP's is `claude` (mcp/server.ts). */
+export const APP_CURSOR = 'app'
 const FOCUS_WEEK = /^focus\/(\d{4}-\d{2}-\d{2})\.json$/
 
 const mergeReports = (a: ReplayReport | null, b: ReplayReport): ReplayReport =>
@@ -227,9 +231,11 @@ export class WorkspaceEngine {
     const m = await this.ready()
     if (!m) return { status: 'unavailable', message: this.unavailable?.message ?? 'Unavailable' }
     if (this.now() - m.meta.lastCheckedAt > this.freshness) await this.refresh()
+    const appCursor = (await this.persistence.get<Cursor>(`${CURSOR}${APP_CURSOR}`)) ?? null
     return {
       status: 'ok', version: m.meta.version, state: m.state, head: m.meta.base.commit, pending: m.pending.batches.length,
       lastError: m.meta.lastError, lastReplay: m.meta.lastReplay,
+      activity: { unread: newFor(APP_CURSOR, activityEntries(m.files), appCursor).length },
     }
   }
 
@@ -238,7 +244,7 @@ export class WorkspaceEngine {
     const m = await this.ready()
     if (!m) return { status: 'unavailable', message: this.unavailable?.message ?? 'Unavailable' }
     if (this.now() - m.meta.lastCheckedAt > this.freshness) await this.refresh()
-    const cursorName = query.kind === 'briefing' || query.kind === 'activity' ? query.cursor : null
+    const cursorName = query.kind === 'briefing' || query.kind === 'activity' || query.kind === 'feed' ? query.cursor : null
     if (cursorName !== null && !CURSOR_PATTERN.test(cursorName)) return { status: 'not-found', version: m.meta.version, message: `"${cursorName}" is not a cursor name (a-z, 0-9, -)` }
     const cursor = cursorName === null ? null : ((await this.persistence.get<Cursor>(`${CURSOR}${cursorName}`)) ?? null)
     const result = runQuery(m.state, query, { now: this.now(), activity: () => activityEntries(m.files), cursor })

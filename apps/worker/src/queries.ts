@@ -25,6 +25,8 @@ export type ReadQuery =
   | { kind: 'search'; query: string; limit?: number }
   | { kind: 'focus'; date?: string }
   | { kind: 'activity'; cursor: string; limit?: number }
+  /** The whole log a page at a time, newest first, with the reader's cursor: the web app's Activity page. */
+  | { kind: 'feed'; cursor: string; limit?: number; before?: string }
 
 export type QueryResult = { found: true; text: string; data: Record<string, unknown> } | { found: false; message: string }
 
@@ -48,6 +50,21 @@ export function activityEntries(files: ReadonlyMap<string, string>): ActivityEnt
 /** Entries the cursor has not reached. */
 export const unread = (entries: readonly ActivityEntry[], cursor: Cursor | null): ActivityEntry[] =>
   cursor === null ? [...entries] : entries.filter(e => e.at > cursor.at || (e.at === cursor.at && e.id > cursor.id))
+
+/**
+ * Readers whose own entries are never new to them. The app's reader is the
+ * person using it, who made those changes; Claude's cursor counts everything,
+ * since a session needs to see what it wrote before as well.
+ */
+const OWN_ACTOR: Readonly<Record<string, ActivityEntry['actor']>> = { app: 'app' }
+
+/** What a named reader has not seen: past its cursor, and not written by itself. */
+export function newFor(cursorName: string, entries: readonly ActivityEntry[], cursor: Cursor | null): ActivityEntry[] {
+  const own = OWN_ACTOR[cursorName]
+  return unread(entries, cursor).filter(e => e.actor !== own)
+}
+
+const FEED_LIMIT = 200
 
 const plural = (n: number, one: string, many = `${one}s`): string => `${n} ${n === 1 ? one : many}`
 
@@ -85,6 +102,19 @@ export function runQuery(state: WorkspaceState, query: ReadQuery, context: { now
       const newest = fresh.slice(-limit).reverse()
       const more = fresh.length > newest.length ? `- … ${fresh.length - newest.length} older unread\n` : ''
       return { found: true, text: `${renderActivity(newest)}${more}`, data: { entries: newest, unread: fresh.length, cursor: query.cursor } }
+    }
+    case 'feed': {
+      const all = context.activity()
+      const end = query.before === undefined ? all.length : all.findIndex(e => e.id === query.before)
+      if (end < 0) return { found: false, message: `No activity entry ${query.before ?? ''}` }
+      const limit = Math.min(FEED_LIMIT, Math.max(1, query.limit ?? 50))
+      const entries = all.slice(Math.max(0, end - limit), end).reverse()
+      const fresh = newFor(query.cursor, all, context.cursor)
+      return {
+        found: true,
+        text: renderActivity(entries),
+        data: { entries, cursor: context.cursor, unread: fresh.length, more: end > limit },
+      }
     }
     default: {
       const never: never = query

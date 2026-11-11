@@ -102,3 +102,22 @@ window gathered, and reverting that commit would undo unrelated edits too.
 - **The limit.** Commits still go through `flush()`. If GitHub is unavailable,
   the close waits with the usual retries, and a change applied in the meantime
   joins its commit. The close itself is never lost or split.
+
+## Amendment — two activity readers (Nov 2026, with `feat/web-activity`)
+
+The Durable Object's activity read cursors (see above) now have two readers.
+The owner chose to keep them apart.
+
+- **`claude`** is MCP's reader (`get_briefing`, `get_activity`,
+  `ack_activity`). It counts every entry after its cursor, including its own,
+  since a session needs to see what an earlier one wrote. Unchanged.
+- **`app`** is the web app's reader (`GET /api/workspaces/:dir/activity`,
+  `POST …/activity/ack`). It uses the same cursor mechanics (`ackActivity`),
+  but entries written by the app itself are never new to it: the person
+  reading made those changes. The snapshot carries its count
+  (`activity.unread`).
+- **Independent.** Acknowledging in the app never moves Claude's cursor, so
+  Claude's next briefing still says what changed in the app; and the
+  reverse.
+- Cursors stay in Durable Object storage, never in git: reading is not a
+  change to the data.

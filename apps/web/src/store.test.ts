@@ -1,7 +1,7 @@
 import { applyBatch, CURRENT_VERSION, emptyState, parseFile, prepareBatch, type WorkspaceState } from '@hecate/core'
 import { describe, expect, it } from 'vitest'
-import type { Api, ApplyAnswer, Outcome, Snapshot } from './api.ts'
-import { createAppStore, type Notice } from './store.ts'
+import type { ApplyAnswer, Outcome, Snapshot } from './api.ts'
+import { createAppStore, type Notice, type StoreServer as Api } from './store.ts'
 
 const snapshot = (version: number): Snapshot => ({ version, state: {} as Snapshot['state'], pending: 0, lastError: null })
 

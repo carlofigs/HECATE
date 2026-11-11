@@ -64,7 +64,7 @@ None.
 - **Responsive (C-10):** the header wraps. The controls group moves under the brand and navigation on narrow screens, and the sticky header stays one tap from every control.
 - **Navigation:** Today, Board, Projects and Sprint in the header from `md`; below it, a sticky bottom bar (M-app-07). Only one copy is ever displayed, so there is one `Main` navigation landmark at a time. The pages are listed once, in `apps/web/src/shell/pages.ts`.
   - **In the bottom bar** each page is an icon over a `text.caption` label, at least `size.target.default` wide. It shows Today, Board and **More**, which with the page's action fits at 320 px (the e2e suite checks the bar never overflows on any page).
-  - **More** is a page, not a menu: plain links to the pages the bar has no room for (Projects, Sprint and People; Activity next), each with a line on what it is for. It shows as current on those pages too; `aria-current` stays on More's own page.
+  - **More** is a page, not a menu: plain links to the pages the bar has no room for (Projects, Sprint, People and Activity), each with a line on what it is for. It shows as current on those pages too; `aria-current` stays on More's own page.
   - **The workspace switcher** keeps the section: switching on a project page opens the other workspace's Projects.
 - **Bottom bar:** below `md`, it also holds the page's primary action (the Board's **New task**) in a slot the page fills.
 - **In-app links:** same-origin links to `/w/…` inside the page navigate without reloading (`useInAppLinks`).
@@ -115,3 +115,4 @@ None.
 - 0.6.0: Projects in the navigation; the compact bottom bar; the switcher keeps the section.
 - 0.7.0: Sprint in the navigation; More, a page of the pages the bottom bar has no room for.
 - 0.8.0: People. With five pages the header wraps below about 1,000 px: the controls move to a second row.
+- 0.9.0: Activity, the sixth page. Its header link, and its link on More, show how many entries are new ("Activity 7 new").

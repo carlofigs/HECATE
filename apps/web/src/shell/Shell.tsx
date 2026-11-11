@@ -1,4 +1,4 @@
-import { Banner, IconButton, SelectField, Toaster, cn } from '@hecate/ui'
+import { Badge, Banner, IconButton, SelectField, Toaster, VisuallyHidden, cn } from '@hecate/ui'
 import { LogOut, MoreHorizontal } from 'lucide-react'
 import { useEffect, type MouseEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
@@ -27,8 +27,19 @@ const navClass = (compact: boolean) => ({ isActive }: { isActive: boolean }): st
   )
 
 /** The pages. One list for both placements: the header from `md`, the bottom bar below it (M-app-02, M-app-07). */
+/** How many activity entries are new to you, in words for a screen reader ("3 new"). */
+export function NewCount({ n }: { n: number }) {
+  return (
+    <Badge tone="accent">
+      {n}
+      <VisuallyHidden> new</VisuallyHidden>
+    </Badge>
+  )
+}
+
 function MainNav({ workspace, compact = false, className }: { workspace: string; compact?: boolean; className?: string }) {
   const base = `/w/${encodeURIComponent(workspace)}`
+  const unread = useApp(s => s.open?.snapshot?.activity?.unread ?? 0)
   const { pathname } = useLocation()
   const shown = compact ? PAGES.slice(0, IN_BAR) : PAGES
   // "More" stands for every page it lists: it shows as current on them too (aria-current stays on More's own page).
@@ -41,6 +52,7 @@ function MainNav({ workspace, compact = false, className }: { workspace: string;
             <NavLink to={`${base}/${path}`} className={navClass(compact)}>
               <Icon aria-hidden="true" className="size-(--size-icon-md)" />
               {label}
+              {path === 'activity' && unread > 0 ? <NewCount n={unread} /> : null}
             </NavLink>
           </li>
         ))}

@@ -19,6 +19,9 @@
 import { applyBatch, BatchInputError, prepareBatch, ulid, type WorkspaceState } from '@hecate/core'
 import { createStore, type StoreApi } from 'zustand/vanilla'
 import type { Api, ApplyAnswer, Failure, Me, Snapshot, WorkspaceList } from './api.ts'
+
+/** What the store needs from the Worker: the snapshot and the write path. Pages call the rest of the API themselves. */
+export type StoreServer = Pick<Api, 'me' | 'workspaces' | 'snapshot' | 'signOut' | 'applyOps'>
 import { rememberWorkspace } from './workspace.ts'
 
 type Session =
@@ -116,7 +119,7 @@ function fold(state: WorkspaceState, queue: readonly PendingBatch[]): WorkspaceS
   }, state)
 }
 
-export function createAppStore(api: Api, options: StoreOptions = {}): AppStore {
+export function createAppStore(api: StoreServer, options: StoreOptions = {}): AppStore {
   const now = options.now ?? Date.now
   const notify = options.notify ?? (() => {})
   const sleep = options.sleep ?? ((ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms)))

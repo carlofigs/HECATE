@@ -5,7 +5,7 @@
  * Object as ops with actor `app`.
  */
 
-import type { ApplyOutcome } from '../engine.ts'
+import { APP_CURSOR, type ApplyOutcome } from '../engine.ts'
 import type { AuthSettings } from '../auth/config.ts'
 import { SESSION_COOKIE, readCookie, verifyToken, type Session } from '../auth/session.ts'
 import type { WorkspaceList } from '../workspaces.ts'
@@ -43,7 +43,7 @@ export async function handleApi(request: Request, deps: ApiDeps): Promise<Respon
   if (path === '/api/me' && !write) return json({ userId: session.sub, login: session.login })
   if (path === '/api/workspaces' && !write) return json({ workspaces: await deps.workspaces.get(), default: deps.defaultWorkspace ?? null })
 
-  const m = /^\/api\/workspaces\/([^/]+)(\/ops|\/flush)?$/.exec(path)
+  const m = /^\/api\/workspaces\/([^/]+)(\/ops|\/flush|\/activity|\/activity\/ack)?$/.exec(path)
   if (!m) return json({ error: 'Not found' }, 404)
   const dir = decodeURIComponent(m[1] as string)
   if (!(await deps.workspaces.has(dir))) return json({ error: `No workspace "${dir}"` }, 404)
@@ -54,6 +54,29 @@ export async function handleApi(request: Request, deps: ApiDeps): Promise<Respon
     return json(snapshot, snapshot.status === 'ok' ? 200 : 503)
   }
   if (m[2] === '/flush' && request.method === 'POST') return json(await workspace.flush(dir))
+  // The app's own activity reader (ADR 0002): the same cursor mechanics as MCP's ack_activity, under the name `app`.
+  if (m[2] === '/activity' && !write) {
+    const params = new URL(request.url).searchParams
+    const limit = Number.parseInt(params.get('limit') ?? '', 10)
+    const before = params.get('before')
+    const outcome = await workspace.read(dir, {
+      kind: 'feed', cursor: APP_CURSOR, ...(Number.isFinite(limit) ? { limit } : {}), ...(before ? { before } : {}),
+    })
+    if (outcome.status === 'ok') return json({ version: outcome.version, ...outcome.data })
+    return json({ error: outcome.message }, outcome.status === 'not-found' ? 404 : 503)
+  }
+  if (m[2] === '/activity/ack' && request.method === 'POST') {
+    let body: { upTo?: unknown } = {}
+    try {
+      const parsed: unknown = await request.json()
+      if (parsed && typeof parsed === 'object') body = parsed
+    } catch {
+      // No body: acknowledge everything.
+    }
+    const outcome = await workspace.ackActivity(dir, APP_CURSOR, typeof body.upTo === 'string' ? body.upTo : undefined)
+    if (outcome.status === 'ok') return json(outcome)
+    return json({ error: outcome.message }, outcome.status === 'not-found' ? 404 : 503)
+  }
   if (m[2] === '/ops' && request.method === 'POST') {
     let body: { ops?: unknown; opId?: unknown; dryRun?: unknown; ifVersion?: unknown }
     try {
