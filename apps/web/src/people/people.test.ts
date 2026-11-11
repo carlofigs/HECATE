@@ -1,7 +1,7 @@
 import { applyBatch, CURRENT_VERSION, emptyState, parseFile, prepareBatch, type WorkspaceState } from '@hecate/core'
 import { describe, expect, it } from 'vitest'
 import {
-  emptyLeaveForm, emptyPersonForm, emptyTermForm, glossary, leaveForm, personForm, personOps, removeLeaveOps, removePersonOps, removeTermOps, restoreLeaveOps,
+  emptyLeaveForm, emptyPersonForm, emptyTermForm, glossary, leaveForm, personForm, personOps, removalDescription, removeLeaveOps, removePersonOps, removeTermOps, restoreLeaveOps,
   restoreTermOps, saveLeaveOps, termForm, termOps, validateLeave, validatePerson, validateTerm, type Person,
 } from './people.ts'
 
@@ -66,6 +66,14 @@ describe('a person', () => {
   it('removes a person nothing refers to', () => {
     const state = workspace()
     expect(applies(state, removePersonOps(first(state))).people.people).toEqual([])
+  })
+
+  it('says which archived tasks keep the person as text', () => {
+    const gone = 'Robin is removed from People, with their notes and leave.'
+    expect(removalDescription({ label: 'Robin', archived: [] })).toBe(`${gone} Nothing else refers to them.`)
+    expect(removalDescription({ label: 'Robin', archived: [{ key: 'B1', title: 'Logo', sprint: 7 }] })).toBe(`${gone} B1, archived in sprint 7, keeps “Robin” as text.`)
+    expect(removalDescription({ label: 'Robin', archived: [{ key: 'B1', title: 'Logo', sprint: 6 }, { key: 'B2', title: 'Fonts', sprint: 6 }, { key: 'B4', title: 'Icons', sprint: 7 }] }))
+      .toBe(`${gone} B1, B2 and B4, already archived, keep “Robin” as text.`)
   })
 })
 

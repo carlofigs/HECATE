@@ -9,7 +9,7 @@ import { PageShell } from '../shell/PageShell.tsx'
 import { useActions } from '../useActions.ts'
 import { useNow } from '../useNow.ts'
 import { LeaveEditor, PersonEditor } from './editors.tsx'
-import { isSanitised, removeLeaveOps, removePersonOps, restoreLeaveOps } from './people.ts'
+import { isSanitised, removalDescription, removeLeaveOps, removePersonOps, restoreLeaveOps } from './people.ts'
 
 const range = (r: { start: IsoDate; end: IsoDate }): string =>
   r.start === r.end ? formatDay(r.start) : `${formatDay(r.start)} – ${formatDay(r.end)}`
@@ -164,7 +164,7 @@ function Body({ state, base, view }: { state: WorkspaceState; base: string; view
           open={removing}
           onOpenChange={setRemoving}
           title={`Remove ${who}?`}
-          description={`${who} is removed from People, with their notes and leave. Nothing else refers to them.`}
+          description={removalDescription({ label: who, archived: view.archived })}
           confirmLabel={`Remove ${who}`}
           onConfirm={() => {
             if (actions.run(removePersonOps(p), `Remove ${who}`)) void navigate(`${base}/people`)

@@ -33,7 +33,7 @@
 | Waiting on them | Open B tasks, titles opening the Board's editor |
 | Cutoffs | Date, what, and the project as a link |
 | Meetings | Date and title, read-only |
-| remove | A `ConfirmDialog` when nothing points at them; otherwise a `Dialog` saying what still does and how to unlink it |
+| remove | A `ConfirmDialog` when nothing open points at them, naming any archived tasks that keep their label as text; otherwise a `Dialog` saying what still does and how to unlink it |
 
 ## Variants
 
@@ -52,6 +52,7 @@
 ## Behaviour
 
 - **Removal is the op's answer.** `personView.removable` comes from applying `person.remove` to a copy of the state, so the page explains exactly what the engine would refuse (a task waiting on them, a cutoff, a meeting).
+- **The archive is never a reason to refuse.** Archived tasks can no longer change, so `person.remove` turns their link into text (the person's label, then any text the task had) instead of refusing. The confirmation lists them from `personView.archived`: "B1, archived in sprint 7, keeps “Sam” as text."
 - **Leave is saved whole** (`person.upsert` with `ooo`), so removing a range can be undone exactly.
 - **Terms removed come back** with their id and every field.
 - **Responsive (C-10):** one column below `lg`, two from `lg`. **Add person** sits in the bottom bar below `md` (M-app-07).
@@ -89,8 +90,9 @@ Those of `PageShell`, `Section`, `Item`, `TaskLine`, `Badge`, `Banner`, `Markdow
 
 ## Open questions
 
-- `person.remove` does not check tasks already archived in a sprint; that belongs in core.
+None.
 
 ## Changelog
 
+- 0.9.1: the remove confirmation names archived tasks that waited on the person, which keep their label as text (`personView.archived`, ADR 0004).
 - 0.8.0: created.

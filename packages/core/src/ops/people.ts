@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { IsoDate, Line, Markdown, Slug, Ulid } from '../primitives.ts'
+import { IsoDate, Line, LINE_MAX, Markdown, Slug, Ulid } from '../primitives.ts'
+import { sprintPath } from '../state.ts'
 import { OpFailure, type OpContext } from './context.ts'
 
 const Ooo = z.strictObject({ start: IsoDate, end: IsoDate, note: Line.nullable().optional() })
@@ -67,10 +68,32 @@ export function applyPersonRemove(op: z.infer<typeof personRemove>, ctx: OpConte
     ...Object.entries(ctx.state.meetings).filter(([, m]) => m.frontmatter.personIds.includes(op.id as never)).map(([path]) => path),
   ]
   if (refs.length > 0) throw new OpFailure('conflict', `${describe(person)} is still referenced by ${refs.join(', ')}`, refs)
+
+  // Archived tasks can never be edited to drop the link, so the archive keeps
+  // who they waited on as text instead (ADR 0004): it reads exactly as before.
+  const label = person.name ?? person.role
+  const detached: string[] = []
+  for (const sprint of Object.values(ctx.state.sprints)) {
+    const tasks = [...sprint.done, ...sprint.dropped].filter(t => t.waitingOn?.personId === op.id)
+    for (const t of tasks) {
+      t.waitingOn = { personId: null, text: asText(label, t.waitingOn?.text ?? null) }
+      detached.push(t.key)
+    }
+    if (tasks.length > 0) ctx.touch(sprintPath(sprint.n))
+  }
+
   file.people.splice(file.people.indexOf(person), 1)
   file.updatedAt = ctx.at
   ctx.touch('people.json')
-  ctx.summary(`Remove person: ${describe(person)}`)
+  ctx.summary(`Remove person: ${describe(person)}${detached.length > 0 ? ` (${detached.join(', ')} keep${detached.length === 1 ? 's' : ''} them as text)` : ''}`)
+}
+
+/** Who a task waited on, as one line: the person's label and any text, joined as every view shows them. */
+function asText(label: string, text: string | null): string {
+  const line = text ? `${label} — ${text}` : label
+  if (line.length <= LINE_MAX) return line
+  // Cut on a character boundary, never inside a surrogate pair or after a space.
+  return `${line.slice(0, LINE_MAX - 1).replace(/[\uD800-\uDBFF]$/, '').trimEnd()}…`
 }
 
 export function applyTermUpsert(op: z.infer<typeof termUpsert>, ctx: OpContext): void {

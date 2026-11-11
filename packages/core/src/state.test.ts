@@ -81,6 +81,16 @@ describe('checkWorkspace', () => {
     expect(codes).toEqual(['completed-at', 'unknown-key', 'unknown-person', 'unknown-status', 'unknown-tag'])
   })
 
+  it('reports an archived task that waits on a person who does not exist', () => {
+    const { state } = baseState()
+    const dropped = ok(run(state, [{ type: 'task.drop', task: 'B1' }], { at: '2026-11-09T22:00:00.000Z' })).state
+    const closed = ok(run(dropped, [{ type: 'sprint.close', n: 7 }], { at: '2026-11-10T23:00:00.000Z' })).state
+    expect(checkWorkspace(closed)).toEqual([])
+    const broken = JSON.parse(JSON.stringify(closed)) as WorkspaceState
+    broken.people.people = []
+    expect(checkWorkspace(broken)).toEqual([expect.objectContaining({ code: 'unknown-person', path: 'sprints/7.json', message: 'B1 (archived) waits on a person who does not exist' })])
+  })
+
   it('applies the sanitised policy to people', () => {
     const broken = JSON.parse(JSON.stringify(baseState('sanitised').state)) as WorkspaceState
     const sam = broken.people.people[0]

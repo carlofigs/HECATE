@@ -278,6 +278,43 @@ describe('people and glossary', () => {
     failsWith(run(state, [{ type: 'person.upsert', name: 'Alex' }]), 'invalid', /needs a role/)
   })
 
+  /** B1 waits on Sam, with this text; it is dropped and archived when sprint 7 closes. */
+  function archivedB1(policy: 'open' | 'sanitised' = 'open', text?: string, role?: string) {
+    const { state, samId } = baseState(policy)
+    const before: Parameters<typeof run>[1] = [
+      ...(text ? [{ type: 'task.update', task: 'B1', patch: { waitingOn: { personId: samId, text } } } as const] : []),
+      ...(role ? [{ type: 'person.upsert', id: samId, role } as const] : []),
+      { type: 'task.drop', task: 'B1' },
+    ]
+    const dropped = ok(run(state, before, { at: '2026-11-09T22:00:00.000Z' })).state
+    return { state: ok(run(dropped, [{ type: 'sprint.close', n: 7 }], { at: '2026-11-10T23:00:00.000Z' })).state, samId }
+  }
+  const archivedWaitingOn = (s: WorkspaceState) => s.sprints[7]?.dropped.find(t => t.key === 'B1')?.waitingOn
+
+  it('removes a person an archived task waited on, keeping who it was as text', () => {
+    const { state, samId } = archivedB1('open', 'Layout pack')
+    expect(archivedWaitingOn(state)).toEqual({ personId: samId, text: 'Layout pack' })
+    const r = ok(run(state, [{ type: 'person.remove', id: samId }]))
+    expect(r.state.people.people).toEqual([])
+    expect(archivedWaitingOn(r.state)).toEqual({ personId: null, text: 'Sam — Layout pack' })
+    expect(r.changed).toEqual(['people.json', 'sprints/7.json'])
+    expect(r.summary.map(s => s.text)).toEqual(['Remove person: Sam (Product manager) (B1 keeps them as text)'])
+  })
+
+  it('keeps the label alone without text, and the role in a sanitised workspace', () => {
+    const open = archivedB1()
+    expect(archivedWaitingOn(ok(run(open.state, [{ type: 'person.remove', id: open.samId }])).state)).toEqual({ personId: null, text: 'Sam' })
+    const sanitised = archivedB1('sanitised')
+    expect(archivedWaitingOn(ok(run(sanitised.state, [{ type: 'person.remove', id: sanitised.samId }])).state)).toEqual({ personId: null, text: 'Product manager' })
+  })
+
+  it('cuts a label and text longer than a line to fit one', () => {
+    const { state, samId } = archivedB1('sanitised', `${'Note '.repeat(60)}end`, `${'Lead '.repeat(60)}role`)
+    const text = archivedWaitingOn(ok(run(state, [{ type: 'person.remove', id: samId }])).state)?.text ?? ''
+    expect(text).toHaveLength(500)
+    expect(text).toMatch(/^Lead Lead .* — Note .*\S…$/)
+  })
+
   it('matches terms by name and requires a meaning for a new one', () => {
     const { state } = baseState()
     const a = ok(run(state, [{ type: 'term.upsert', term: 'BAU', meaning: 'Business as usual.' }]))

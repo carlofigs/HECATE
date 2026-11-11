@@ -78,6 +78,16 @@ export function personOps(state: WorkspaceState, form: PersonForm, existing: Per
 
 export const removePersonOps = (p: Person): unknown[] => [{ type: 'person.remove', id: p.id }]
 
+/** The remove confirmation: what goes, and what archived tasks keep (person.remove turns their link into text). */
+export function removalDescription(view: Pick<PersonView, 'label' | 'archived'>): string {
+  const gone = `${view.label} is removed from People, with their notes and leave.`
+  const keys = view.archived.map(t => t.key)
+  if (keys.length === 0) return `${gone} Nothing else refers to them.`
+  const where = view.archived.length === 1 ? `, archived in sprint ${view.archived[0]?.sprint},` : ', already archived,'
+  const listed = keys.length === 1 ? keys[0] : `${keys.slice(0, -1).join(', ')} and ${keys.at(-1)}`
+  return `${gone} ${listed}${where} ${keys.length === 1 ? 'keeps' : 'keep'} “${view.label}” as text.`
+}
+
 // ─── Leave ──────────────────────────────────────────────────────────────────
 
 export interface LeaveForm {

@@ -77,7 +77,12 @@ export function checkWorkspace(state: WorkspaceState): Issue[] {
   }
 
   for (const [n, sprint] of Object.entries(state.sprints)) {
-    if (Number(n) !== sprint.n) error(pathFor('sprint', { n: sprint.n }), 'file-name', `Stored under ${n} but its n is ${sprint.n}`)
+    const path = pathFor('sprint', { n: sprint.n })
+    if (Number(n) !== sprint.n) error(path, 'file-name', `Stored under ${n} but its n is ${sprint.n}`)
+    // person.remove turns these into text (ADR 0004), so a dangling id is a fault.
+    for (const t of [...sprint.done, ...sprint.dropped]) {
+      if (t.waitingOn?.personId && !personIds.has(t.waitingOn.personId)) error(path, 'unknown-person', `${t.key} (archived) waits on a person who does not exist`)
+    }
   }
 
   for (const term of state.glossary.terms) {

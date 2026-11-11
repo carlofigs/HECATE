@@ -31,7 +31,8 @@ export const Slug = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'Expected a keb
  */
 export const LINE_PATTERN = /^\S(?:[^\r\n]*\S)?$/
 export const LINE_MESSAGE = 'Expected a single line of text without leading or trailing spaces'
-export const Line = z.string().max(500).regex(LINE_PATTERN, LINE_MESSAGE).meta({ id: 'Line' })
+export const LINE_MAX = 500
+export const Line = z.string().max(LINE_MAX).regex(LINE_PATTERN, LINE_MESSAGE).meta({ id: 'Line' })
 
 /** Free-form markdown: notes, details, retro text. */
 export const Markdown = z.string().meta({ id: 'Markdown', contentMediaType: 'text/markdown' })
