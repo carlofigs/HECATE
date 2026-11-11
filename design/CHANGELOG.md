@@ -14,6 +14,7 @@ The pre-cutover audit ([`audits/2026-11-pre-cutover.md`](audits/2026-11-pre-cuto
 - **The narrow Board's tab panels** are no longer an invisible tab stop (R-05, R-06).
 - **Try again, Mark all as read and Sign out** say they are working ("Trying…", "Marking as read…", "Signing out…") (R-25).
 - **Offline, one banner** says so, not two.
+- **Counts follow the socket:** a refresh that set off before a change no longer brings back the old "new" or "Saving to GitHub" count for the same version (M-app-06).
 
 ### Added
 

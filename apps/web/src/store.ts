@@ -171,6 +171,14 @@ export function createAppStore(api: StoreServer, options: StoreOptions = {}): Ap
     let attempt = 0
     /** The newest version the live socket has announced for the open workspace. */
     let heard = 0
+    /**
+     * The newest change the live socket announced. Its counts (pending, unread) are not versioned: a read or a commit
+     * leaves the version alone, so a snapshot of the same version taken before the change would undo them. For its
+     * version, the socket's counts win; any later change sends another message.
+     */
+    let lastLive: LiveChange | null = null
+    /** Refreshes started, so only the newest decides whether to fetch again. */
+    let refreshes = 0
     /** Ends the current backoff early (retryNow). */
     let wake: (() => void) | null = null
     const pause = (ms: number): Promise<void> =>
@@ -266,6 +274,7 @@ export function createAppStore(api: StoreServer, options: StoreOptions = {}): Ap
         if (current?.dir === dir && current.snapshot) return get().refresh()
         attempt = 0
         heard = 0
+        lastLive = null
         set({ open: { dir, snapshot: null, view: null, fetchedAt: null, status: 'loading', failure: null, queue: [], sending: false, sendFailure: null, live: 'off', fromDevice: false } })
         // The device copy first, so the page shows at once, offline too; then the Worker's answer.
         const copy = await offline.loadWorkspace(dir)
@@ -286,6 +295,8 @@ export function createAppStore(api: StoreServer, options: StoreOptions = {}): Ap
         // While a batch is in flight the Worker's answer is not known yet: the next refresh will see it.
         if (!open || open.sending) return
         set({ open: { ...open, status: open.snapshot ? 'refreshing' : 'loading' } })
+        const heardBefore = heard
+        const mine = ++refreshes
         const result = await api.snapshot(open.dir)
         const latest = get().open
         if (latest?.dir !== open.dir) return
@@ -299,8 +310,16 @@ export function createAppStore(api: StoreServer, options: StoreOptions = {}): Ap
             update(open.dir, () => ({ fetchedAt: now(), status: 'ready', failure: null }))
             return
           }
-          update(open.dir, o => ({ snapshot: result.data, view: fold(result.data.state, o.queue), fetchedAt: now(), status: 'ready', failure: null, fromDevice: false }))
-          keep(open.dir, result.data)
+          const live = lastLive
+          const snapshot: Snapshot = live && live.version === result.data.version
+            ? { ...result.data, pending: live.pending, activity: { unread: live.unread } }
+            : result.data
+          update(open.dir, o => ({ snapshot, view: fold(snapshot.state, o.queue), fetchedAt: now(), status: 'ready', failure: null, fromDevice: false }))
+          keep(open.dir, snapshot)
+          // A newer version announced while this refresh was on its way: fetch that one too (once per announcement, so
+          // versions that start again after a storage reset can never loop).
+          // A later refresh already covers it if one has started since.
+          if (heard > heardBefore && heard > snapshot.version && mine === refreshes) return get().refresh()
           const queued = get().open
           if (queued && queued.queue.length > 0 && !queued.sending) void send(open.dir)
           return
@@ -352,6 +371,8 @@ export function createAppStore(api: StoreServer, options: StoreOptions = {}): Ap
         const open = get().open
         if (open?.dir !== dir) return
         heard = Math.max(heard, change.version)
+        // One socket delivers in order, and a reconnect starts with the current state: the last message is the newest.
+        lastLive = change
         const snapshot = open.snapshot
         if (!snapshot) return
         // Newer: fetch it (a refresh waits for a batch in flight; the batch's answer checks `heard`).

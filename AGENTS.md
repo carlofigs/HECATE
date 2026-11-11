@@ -184,7 +184,9 @@ sessions pushing by hand. Treat every write as concurrent with someone else's.
     over a hibernating WebSocket (`apps/web/src/live.ts`, ADR 0003 amendment)
     whenever one changes; the engine calls `notify`, the DO class only
     broadcasts. A newer version means the same snapshot refetch, never data
-    over the socket. The 60 s poll runs only while the socket is down.
+    over the socket. The counts are not versioned, so for a given version the
+    socket's newest counts win over a refresh's. The 60 s poll runs only
+    while the socket is down.
   - **Writes:** only ops, through the store's `apply` (`apps/web/src/store.ts`):
     - it applies them locally with core's engine at once, then queues them;
     - the Worker gets one batch at a time with its own `opId`;

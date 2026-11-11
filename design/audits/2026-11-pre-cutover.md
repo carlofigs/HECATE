@@ -44,6 +44,7 @@
 | 8 | Activity | R-25 | Low | Mark all as read showed nothing while the Worker answered. | It reads "Marking as read…" until done. |
 | 9 | Shell | R-25 | Low | Sign out showed nothing while the Worker answered. | The button is named "Signing out…" until the sign-in page replaces the app. |
 | 10 | Nested dialogs | R-06 | Low, kept | An Escape pressed within the same frame a confirmation opens (under about 50 ms) reaches the dialog beneath, closing both. Radix registers the new top layer in an effect. A person cannot press that fast; a script can. | Recorded, not patched (it is Radix's internals). The keyboard spec waits two frames. |
+| 11 | Every page, live (found by CI on this PR) | R-25, M-app-06 | Medium | A refresh that set off before a change could undo it. A tab opened from the device copy shows "Up to date" while its first refresh is still on its way. Mark all as read in another tab then cleared its count over the socket, and that refresh landed with the same version and the old count. "Activity 7 new" came back and stayed. The same could happen to "Saving to GitHub (n)". | The counts carry no version of their own, so for a given version the socket's newest counts win over a refresh's. A newer version announced during a refresh is fetched once it lands. Two store tests cover it, and `live.spec.ts` ran 90 of 90 over five repeats. |
 
 ## Checked and in order
 
