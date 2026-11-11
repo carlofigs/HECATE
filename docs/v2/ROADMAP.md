@@ -398,7 +398,22 @@ Delivered as sequential PRs:
       many entries are new.
 
 **P5 is complete in code.** Its acceptance is re-checked on preview once the
-owner's setup is done.
+owner's setup is done. Follow-up: `fix/person-remove-archived` — removing a
+person keeps archived tasks' link as text (ADR 0004 amendment).
+
+### P6 — live and offline
+
+Delivered as sequential PRs:
+
+- [x] `feat/live-updates` — every open tab keeps a live socket to its
+      workspace's Durable Object (Hibernation API), told `{ version, pending,
+      unread }` on each change from another tab, Claude or a push; a newer
+      version refetches the snapshot. Two tabs converge within 2 s. The socket
+      is checked like a write (cookie and Origin), carries no workspace data,
+      and closes at session expiry (ADR 0003 amendment). The 60 s poll is now
+      the fallback.
+- [ ] `feat/offline-snapshot` — the snapshot and the unsent changes survive a
+      reload while offline.
 
 ### P5 / P6 acceptance
 

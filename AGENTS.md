@@ -146,7 +146,8 @@ sessions pushing by hand. Treat every write as concurrent with someone else's.
 - **The Worker's routes** (`apps/worker/src/index.ts`): `/mcp` (OAuth bearer
   only), `/authorize` and `/oauth/github/callback` (connecting an MCP client),
   `/auth/*` and `/api/*` (the web app: a signed `__Host-` session cookie, with
-  an Origin check on writes), `/hooks/github` (signed), `/health`. Never accept
+  an Origin check on writes and on the live socket,
+  `/api/workspaces/:dir/live`), `/hooks/github` (signed), `/health`. Never accept
   the cookie on `/mcp` or a bearer token on `/api`. Never loosen the allowlist,
   the Origin check or the redirect-host allowlist without an ADR (ADR 0003).
   Settings are vars (`PUBLIC_URL`, `GITHUB_CLIENT_ID`, `ALLOWED_GITHUB_USER_ID`,
@@ -171,6 +172,11 @@ sessions pushing by hand. Treat every write as concurrent with someone else's.
   - **Reads:** one snapshot of the workspace (`GET /api/workspaces/:dir`),
     with every view computed from it through core's selectors, as the MCP
     tools do.
+  - **Live:** the Durable Object tells each open tab `{ version, pending, unread }`
+    over a hibernating WebSocket (`apps/web/src/live.ts`, ADR 0003 amendment)
+    whenever one changes; the engine calls `notify`, the DO class only
+    broadcasts. A newer version means the same snapshot refetch, never data
+    over the socket. The 60 s poll runs only while the socket is down.
   - **Writes:** only ops, through the store's `apply` (`apps/web/src/store.ts`):
     - it applies them locally with core's engine at once, then queues them;
     - the Worker gets one batch at a time with its own `opId`;

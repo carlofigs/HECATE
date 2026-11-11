@@ -9,7 +9,7 @@ import {
 } from '@hecate/core'
 import { createGitStore, type Fetch } from '@hecate/github-store'
 import { createFakeGitHub, type FakeGitHub } from '@hecate/github-store/testing'
-import { WorkspaceEngine } from '../src/engine.ts'
+import { WorkspaceEngine, type LiveChange } from '../src/engine.ts'
 import { memoryPersistence, type Persistence } from '../src/persistence.ts'
 import type { WorkspaceRpc } from '../src/routes/workspace-rpc.ts'
 
@@ -73,7 +73,7 @@ export interface Harness {
   requests(): string[]
 }
 
-export async function harness(options: { dir?: string; fetch?: (fake: FakeGitHub) => Fetch } = {}): Promise<Harness> {
+export async function harness(options: { dir?: string; fetch?: (fake: FakeGitHub) => Fetch; notify?: (change: LiveChange) => void } = {}): Promise<Harness> {
   const fake = await seededFake()
   let now = START
   let alarmAt: number | null = null
@@ -96,6 +96,7 @@ export async function harness(options: { dir?: string; fetch?: (fake: FakeGitHub
       commitIntervalMs: 30_000,
       freshnessMs: 30_000,
       sleep: () => Promise.resolve(),
+      ...(options.notify ? { notify: options.notify } : {}),
     })
   }
   const h: Harness = {
@@ -128,5 +129,7 @@ export function rpcFor(engine: () => WorkspaceEngine): WorkspaceRpc {
     refresh: () => engine().refresh(),
     read: (_dir, query) => engine().read(query),
     ackActivity: (_dir, cursor, upTo) => engine().ackActivity(cursor, upTo),
+    // Sockets need the runtime: test/worker.test.ts covers them.
+    fetch: () => Promise.resolve(new Response('Live sockets need the Workers runtime', { status: 501 })),
   }
 }

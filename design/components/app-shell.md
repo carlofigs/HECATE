@@ -43,7 +43,7 @@ None.
 | nav hover | Text darkens | `color.text.primary` | Never the only affordance |
 | focus-visible | Ring | `color.border.focus` | |
 | sync: checking | "Checking…" with a refresh icon | | |
-| sync: up to date | "Up to date · 10:42" with a cloud-check icon | | |
+| sync: up to date | "Up to date" with a cloud-check icon while the live socket is open; "Up to date · 10:42" (the last check) while it is not | | |
 | sync: saving | "Saving to GitHub (n)", for changes not yet committed | | |
 | sync: offline | "Offline" with a wifi-off icon | | |
 | sync: failed | "Couldn't load" with a cloud-off icon, when HECATE answered with an error | | |
@@ -52,9 +52,9 @@ None.
 ## Behaviour
 
 - **Layout:** the shell is an app layout. Header, page and bottom bar fill the viewport (`h-dvh`), and only the page scrolls. Nothing on the page ever sits under the header or the bar, which keeps targets measurable (R-07) and focus unobscured (WCAG 2.4.11).
-- **Refreshing:** the open workspace refreshes on window focus, when the page becomes visible, and every 60 s while visible, at most once in 5 s.
+- **Live:** the open workspace keeps a live socket (`apps/web/src/live.ts`). The Worker tells it `{ version, pending, unread }` on every change, from another tab, from Claude, or from a push; a newer version refetches the snapshot, the same one updates the counts in place. Two tabs converge within 2 s (P6). The socket reconnects after 1, 2, 5, 10, then every 30 s, and closes when the session expires.
+- **Refreshing:** the open workspace also refreshes on window focus and when the page becomes visible, at most once in 5 s. Every 60 s while visible it checks too, but only while the live socket is down.
   - When the connection returns, waiting changes are sent at once (`retryNow`) and the page catches up.
-  - Live updates are P6.
 - **Offline:**
   - the offline banner shows while the browser is offline;
   - the sync status counts the changes waiting;
@@ -116,3 +116,4 @@ None.
 - 0.7.0: Sprint in the navigation; More, a page of the pages the bottom bar has no room for.
 - 0.8.0: People. With five pages the header wraps below about 1,000 px: the controls move to a second row.
 - 0.9.0: Activity, the sixth page. Its header link, and its link on More, show how many entries are new ("Activity 7 new").
+- 0.10.0: Live updates. The sync status drops the time while the live socket is open; the 60 s poll runs only while it is down.

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { stateFromFiles } from '@hecate/core'
 import type { Fetch } from '@hecate/github-store'
 import type { FakeGitHub } from '@hecate/github-store/testing'
-import { WorkspaceEngine, type ApplyOutcome, type Snapshot } from '../src/engine.ts'
+import { WorkspaceEngine, type ApplyOutcome, type LiveChange, type Snapshot } from '../src/engine.ts'
 import { DIR, START, addTask, harness, pushOps } from './helpers.ts'
 
 const ok = (s: Snapshot) => {
@@ -314,6 +314,58 @@ describe('activity readers', () => {
     expect(await h.engine.ackActivity('claude')).toMatchObject({ status: 'ok', acknowledged: 3 })
     expect(await claudeUnread()).toBe(0)
     expect((await feed(h)).unread).toBe(1)
+  })
+})
+
+describe('live changes', () => {
+  const log = (delta: string) => ({ type: 'activity.log', entry: 'flag', delta })
+  async function watched() {
+    const changes: LiveChange[] = []
+    const h = await harness({ notify: c => void changes.push(c) })
+    await h.engine.snapshot()
+    return { h, changes }
+  }
+
+  it('tells open tabs about each applied change and each commit, with what an app reader has not seen', async () => {
+    const { h, changes } = await watched()
+    expect(await h.engine.live()).toEqual({ version: 1, pending: 0, unread: 0 })
+    applied(await h.engine.apply({ ops: [log('From Claude')], actor: 'claude' }))
+    applied(await h.engine.apply({ ops: [addTask('Mine')], actor: 'app' }))
+    expect(changes).toEqual([{ version: 2, pending: 1, unread: 1 }, { version: 3, pending: 2, unread: 1 }])
+    expect(await h.engine.flush()).toMatchObject({ status: 'committed' })
+    expect(changes.at(-1)).toEqual({ version: 3, pending: 0, unread: 1 })
+    // The ack moves past every entry, the app's own "Added A3" too; only Claude's was new.
+    expect(await h.engine.ackActivity('app')).toMatchObject({ acknowledged: 2 })
+    expect(changes.at(-1)).toEqual({ version: 3, pending: 0, unread: 0 })
+    expect(await h.engine.live()).toEqual({ version: 3, pending: 0, unread: 0 })
+  })
+
+  it('tells them when another writer’s push is adopted', async () => {
+    const { h, changes } = await watched()
+    await h.fake.push({ 'work/references/notes.md': '# Notes\n' })
+    expect(await h.engine.refresh()).toMatchObject({ status: 'updated', version: 2 })
+    expect(changes).toEqual([{ version: 2, pending: 0, unread: 0 }])
+    expect(await h.engine.refresh()).toMatchObject({ status: 'unchanged' })
+    expect(changes).toHaveLength(1)
+  })
+
+  it('says nothing for a dry run, a retry, a refusal, Claude’s own ack or an ack with nothing new', async () => {
+    const { h, changes } = await watched()
+    applied(await h.engine.apply({ ops: [log('One')], actor: 'claude', opId: 'once' }))
+    changes.length = 0
+    expect(await h.engine.apply({ ops: [addTask('Preview')], actor: 'app', dryRun: true })).toMatchObject({ status: 'dry-run' })
+    expect(await h.engine.apply({ ops: [log('One')], actor: 'claude', opId: 'once' })).toMatchObject({ status: 'applied', duplicate: true })
+    expect(await h.engine.apply({ ops: [{ type: 'task.complete', task: 'A99' }], actor: 'app' })).toMatchObject({ status: 'rejected' })
+    expect(await h.engine.ackActivity('claude')).toMatchObject({ acknowledged: 1 })
+    expect(await h.engine.ackActivity('app')).toMatchObject({ acknowledged: 1 })
+    expect(await h.engine.ackActivity('app')).toMatchObject({ acknowledged: 0 })
+    expect(changes).toEqual([{ version: 2, pending: 1, unread: 0 }])
+  })
+
+  it('never fails a write because a socket could not be told', async () => {
+    const h = await harness({ notify: () => { throw new Error('socket gone') } })
+    applied(await h.engine.apply({ ops: [addTask('Still saved')], actor: 'app' }))
+    expect(keys(await h.engine.snapshot())).toContain('A3')
   })
 })
 

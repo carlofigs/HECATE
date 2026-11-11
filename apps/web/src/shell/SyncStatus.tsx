@@ -24,7 +24,8 @@ function syncState(open: OpenWorkspace | null): { icon: ReactNode; text: string 
   if (pending > 0) return { icon: <CloudUpload aria-hidden="true" className={ICON} />, text: `Saving to GitHub (${pending})` }
   return {
     icon: <CloudCheck aria-hidden="true" className={ICON} />,
-    text: open.fetchedAt ? `Up to date · ${clockTime(open.fetchedAt)}` : 'Up to date',
+    // Live, the page is current by definition; otherwise say when it last checked.
+    text: open.live !== 'open' && open.fetchedAt ? `Up to date · ${clockTime(open.fetchedAt)}` : 'Up to date',
   }
 }
 

@@ -2,6 +2,16 @@
 
 Semver (G-01). Each entry lists the rule IDs it concerns.
 
+## [0.10.0] — 2026-11-11
+
+### Added
+
+- **Live updates** (C-02): a change in another tab, from Claude, or pushed to the data repo reaches an open page within 2 s, without a reload.
+
+### Changed
+
+- **Sync status** (R-04): "Up to date" while the page is live; "Up to date · 10:42" only while it is relying on the poll, when the time says how current it is.
+
 ## [0.9.1] — 2026-11-11
 
 ### Fixed

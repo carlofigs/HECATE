@@ -13,4 +13,6 @@ export interface WorkspaceRpc {
   refresh(dir: string): Promise<RefreshOutcome>
   read(dir: string, query: ReadQuery): Promise<ReadOutcome>
   ackActivity(dir: string, cursor: string, upTo?: string): Promise<AckOutcome>
+  /** The Durable Object's own fetch: /api forwards a tab's live socket here (`GET /live`), after its checks. */
+  fetch(request: Request): Promise<Response>
 }

@@ -77,3 +77,33 @@ Recorded when sign-in, `/api`, `/mcp` and `/hooks` were built in `apps/worker`.
   say (no commits, or GitHub's 20-commit cap), it refreshes them all.
 - **Configuration is never half-applied.** Missing settings make the Worker
   answer 503 naming them (never their values). `/health` stays open.
+
+## Amendment — the live socket (Nov 2026, with `feat/live-updates`)
+
+P6 asks that two open tabs converge within 2 s. Polling cannot do that
+cheaply, so each tab keeps a WebSocket to its workspace's Durable Object,
+which tells it when something changed.
+
+- **The route.** `GET /api/workspaces/:dir/live` with `Upgrade: websocket`.
+  It is a read, but it is checked like a write: the session cookie, and an
+  Origin equal to `PUBLIC_URL`. A WebSocket handshake is not covered by CORS,
+  so without the Origin check a page on another site could hold a socket open
+  in the owner's browser (cross-site WebSocket hijacking). The Worker
+  forwards the upgrade to the Durable Object only after these checks; the
+  object's `/live` is never reachable from outside.
+- **What it carries.** Only `{ version, pending, unread }`, and only from the
+  server. A tab that sees a newer version refetches the snapshot through the
+  cookie-checked `GET /api/workspaces/:dir`. No workspace data ever crosses
+  the socket, so all data still goes through one checked read path, and a
+  socket that outlived its session would show only that something changed.
+- **Expiry.** The socket stores its session's expiry. The object closes it
+  with code 4401 instead of sending once that has passed, and the tab's next
+  request finds it signed out.
+- **Cost.** The Durable Object accepts sockets with the Hibernation API and
+  answers the tab's `ping` keep-alives without waking. At most 16 sockets per
+  workspace (429 beyond), a ceiling on a reconnect loop gone wrong. The tab
+  reconnects after 1, 2, 5, 10, then every 30 s.
+- **Rejected:** Server-Sent Events, which would keep the Durable Object awake
+  for every open tab; and sending the applied ops over the socket, which
+  would make a second read path and merge logic in the client for a
+  single-user app.

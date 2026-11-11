@@ -258,3 +258,83 @@ describe('writing', () => {
     expect(store.getState().open?.queue).toEqual([])
   })
 })
+
+describe('live changes', () => {
+  /** An API whose snapshot version the test moves, as other tabs and Claude would. */
+  function liveApi() {
+    let version = 1
+    let snapshots = 0
+    let release: (() => void) | null = null
+    const api: Api = {
+      me: () => Promise.resolve({ kind: 'ok', data: { userId: 42, login: 'owner' } }),
+      workspaces: () => Promise.resolve({ kind: 'ok', data: { workspaces: [], default: null } }),
+      snapshot: () => {
+        snapshots++
+        return Promise.resolve({ kind: 'ok', data: { version, state: workspace(), pending: 0, lastError: null, activity: { unread: 0 } } })
+      },
+      signOut: () => Promise.resolve({ kind: 'ok', data: null }),
+      // Held until the test releases it, so a change can be heard while this one is in flight.
+      applyOps: () => new Promise(resolve => {
+        release = () => resolve({ kind: 'applied', version: 2, keyMap: {}, duplicate: false })
+      }),
+    }
+    return { api, snapshots: () => snapshots, setVersion: (v: number) => void (version = v), release: () => release?.() }
+  }
+
+  it('refetches on a newer version, updates the counts in place on the same one, and ignores an older one', async () => {
+    const server = liveApi()
+    const store = createAppStore(server.api)
+    await store.getState().openWorkspace('w')
+    store.getState().setLive('w', 'open')
+    expect(store.getState().open?.live).toBe('open')
+
+    store.getState().onLive('w', { version: 1, pending: 2, unread: 3 })
+    expect(store.getState().open?.snapshot).toMatchObject({ version: 1, pending: 2, activity: { unread: 3 } })
+    expect(server.snapshots()).toBe(1)
+
+    server.setVersion(4)
+    store.getState().onLive('w', { version: 4, pending: 1, unread: 0 })
+    await settle()
+    expect(store.getState().open?.snapshot?.version).toBe(4)
+    expect(server.snapshots()).toBe(2)
+
+    store.getState().onLive('w', { version: 3, pending: 9, unread: 9 })
+    store.getState().onLive('other', { version: 9, pending: 9, unread: 9 })
+    await settle()
+    expect(store.getState().open?.snapshot).toMatchObject({ version: 4, pending: 0 })
+    expect(server.snapshots()).toBe(2)
+  })
+
+  it('fetches a change heard while its own was in flight, once the answer is in', async () => {
+    const server = liveApi()
+    const store = createAppStore(server.api)
+    await store.getState().openWorkspace('w')
+    store.getState().apply([{ type: 'task.move', task: 'A1', status: 'doing' }], 'Move A1')
+    await settle()
+    // Its own change (2), then another tab's (3), heard before the Worker's answer arrives.
+    server.setVersion(3)
+    store.getState().onLive('w', { version: 2, pending: 1, unread: 0 })
+    store.getState().onLive('w', { version: 3, pending: 2, unread: 0 })
+    await settle()
+    expect(server.snapshots()).toBe(1)
+    server.release()
+    await settle()
+    await settle()
+    expect(store.getState().open).toMatchObject({ queue: [], snapshot: { version: 3 } })
+    expect(server.snapshots()).toBe(2)
+  })
+
+  it('checks the session when the socket ends with it', async () => {
+    let signedIn = true
+    const store = createAppStore({
+      ...fakeApi([]),
+      snapshot: () => Promise.resolve(signedIn ? { kind: 'ok', data: snapshot(1) } : { kind: 'signed-out' }),
+    })
+    await store.getState().start()
+    await store.getState().openWorkspace('a')
+    signedIn = false
+    store.getState().setLive('a', 'ended')
+    await settle()
+    expect(store.getState().session).toEqual({ status: 'signed-out' })
+  })
+})

@@ -15,10 +15,16 @@
  * - Applied after someone else's change: refetch.
  * - Refused: drop the batch, refetch, and say why.
  * - Offline or failing: keep it and retry with backoff.
+ *
+ * Live: the Worker tells an open tab `{ version, pending, unread }` on every
+ * change (live.ts). A newer version means refetch; the same version updates
+ * the counts in place. A newer version heard while a batch is in flight is
+ * remembered, and fetched once the batch's answer is in.
  */
 import { applyBatch, BatchInputError, prepareBatch, ulid, type WorkspaceState } from '@hecate/core'
 import { createStore, type StoreApi } from 'zustand/vanilla'
 import type { Api, ApplyAnswer, Failure, Me, Snapshot, WorkspaceList } from './api.ts'
+import type { LiveChange, LiveState } from './live.ts'
 
 /** What the store needs from the Worker: the snapshot and the write path. Pages call the rest of the API themselves. */
 export type StoreServer = Pick<Api, 'me' | 'workspaces' | 'snapshot' | 'signOut' | 'applyOps'>
@@ -59,6 +65,8 @@ export interface OpenWorkspace {
   sending: boolean
   /** The last attempt to send failed; the queue retries on its own. */
   sendFailure: Failure | null
+  /** The live socket (live.ts): while it is open, changes made elsewhere arrive within a second or two. */
+  live: 'off' | LiveState
 }
 
 /** A message for the person using the app; the page decides how to show it (a toast). */
@@ -84,6 +92,10 @@ export interface AppState {
   apply: (ops: unknown[], label: string) => LocalResult
   /** Sends waiting changes now instead of after the backoff: the connection is back. */
   retryNow: () => void
+  /** The live socket for `dir` heard a change. */
+  onLive: (dir: string, change: LiveChange) => void
+  /** The live socket for `dir` connected, dropped, or ended with the session. */
+  setLive: (dir: string, state: LiveState) => void
   signOut: () => Promise<void>
 }
 
@@ -133,6 +145,8 @@ export function createAppStore(api: StoreServer, options: StoreOptions = {}): Ap
     }
 
     let attempt = 0
+    /** The newest version the live socket has announced for the open workspace. */
+    let heard = 0
     /** Ends the current backoff early (retryNow). */
     let wake: (() => void) | null = null
     const pause = (ms: number): Promise<void> =>
@@ -161,6 +175,8 @@ export function createAppStore(api: StoreServer, options: StoreOptions = {}): Ap
         if (local?.ok) {
           const snapshot: Snapshot = { ...base, state: local.state, version: answer.version }
           update(dir, () => ({ snapshot, queue: rest, view: fold(local.state, rest), sending: false, sendFailure: null }))
+          // Another change was announced while this one was on its way: fetch it now.
+          if (heard > answer.version) await get().refresh()
         } else {
           // Someone else's change landed first, or this was a retry the Worker had already applied: take its state.
           update(dir, () => ({ queue: rest, sending: false, sendFailure: null }))
@@ -208,7 +224,8 @@ export function createAppStore(api: StoreServer, options: StoreOptions = {}): Ap
         const current = get().open
         if (current?.dir === dir && current.snapshot) return get().refresh()
         attempt = 0
-        set({ open: { dir, snapshot: null, view: null, fetchedAt: null, status: 'loading', failure: null, queue: [], sending: false, sendFailure: null } })
+        heard = 0
+        set({ open: { dir, snapshot: null, view: null, fetchedAt: null, status: 'loading', failure: null, queue: [], sending: false, sendFailure: null, live: 'off' } })
         await get().refresh()
       },
 
@@ -272,6 +289,26 @@ export function createAppStore(api: StoreServer, options: StoreOptions = {}): Ap
         if (backoff) return backoff()
         const open = get().open
         if (open && open.queue.length > 0 && !open.sending) void send(open.dir)
+      },
+
+      onLive(dir, change) {
+        const open = get().open
+        if (open?.dir !== dir) return
+        heard = Math.max(heard, change.version)
+        const snapshot = open.snapshot
+        if (!snapshot) return
+        // Newer: fetch it (a refresh waits for a batch in flight; the batch's answer checks `heard`).
+        if (change.version > snapshot.version) return void get().refresh()
+        if (change.version < snapshot.version) return
+        if (snapshot.pending === change.pending && snapshot.activity?.unread === change.unread) return
+        update(dir, o => (o.snapshot ? { snapshot: { ...o.snapshot, pending: change.pending, activity: { unread: change.unread } } } : {}))
+      },
+
+      setLive(dir, state) {
+        if (get().open?.dir !== dir) return
+        update(dir, () => ({ live: state }))
+        // The session expired: the next request finds the tab signed out.
+        if (state === 'ended') void get().refresh()
       },
 
       async signOut() {
