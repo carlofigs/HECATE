@@ -1,6 +1,6 @@
 import { X } from 'lucide-react'
 import { AlertDialog, Dialog as RadixDialog } from 'radix-ui'
-import type { ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 import { Button, IconButton } from './Button.tsx'
 
 /** design/components/dialog.md */
@@ -12,6 +12,29 @@ const CONTENT = [
   'md:inset-auto md:left-1/2 md:top-1/2 md:w-full md:max-w-prose md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-container md:p-inset-xl',
 ].join(' ')
 
+/**
+ * Focus goes back to what opened the dialog (R-06). Radix returns it to its own Trigger, and HECATE opens dialogs from
+ * ordinary buttons, so without this it fell to <body>. If the opener has gone (a deleted task's card), focus goes to
+ * the page's main region, unless something else (a new page's heading) already has it.
+ */
+function useReturnFocus() {
+  const opener = useRef<HTMLElement | null>(null)
+  return {
+    // Runs before focus moves inside, so the active element is still the opener.
+    onOpenAutoFocus: (): void => {
+      const active = document.activeElement
+      opener.current = active instanceof HTMLElement && active !== document.body ? active : null
+    },
+    onCloseAutoFocus: (event: Event): void => {
+      event.preventDefault()
+      const target = opener.current
+      opener.current = null
+      if (target?.isConnected) target.focus()
+      else if (!document.activeElement || document.activeElement === document.body) document.getElementById('main')?.focus()
+    },
+  }
+}
+
 export interface DialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -22,11 +45,12 @@ export interface DialogProps {
 
 /** A task that needs the person's attention before going on (M-app-05). Focus is trapped and returns to the opener. */
 export function Dialog({ open, onOpenChange, title, description, children }: DialogProps) {
+  const focus = useReturnFocus()
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
       <RadixDialog.Portal>
         <RadixDialog.Overlay className={OVERLAY} />
-        <RadixDialog.Content className={CONTENT} {...(description ? {} : { 'aria-describedby': undefined })}>
+        <RadixDialog.Content className={CONTENT} {...focus} {...(description ? {} : { 'aria-describedby': undefined })}>
           <div className="flex items-start justify-between gap-inline-md">
             <RadixDialog.Title className="text-heading-2">{title}</RadixDialog.Title>
             <RadixDialog.Close asChild>
@@ -53,11 +77,13 @@ export interface ConfirmDialogProps {
 
 /** Confirms a destructive action (R-24): Cancel has focus and is the default; the action is never primary-styled. */
 export function ConfirmDialog({ open, onOpenChange, title, description, confirmLabel, onConfirm }: ConfirmDialogProps) {
+  const focus = useReturnFocus()
   return (
     <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
       <AlertDialog.Portal>
         <AlertDialog.Overlay className={OVERLAY} />
-        <AlertDialog.Content className={CONTENT}>
+        {/* Radix then puts focus on Cancel (R-24). */}
+        <AlertDialog.Content className={CONTENT} {...focus}>
           <AlertDialog.Title className="text-heading-2">{title}</AlertDialog.Title>
           <AlertDialog.Description className="text-body-md text-text-secondary">{description}</AlertDialog.Description>
           <div className="flex flex-col-reverse gap-stack-sm md:flex-row md:justify-end md:gap-inline-sm">

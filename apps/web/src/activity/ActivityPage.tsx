@@ -84,9 +84,19 @@ export function ActivityPage() {
   const [adding, setAdding] = useState(false)
   const unread = activity.page?.unread ?? 0
 
+  const [marking, setMarking] = useState(false)
   const markRead = (
-    <Button variant="primary" icon={<CheckCheck aria-hidden="true" className={ICON} />} onClick={() => void activity.markRead()}>
-      Mark all as read
+    <Button
+      variant="primary"
+      icon={<CheckCheck aria-hidden="true" className={ICON} />}
+      aria-disabled={marking || undefined}
+      onClick={() => {
+        if (marking) return
+        setMarking(true)
+        void activity.markRead().finally(() => setMarking(false))
+      }}
+    >
+      {marking ? 'Marking as read…' : 'Mark all as read'}
     </Button>
   )
   return (

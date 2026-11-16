@@ -84,31 +84,31 @@ The C-05 ladder runs `draft` → `candidate` → `stable` → `deprecated`. Only
 - the manual keyboard and screen-reader passes (R-29 layers 2 and 3);
 - tests.
 
-The e2e suite covers part of the keyboard pass (focus order and rings through the shell); the screen-reader pass has not been done.
+**Pre-cutover audit (2026-11-11, [`audits/2026-11-pre-cutover.md`](audits/2026-11-pre-cutover.md)):** the keyboard-only pass (layer 2) is done for every surface, and its repeatable parts run in CI. These are `keyboard.spec.ts` (every dialog and menu), `motion.spec.ts`, and `layout.spec.ts` on every page. Its findings are fixed. The screen-reader pass (layer 3) is the owner's, with the checklist in the audit; until it passes, nothing below is `stable`.
 
 | Section / component | Status | Next |
 |---|---|---|
 | Token layer (`theme.css`, `tokens.json`) | `draft` | The owner's approval of the foundations |
-| `Button`, `ButtonLink`, `IconButton` | `candidate` | Manual passes (`ButtonLink` still needs a second surface) |
-| `SelectField` | `candidate` | Manual passes |
-| `Badge`, `KeyChip` | `candidate` | Manual passes |
-| `Banner` | `candidate` | Manual passes |
-| `EmptyState` | `candidate` | Manual passes |
-| `Skeleton`, `VisuallyHidden` | `candidate` | Second surface; manual passes |
-| `Markdown` | `candidate` | Second surface; manual passes |
-| `Dialog`, `ConfirmDialog` | `candidate` | Manual passes |
-| `Menu` | `candidate` | Manual passes |
-| `Toast` (`Toaster`) | `candidate` | Manual passes |
-| `TextField`, `TextAreaField`, `RadioGroupField` | `candidate` | Manual passes |
-| `CheckboxField` | `candidate` | Manual passes |
-| Task card, Board column, Task editor (app) | `candidate` | Manual passes |
-| Focus item editor and item controls, Close the day (app) | `candidate` | Manual passes |
-| Project list and project page, project editor and item editor (app) | `candidate` | Manual passes |
-| Sprint page, Close sprint, More (app) | `candidate` | Manual passes |
-| People pages, person, leave and term editors (app) | `candidate` | Manual passes |
-| Activity page, Add to log (app) | `candidate` | Manual passes |
-| App shell (pattern), with the offline and update banners | `candidate` | Manual passes |
-| PageShell (pattern) | `candidate` | Manual passes; it now serves Today, the Board, Projects, Sprint, People, Activity and More |
+| `Button`, `ButtonLink`, `IconButton` | `candidate` | Screen-reader pass (owner); `ButtonLink` still needs a second surface |
+| `SelectField` | `candidate` | Screen-reader pass (owner) |
+| `Badge`, `KeyChip` | `candidate` | Screen-reader pass (owner) |
+| `Banner` | `candidate` | Screen-reader pass (owner) |
+| `EmptyState` | `candidate` | Screen-reader pass (owner) |
+| `Skeleton`, `VisuallyHidden` | `candidate` | Second surface; screen-reader pass (owner) |
+| `Markdown` | `candidate` | Second surface; screen-reader pass (owner) |
+| `Dialog`, `ConfirmDialog` | `candidate` | Screen-reader pass (owner) |
+| `Menu` | `candidate` | Screen-reader pass (owner) |
+| `Toast` (`Toaster`) | `candidate` | Screen-reader pass (owner) |
+| `TextField`, `TextAreaField`, `RadioGroupField` | `candidate` | Screen-reader pass (owner) |
+| `CheckboxField` | `candidate` | Screen-reader pass (owner) |
+| Task card, Board column, Task editor (app) | `candidate` | Screen-reader pass (owner) |
+| Focus item editor and item controls, Close the day (app) | `candidate` | Screen-reader pass (owner) |
+| Project list and project page, project editor and item editor (app) | `candidate` | Screen-reader pass (owner) |
+| Sprint page, Close sprint, More (app) | `candidate` | Screen-reader pass (owner) |
+| People pages, person, leave and term editors (app) | `candidate` | Screen-reader pass (owner) |
+| Activity page, Add to log (app) | `candidate` | Screen-reader pass (owner) |
+| App shell (pattern), with the offline and update banners | `candidate` | Screen-reader pass (owner) |
+| PageShell (pattern) | `candidate` | Screen-reader pass (owner); it serves Today, the Board, Projects, Sprint, People, Activity and More |
 
 ## 5. Brand inputs
 

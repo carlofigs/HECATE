@@ -52,7 +52,7 @@ One status on the Board: its cards in board order, a drop zone even when empty, 
 
 - **Element:** `section` named by its `h2`, and a list of cards.
 - **Board region:** "Board columns" is focusable for keyboard scrolling.
-- **Tabs (narrow):** Radix Tabs, with arrow keys between statuses.
+- **Tabs (narrow):** Radix Tabs, with arrow keys between statuses. A tab panel is not a tab stop of its own (`tabIndex={-1}`): Tab goes from the tab to the column's first control.
 
 ## Content (C-09)
 
@@ -83,3 +83,4 @@ One status on the Board: its cards in board order, a drop zone even when empty, 
 ## Changelog
 
 - 0.3.0: created.
+- 0.11.1: the narrow tab panels are no longer an invisible tab stop (audit 2026-11, finding 3).

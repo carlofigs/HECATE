@@ -5,6 +5,7 @@ import { Link, useLocation } from 'react-router'
 import type { Snapshot } from '../api.ts'
 import { useApp } from '../appStore.ts'
 import { clockTime } from '../format.ts'
+import { useOnline } from '../useOnline.ts'
 import { describeFailure } from './failure.ts'
 
 /** A page over the open workspace: its heading and every state (R-25, R-26, R-27). design/components/page-shell.md */
@@ -36,8 +37,17 @@ export function PageShell({ title, back, subtitle, actions, children }: PageShel
     heading.current?.focus()
   }, [pathname])
 
+  const online = useOnline()
   const snapshot = open?.snapshot && open.view ? { ...open.snapshot, state: open.view } : (open?.snapshot ?? null)
-  const retry = <Button onClick={() => void refresh()}>Try again</Button>
+  // While a retry runs the banner stays, its button saying so (R-25), and keeps focus: aria-disabled, not disabled.
+  const trying = open?.status === 'refreshing'
+  const retry = (
+    <Button aria-disabled={trying || undefined} onClick={() => void (trying ? undefined : refresh())}>
+      {trying ? 'Trying…' : 'Try again'}
+    </Button>
+  )
+  // Offline, the shell's banner already says so; this one shows when the browser is online but HECATE is not.
+  const stale = snapshot && open?.failure && open.fetchedAt && (open.status === 'stale' || open.status === 'refreshing') && (online || open.failure.kind !== 'network')
 
   return (
     <div className="flex flex-col gap-stack-lg">
@@ -74,7 +84,7 @@ export function PageShell({ title, back, subtitle, actions, children }: PageShel
         )
       })() : null}
 
-      {snapshot && open?.status === 'stale' && open.failure && open.fetchedAt ? (
+      {stale && open.failure && open.fetchedAt ? (
         <Banner tone="warning" title={`Showing what HECATE had at ${clockTime(open.fetchedAt)}`} action={retry}>
           {describeFailure(open.failure, 'this workspace').title}. This page updates when HECATE can be reached again.
         </Banner>

@@ -34,7 +34,13 @@ test('the log shows what happened by day, newest first, with what is new since y
 
 test('marking all as read clears what is new, and it stays read', async ({ page }) => {
   const dir = await openActivity(page)
+  await page.route('**/activity/ack', async route => {
+    await new Promise(resolve => setTimeout(resolve, 600))
+    await route.continue()
+  })
   await page.getByRole('button', { name: 'Mark all as read' }).click()
+  // R-25: it says so while the Worker answers.
+  await expect(page.getByRole('button', { name: 'Marking as read…' })).toBeVisible()
   await expect(page.getByText('Nothing new since you last looked')).toBeVisible()
   await expect(page.getByText('New', { exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Mark all as read' })).toHaveCount(0)

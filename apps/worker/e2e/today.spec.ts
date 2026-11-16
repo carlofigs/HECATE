@@ -77,6 +77,18 @@ test('when a refresh fails, the last good data stays, marked with its time', asy
   await expect(page.getByRole('status').filter({ hasText: /^Showing what HECATE had at / })).toBeVisible()
   await expect(page.getByRole('status').filter({ hasText: "Couldn't load" })).toBeVisible()
   await expect(section(page, 'In progress').getByText('Draft the scorecard')).toBeVisible()
+
+  // Try again says it is trying, and keeps the banner (and focus) until the answer is in (R-25).
+  await page.unroute('**/api/workspaces/planning')
+  await page.route('**/api/workspaces/planning', async route => {
+    await new Promise(resolve => setTimeout(resolve, 800))
+    await route.continue()
+  })
+  const retry = page.getByRole('button', { name: 'Try again' })
+  await retry.click()
+  await expect(page.getByRole('button', { name: 'Trying…' })).toBeFocused()
+  await expect(page.getByRole('status').filter({ hasText: /^Showing what HECATE had at / })).toHaveCount(0)
+  await expect(page.getByRole('status').filter({ hasText: /^Up to date/ })).toBeVisible()
 })
 
 test('offline, the page keeps its data and says it is offline', async ({ page, context }) => {
@@ -86,6 +98,8 @@ test('offline, the page keeps its data and says it is offline', async ({ page, c
   await comeBackLater(page)
   await expect(page.getByRole('status').filter({ hasText: /^Offline · as of / })).toBeVisible()
   await expect(page.getByRole('status').filter({ hasText: "You're offline" })).toBeVisible()
+  // One banner says so: the page's own "Showing what HECATE had…" is for HECATE being down while you are online.
+  await expect(page.getByRole('status').filter({ hasText: /^Showing what HECATE had at / })).toHaveCount(0)
   await expect(section(page, 'In progress').getByText('Draft the scorecard')).toBeVisible()
   await context.setOffline(false)
   await comeBackLater(page, 10)

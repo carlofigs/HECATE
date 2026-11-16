@@ -47,6 +47,8 @@ None.
 ## Behaviour
 
 - **Loading:** the store keeps the last good snapshot when a refresh fails, so data never disappears because the network did.
+- **Try again** stays where it is while it retries, reading "Trying…" (`aria-disabled`, so it keeps focus), until the answer replaces the banner or brings it back (R-25).
+- **Offline:** the "Showing what HECATE had at …" banner gives way to the shell's "You're offline". It shows when the browser is online but HECATE can't be reached.
 - **Responsive (C-10):** n/a; the page lays out its own content.
 
 ## Accessibility (C-08)
@@ -87,3 +89,4 @@ None.
 
 - 0.2.0: created.
 - 0.6.0: the optional `back` link.
+- 0.11.1: Try again shows that it is trying; one offline banner, not two (audit 2026-11, findings 6 and 7).

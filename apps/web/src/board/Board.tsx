@@ -179,7 +179,8 @@ function BoardBody({ state, params, setParams }: BodyProps) {
               ))}
             </Tabs.List>
             {columns.map(c => (
-              <Tabs.Content key={c.status.id} value={c.status.id} className="outline-none">
+              // Not a tab stop of its own: the column inside has focusable cards and Add task (WAI-ARIA tabs pattern).
+              <Tabs.Content key={c.status.id} value={c.status.id} tabIndex={-1}>
                 {column(c, false)}
               </Tabs.Content>
             ))}

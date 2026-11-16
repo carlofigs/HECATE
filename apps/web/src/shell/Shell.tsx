@@ -99,6 +99,13 @@ export function Shell() {
   const waiting = useApp(s => s.open?.queue.length ?? 0)
   const unsent = waiting > 0
   const [confirmSignOut, setConfirmSignOut] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
+  // Signing out waits for the Worker (R-25): the button says so until the sign-in page replaces this one.
+  const leave = (): void => {
+    if (signingOut) return
+    setSigningOut(true)
+    void signOut().finally(() => setSigningOut(false))
+  }
 
   // Never lose input (M-app-06): unsent changes are kept on this device (ADR 0009). Only where it cannot keep them
   // (a private window, blocked site data) do they live in this tab alone, so then ask before it closes or reloads.
@@ -180,9 +187,10 @@ export function Shell() {
               onChange={e => void navigate(`/w/${encodeURIComponent(e.target.value)}/${page}`)}
             />
             <IconButton
-              label="Sign out"
+              label={signingOut ? 'Signing out…' : 'Sign out'}
               icon={<LogOut aria-hidden="true" className="size-(--size-icon-md)" />}
-              onClick={() => (unsent ? setConfirmSignOut(true) : void signOut())}
+              aria-disabled={signingOut || undefined}
+              onClick={() => (unsent ? setConfirmSignOut(true) : leave())}
             />
           </div>
         </div>
@@ -212,7 +220,7 @@ export function Shell() {
         title={`Sign out and lose ${changes(waiting)}?`}
         description={`${waiting === 1 ? "1 change hasn't" : `${waiting} changes haven't`} been sent: you're offline, or HECATE can't be reached. Signing out clears HECATE from this device, ${waiting === 1 ? 'that change' : 'those changes'} included.`}
         confirmLabel="Sign out"
-        onConfirm={() => void signOut()}
+        onConfirm={leave}
       />
     </div>
   )

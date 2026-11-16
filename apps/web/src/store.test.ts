@@ -302,7 +302,8 @@ describe('live changes', () => {
     store.getState().onLive('w', { version: 3, pending: 9, unread: 9 })
     store.getState().onLive('other', { version: 9, pending: 9, unread: 9 })
     await settle()
-    expect(store.getState().open?.snapshot).toMatchObject({ version: 4, pending: 0 })
+    // For version 4 the socket's counts stand (pending 1): the snapshot carries the same version, not newer counts.
+    expect(store.getState().open?.snapshot).toMatchObject({ version: 4, pending: 1 })
     expect(server.snapshots()).toBe(2)
   })
 
@@ -323,6 +324,67 @@ describe('live changes', () => {
     await settle()
     expect(store.getState().open).toMatchObject({ queue: [], snapshot: { version: 3 } })
     expect(server.snapshots()).toBe(2)
+  })
+
+  /** An API whose snapshot answers the test releases one at a time, each with its own version and counts. */
+  function heldSnapshots() {
+    const waiting: ((answer: { version: number; pending: number; unread: number }) => void)[] = []
+    let asked = 0
+    const api: Api = {
+      me: () => Promise.resolve({ kind: 'ok', data: { userId: 42, login: 'owner' } }),
+      workspaces: () => Promise.resolve({ kind: 'ok', data: { workspaces: [], default: null } }),
+      snapshot: () => {
+        asked++
+        return new Promise(resolve => {
+          waiting.push(a => resolve({ kind: 'ok', data: { version: a.version, state: workspace(), pending: a.pending, lastError: null, activity: { unread: a.unread } } }))
+        })
+      },
+      signOut: () => Promise.resolve({ kind: 'ok', data: null }),
+      applyOps: () => Promise.resolve({ kind: 'network' }),
+    }
+    /** Answers the oldest request, once it has been made. */
+    const answer = async (a: { version: number; pending: number; unread: number }): Promise<void> => {
+      while (waiting.length === 0) await settle()
+      waiting.shift()?.(a)
+    }
+    return { api, asked: () => asked, answer }
+  }
+
+  it('keeps a live count heard while a refresh is on its way, rather than the older one that refresh brings', async () => {
+    const server = heldSnapshots()
+    const store = createAppStore(server.api)
+    const opening = store.getState().openWorkspace('w')
+    await server.answer({ version: 1, pending: 1, unread: 7 })
+    await opening
+    // A refresh sets off; meanwhile the socket says the app has read everything and the commit went through.
+    const refreshing = store.getState().refresh()
+    store.getState().onLive('w', { version: 1, pending: 0, unread: 0 })
+    expect(store.getState().open?.snapshot).toMatchObject({ pending: 0, activity: { unread: 0 } })
+    // The refresh's snapshot was taken before that: same version, the old counts.
+    await server.answer({ version: 1, pending: 1, unread: 7 })
+    await refreshing
+    expect(store.getState().open?.snapshot).toMatchObject({ version: 1, pending: 0, activity: { unread: 0 } })
+  })
+
+  it('fetches once more when a newer version is announced while a refresh is on its way', async () => {
+    const server = heldSnapshots()
+    const store = createAppStore(server.api)
+    const opening = store.getState().openWorkspace('w')
+    await server.answer({ version: 1, pending: 0, unread: 0 })
+    await opening
+    const refreshing = store.getState().refresh()
+    store.getState().onLive('w', { version: 2, pending: 1, unread: 0 })
+    await server.answer({ version: 1, pending: 0, unread: 0 })
+    await server.answer({ version: 2, pending: 1, unread: 0 })
+    await refreshing
+    await settle()
+    expect(store.getState().open?.snapshot?.version).toBe(2)
+    // Nothing newer was announced during those: no more fetching.
+    const asked = server.asked()
+    await settle()
+    await settle()
+    expect(server.asked()).toBe(asked)
+    expect(store.getState().open?.snapshot?.version).toBe(2)
   })
 
   it('checks the session when the socket ends with it', async () => {

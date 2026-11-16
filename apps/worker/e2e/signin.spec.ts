@@ -23,7 +23,13 @@ test('signing in from a deep link comes back to it', async ({ page }) => {
 test('signing out ends the session for good', async ({ page }) => {
   await signIn(page)
   await todayLoaded(page)
+  await page.route('**/auth/logout', async route => {
+    await new Promise(resolve => setTimeout(resolve, 600))
+    await route.continue()
+  })
   await page.getByRole('button', { name: 'Sign out' }).click()
+  // R-25: it says so while the Worker answers.
+  await expect(page.getByRole('button', { name: 'Signing out…' })).toBeVisible()
   await expect(page.getByRole('heading', { level: 1, name: 'Sign in to HECATE' })).toBeVisible()
   await page.reload()
   await expect(page.getByRole('heading', { level: 1, name: 'Sign in to HECATE' })).toBeVisible()
