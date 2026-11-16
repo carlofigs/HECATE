@@ -75,15 +75,29 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ steps.playwright.outputs.version }}
 
+      # Both steps fetch system libraries from Ubuntu's mirrors, which fail now and then (DNS, timeouts) and once
+      # failed a PR before any test ran: three tries, 30 s then 60 s apart, before the job gives up.
       - name: Install Chromium
         if: steps.browser-cache.outputs.cache-hit != 'true'
         working-directory: apps/worker
-        run: pnpm exec playwright install --with-deps chromium
+        run: |
+          for attempt in 1 2 3; do
+            pnpm exec playwright install --with-deps chromium && exit 0
+            echo "::warning::Installing Chromium failed (attempt $attempt of 3)"
+            if [ "$attempt" -lt 3 ]; then sleep $((attempt * 30)); fi
+          done
+          exit 1
 
       - name: Install Chromium's system libraries
         if: steps.browser-cache.outputs.cache-hit == 'true'
         working-directory: apps/worker
-        run: pnpm exec playwright install-deps chromium
+        run: |
+          for attempt in 1 2 3; do
+            pnpm exec playwright install-deps chromium && exit 0
+            echo "::warning::Installing Chromium's system libraries failed (attempt $attempt of 3)"
+            if [ "$attempt" -lt 3 ]; then sleep $((attempt * 30)); fi
+          done
+          exit 1
 
       - name: End-to-end and accessibility
         run: pnpm --filter @hecate/worker e2e
